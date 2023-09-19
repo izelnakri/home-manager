@@ -22,7 +22,9 @@
     in {
       images = {
         pi = (self.nixosConfigurations.pi.extendModules {
-          modules = [ "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel-no-zfs-installer.nix" ];
+          modules = [
+            "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel-no-zfs-installer.nix"
+          ];
         }).config.system.build.sdImage;
       };
       nixosConfigurations = {
@@ -33,6 +35,7 @@
             ./modules/build-raspberry-pi-image.nix
             ./hosts/izels-pi4/configuration.nix
           ];
+          specialArgs = inputs;
         };
       };
 

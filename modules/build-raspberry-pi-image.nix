@@ -1,21 +1,27 @@
-{ pkgs, nixpkgs, config, lib, ... }:
+{ pkgs, nixpkgs, self, config, lib, ... }:
 {
   # This causes an overlay which causes a lot of rebuilding
   environment.noXlibs = lib.mkForce false;
   # "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix" creates a
   # disk with this label on first boot. Therefore, we need to keep it. It is the
   # only information from the installer image that we need to keep persistent
-  fileSystems."/" =
-    { device = "/dev/disk/by-label/NIXOS_SD";
-      fsType = "ext4";
-    };
+  fileSystems."/" = {
+    device = "/dev/disk/by-label/NIXOS_SD";
+    fsType = "ext4";
+  };
+  # fileSystems."/tmp" = {
+  #   device = "tmpfs";
+  #   fsType = "tmpfs";
+  #   options = ["noatime" "nodev" "size=8G"];
+  # };
+
   boot = {
     kernelPackages = lib.mkForce pkgs.linuxPackages_latest;
     loader = {
       generic-extlinux-compatible.enable = lib.mkDefault true;
       grub.enable = lib.mkDefault false;
     };
-    binfmt.emulatedSystems = [ "aarch64-linux" ];
+    # binfmt.emulatedSystems = [ "aarch64-linux" ];
   };
 
   sdImage.compressImage = false;
@@ -24,9 +30,21 @@
     experimental-features = lib.mkDefault "nix-command flakes";
     trusted-users = [ "root" "@wheel" ];
   };
-  nixpkgs.config.allowUnsupportedSystem = true;
-  nixpkgs.hostPlatform.system = "aarch64-linux";
-  nixpkgs.buildPlatform.system = "x86_64-linux"; #If you build on x86 other wise changes this.
+
+  nixpkgs = {
+    config.allowUnsupportedSystem = true;
+    hostPlatform.system = "aarch64-linux";
+    buildPlatform.system = "x86_64-linux";
+
+    overlays = [
+      (final: super: {
+        p11-kit = super.p11-kit.overrideAttrs(_: {
+          doCheck = false;
+          doInstallCheck = false;
+        });
+      })
+    ];
+  };
 }
 
 # { pkgs, modulesPath, lib, ... }: {

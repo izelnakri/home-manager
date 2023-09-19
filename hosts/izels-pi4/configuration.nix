@@ -15,7 +15,7 @@
       interfaces = [ "wlan0" ];
       enable = true;
       networks = {
-        UC_wifi_2d.psk = "L0v31sth3k3y-2D";
+        UC_wifi_2D.psk = "L0v31sth3k3y-2D";
       };
     };
   };
