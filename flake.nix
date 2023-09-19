@@ -21,14 +21,14 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       images = {
-        pi = (self.nixosConfigurations.pi.extendModules {
+        pi4-nas = (self.nixosConfigurations.pi4-nas.extendModules {
           modules = [
             "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel-no-zfs-installer.nix"
           ];
         }).config.system.build.sdImage;
       };
       nixosConfigurations = {
-        pi = nixpkgs.lib.nixosSystem {
+        pi4-nas = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
           modules = [
             nixos-hardware.nixosModules.raspberry-pi-4
