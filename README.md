@@ -36,3 +36,11 @@ space available to `/tmp` by running the following command:
 ```bash
 sudo mount -o remount,size=32G,nr_inodes=0 /tmp
 ```
+
+### Tips
+
+Dynamically browse all evaluated options:
+
+```bash
+nix repl --file '<nixpkgs/nixos>' -I nixos-config=./hosts/izels-pi4/configuration.nix
+```

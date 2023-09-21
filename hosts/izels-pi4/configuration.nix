@@ -1,12 +1,24 @@
 { pkgs, config, lib, ... }:
 {
+  system.stateVersion = "23.05";
+
   environment.systemPackages = with pkgs; [
+    libarchive
     gnumake
     vim
     git
     bat
     home-manager
   ];
+
+  time.timeZone = "Europe/Madrid";
+  i18n.defaultLocale = "en_US.UTF-8";
+  sound.enable = true;
+
+  hardware = {
+    pulseaudio.enable = true;
+    # cpu.amd.updateMicrocode = true;
+  };
 
   users = {
     users.admin = {
@@ -15,8 +27,22 @@
       extraGroups = [ "wheel" ];
     };
   };
+
+  # console = {
+  #   packages=[ pkgs.terminus_font ];
+  #   font="${pkgs.terminus_font}/share/consolefonts/ter-i22b.psf.gz";
+  # };
+
+  # security.polkit.enable = true;
+  # boot.loader.systemd-boot.enable = true;
+  # boot.loader.efi.canTouchEfiVariables = true;
+
   networking = {
     hostName = "pi4-nas";
+
+    # networkmanager.enable = true;  # Easiest to use and most distros use this by default.
+    firewall.enable = false;
+    enableIPv6 = false;
     interfaces."wlan0".useDHCP = true;
     wireless = {
       interfaces = [ "wlan0" ];
@@ -26,12 +52,44 @@
       };
     };
   };
+
+  # programs = {
+  # git = {
+  #   enable = true;
+  #   userName = "Jane Doe";
+  #   userEmail = "jane.doe@example.org";
+  # };
+  # };
+
   services = {
     openssh.enable = true;
     timesyncd.enable = true;
+    # flatpak.enable = true;
+    # dbus.enable = true;
+
+    # gpg-agent = {
+    #   enable = true;
+    #   defaultCacheTtl = 1800;
+    #   enableSshSupport = true;
+    # };
   };
 
-  system.stateVersion = "23.05";
+  # fonts = {
+  #   fonts = with pkgs; [
+  #     noto-fonts
+  #     noto-fonts-emoji
+  #     font-awesome
+  #     (nerdfonts.override { fonts = [ "Meslo" ]; })
+  #   ];
+  #   fontconfig = {
+  #     enable = true;
+  #     defaultFonts = {
+	#       monospace = [ "Meslo LG M Regular Nerd Font Complete Mono" ];
+	#       serif = [ "Noto Serif" ];
+	#       sansSerif = [ "Noto Sans" ];
+  #     };
+  #   };
+  # };
 
   # OpenSSH is forced to have an empty `wantedBy` on the installer system[1], this won't allow it
   # to be automatically started. Override it with the normal value.

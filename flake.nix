@@ -1,4 +1,3 @@
-# NixOS-generator must be used
 {
   description = "Home Manager configuration of izelnakri";
 
@@ -15,10 +14,13 @@
     };
   };
 
+  # TODO: make home.nix, ~/.config/home-manager present in the repo downloaded from github and switched
+  # Make everything run as btrfs after home-manager install is complete
   outputs = inputs@{ self, nixpkgs, nixos-hardware, nixos-generators, home-manager, ... }:
     let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      x86Pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      armPkgs = nixpkgs.legacyPackages.aarch64-linux;
     in {
       images = {
         pi4-nas = (self.nixosConfigurations.pi4-nas.extendModules {
@@ -38,19 +40,15 @@
           specialArgs = inputs;
         };
       };
-
-      # TODO: each machine is a different configuration
-      # homeConfigurations = {
-      #   izelnakri = home-manager.lib.homeManagerConfiguration {
-      #     inherit pkgs;
-
-      #     # Specify your home configuration modules here, for example,
-      #     # the path to your home.nix.
-      #     modules = [ ./home.nix ];
-
-      #     # Optionally, use home-manager.extraSpecialArgs to pass
-      #     # to pass through arguments to home.nix
-      #   };
-      # };
+      homeConfigurations = {
+        admin = home-manager.lib.homeManagerConfiguration {
+          pkgs = armPkgs;
+          modules = [ ./home.nix ];
+        };
+        izelnakri = home-manager.lib.homeManagerConfiguration {
+          pkgs = x86Pkgs;
+          modules = [ ./home.nix ];
+        };
+      };
     };
 }

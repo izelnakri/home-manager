@@ -27,12 +27,18 @@
   sdImage.compressImage = false;
 
   nix.settings = {
-    experimental-features = lib.mkDefault "nix-command flakes";
+    experimental-features = lib.mkDefault "nix-command flakes repl-flake";
+    max-jobs = lib.mkDefault "auto";
+    cores = lib.mkDefault 0;
     trusted-users = [ "root" "@wheel" ];
   };
 
   nixpkgs = {
-    config.allowUnsupportedSystem = true;
+    config = {
+      allowUnsupportedSystem = true;
+      allowUnfree = true;
+    };
+
     hostPlatform.system = "aarch64-linux";
     buildPlatform.system = "x86_64-linux";
 
