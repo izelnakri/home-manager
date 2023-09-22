@@ -2,7 +2,7 @@
   description = "Home Manager configuration of izelnakri";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/master";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixos-generators = {
       url = "github:nix-community/nixos-generators";

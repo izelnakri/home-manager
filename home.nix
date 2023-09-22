@@ -1,29 +1,101 @@
+# do the base color consistency
+# Add alacritty, nvim, tmux, zsh config
 { config, pkgs, ... }:
 {
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.allowUnfreePredicate = (_: true);
 
   home.username = "izelnakri";
   home.homeDirectory = "/home/izelnakri";
   home.stateVersion = "23.05";
   home.packages = with pkgs; [
     # alacritty
-    emacs29
+    # bspwm
+    # dmenu
+    # elinks - text based web browser, is it the best(?)
+    # eww - Widget library for unix
+    flameshot
+    brave
+    chromium
+    comma
+    deno
+    # dunst
+    # dwm
+    # emacs29
+    # emacs-doom
+    elixir_1_15
+    # helix
+    flatpak
+    fontconfig
+    freetype
+    gcc
+    gh
+    gimp
+    # groff
+    # joplin
+    htop
+    # inkspace
+    iperf
+    kubectl
+    # kubectl-tree
+    kubernetes
+    kubernetes-helm
+    # ktop
+    # lens
+    lf
+    lsd
+    lsof
+    lxc
+    lxcfs
+    lxd
+    # lutris
     ripgrep
+    rsync
     fd
+    fx
     bat
     fzf
-    wget
-    chromium
-    neovim
-    tmux
+    # w3m
+    magic-wormhole
     mpv
-    # gnumake
-    htop
-    # git
+    neofetch
+    neovim
+    # nfs-utils
+    ninja
+    ngrok
+    nodejs
+    openssl
+    # pavucontrol
+    # pgmodeler
+    # postman
+    pass
+    postgresql
+    python3Full
+    # python.pkgs.pip
+    # rofi - dmenu replacement, window switcher
+    ruby
+    rustup
+    # sc
+    # sxiv
+    # synergy
+    # swaycons
+    syncthing
+    terminus-nerdfont
+    tldr
+    # timeshift
+    tmux
+    # touchegg
+    # transmission
+    # trash-cli
+    qemu
     # playonlinux
-    lxc
-    lxd
-    lxcfs
+    # variety
+    unzip
+    unixtools.nettools
+    wget
+    vlc
+    xfce.thunar
+    zathura
 
     # inputs.agenix.packages.x86_64-linux.default
 
@@ -63,6 +135,12 @@
     '')
   ];
 
+  #  nixpkgs.overlays = [
+  #   (final: prev: {
+  #     dwm = prev.dwm.overrideAttrs (old: { src = /home/titus/GitHub/dwm-titus ;});
+  #   })
+  # ];
+
   home.file = {
     # # Building this configuration will create a copy of 'dotfiles/screenrc' in
     # # the Nix store. Activating the configuration will then make '~/.screenrc' a
@@ -81,5 +159,15 @@
     # EDITOR = "emacs";
   };
 
-  programs.home-manager.enable = true;
+  programs = {
+    home-manager.enable = true;
+    git = {
+      enable = true;
+      userName = "Izel Nakri";
+      userEmail = "contact@izelnakri.com";
+      aliases = {
+        co = "checkout";
+      };
+    };
+  };
 }

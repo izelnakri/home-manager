@@ -17,7 +17,7 @@
 
   hardware = {
     pulseaudio.enable = true;
-    # cpu.amd.updateMicrocode = true;
+    cpu.amd.updateMicrocode = true;
   };
 
   users = {
@@ -28,19 +28,14 @@
     };
   };
 
-  # console = {
-  #   packages=[ pkgs.terminus_font ];
-  #   font="${pkgs.terminus_font}/share/consolefonts/ter-i22b.psf.gz";
-  # };
-
   # security.polkit.enable = true;
   # boot.loader.systemd-boot.enable = true;
   # boot.loader.efi.canTouchEfiVariables = true;
+  # boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
   networking = {
     hostName = "pi4-nas";
-
-    # networkmanager.enable = true;  # Easiest to use and most distros use this by default.
+    # networkmanager.enable = true;  # Requires networking.supplication default network declaration
     firewall.enable = false;
     enableIPv6 = false;
     interfaces."wlan0".useDHCP = true;
@@ -48,21 +43,16 @@
       interfaces = [ "wlan0" ];
       enable = true;
       networks = {
-        UC_wifi_2D.psk = "L0v31sth3k3y-2D";
+        UC_wifi_2D.pskRaw = "f36173de86e72e79253b4350db006c1e6cc4187c3f30e18a727c41bb844e52a8";
       };
     };
   };
 
-  # programs = {
-  # git = {
-  #   enable = true;
-  #   userName = "Jane Doe";
-  #   userEmail = "jane.doe@example.org";
-  # };
-  # };
-
   services = {
-    openssh.enable = true;
+    openssh = {
+      enable = true;
+      PermitRootLogin = lib.mkForce "no";
+    };
     timesyncd.enable = true;
     # flatpak.enable = true;
     # dbus.enable = true;
@@ -74,22 +64,24 @@
     # };
   };
 
-  # fonts = {
-  #   fonts = with pkgs; [
-  #     noto-fonts
-  #     noto-fonts-emoji
-  #     font-awesome
-  #     (nerdfonts.override { fonts = [ "Meslo" ]; })
-  #   ];
-  #   fontconfig = {
-  #     enable = true;
-  #     defaultFonts = {
-	#       monospace = [ "Meslo LG M Regular Nerd Font Complete Mono" ];
-	#       serif = [ "Noto Serif" ];
-	#       sansSerif = [ "Noto Sans" ];
-  #     };
-  #   };
-  # };
+  # NOTE: Takes long, optimize it(?)
+  # zopflipng -y "build/quantized_pngs/emoji_u1f1ea_1f1ea.png" "build/compressed_pngs/emoji_u1f1ea_1f1ea.png" 1> /dev/null 2>&1
+  fonts = {
+    packages = with pkgs; [
+      noto-fonts
+      noto-fonts-emoji
+      font-awesome
+      (nerdfonts.override { fonts = [ "Meslo" ]; })
+    ];
+    fontconfig = {
+      enable = true;
+      defaultFonts = {
+        monospace = [ "Meslo LG M Regular Nerd Font Complete Mono" ];
+        serif = [ "Noto Serif" ];
+        sansSerif = [ "Noto Sans" ];
+      };
+    };
+  };
 
   # OpenSSH is forced to have an empty `wantedBy` on the installer system[1], this won't allow it
   # to be automatically started. Override it with the normal value.
