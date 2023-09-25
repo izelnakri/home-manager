@@ -172,7 +172,29 @@
 
   #  ~/.nix-profile/etc/profile.d/hm-session-vars.sh or /etc/profiles/per-user/izelnakri/etc/profile.d/hm-session-vars.sh
   home.sessionVariables = {
+    BROWSER = "brave";
     EDITOR = "nvim";
+    ELIXIR_ERL_OPTIONS = "+fnu";
+    ERL_AFLAGS = "-kernel shell_history enabled -kernel shell_history_file_bytes 1024000";
+    FZF_DEFAULT_COMMAND = "fd --type f";
+    GDK_SCALE = 2;
+    # LF_ICONS
+    MANPAGER= "bat -l man -p";
+    HISTTIMEFORMAT= "%d/%m/%y %T ";
+    HISTFILE= "~/.cache/zsh/history";
+    TERMINAL = "alacritty";
+    POSTGRES_USER = "postgres";
+    POSTGRES_PASSWORD = "postgres";
+    POSTGRES_HOST = "localhost";
+    POSTGRES_PORT = 5432;
+    # PGUSER= $POSTGRES_USER
+    # PGPASSWORD= $POSTGRES_PASSWORD
+    # PGHOST= $POSTGRES_HOST
+    # PGPORT= $POSTGRES_PORT
+    VOLTA_HOME = "$HOME/.volta";
+    PATH = "$HOME/.rbenv/shims:$HOME/.rbenv/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/bin:/usr/sbin:$PATH";
+    TERM = "xterm-256color";
+    # ZSH_AUTOSUGGEST_STRATEGY = (history completion)
   };
 
   programs = {
@@ -209,6 +231,112 @@
       enableAutosuggestions = true;
       enableCompletion = true;
       syntaxHighlighting.enable = true;
+      initExtra = ''
+        unsetopt INC_APPEND_HISTORY # Write to the history file immediately, not when the shell exits.
+        setopt PROMPT_SUBST # Enable parameter expansion, command substitution and arithmetic expansion in the prompt.
+
+        function cheat {
+          curl cheat.sh/$argv
+        }
+
+        function display_jobs_count_if_needed {
+          local job_count=$(jobs -s | wc -l | tr -d " ")
+
+          if [ $job_count -gt 0 ]; then
+            echo "%B%{$fg[yellow]%}|%j| ";
+          fi
+        }
+
+        # As in "delpod default"
+        # As in "delpod <namespace>"
+        function delpod {
+          kubectl delete po --all -n $argv
+        }
+
+        function extract() {
+            case "$1" in
+                *.tar.bz|*.tar.bz2|*.tbz|*.tbz2) tar xjf "$1";;
+                *.tar.gz|*.tgz) tar xzf "$1";;
+                *.tar.xz|*.txz) tar xJf "$1";;
+                *.zip) unzip "$1";;
+                *.rar) unrar x "$1";;
+                *.7z) 7z x "$1";;
+            esac
+        }
+
+        # kill everything in a namespace
+        function fuck {
+          kubectl delete all --all -n $argv
+        }
+
+        function ix() {
+            local opts
+            local OPTIND
+            [ -f "$HOME/.netrc" ] && opts='-n'
+            while getopts ":hd:i:n:" x; do
+                case $x in
+                    h) echo "ix [-d ID] [-i ID] [-n N] [opts]"; return;;
+                    d) $echo curl $opts -X DELETE ix.io/$OPTARG; return;;
+                    i) opts="$opts -X PUT"; local id="$OPTARG";;
+                    n) opts="$opts -F read:1=$OPTARG";;
+                esac
+            done
+            shift $(($OPTIND - 1))
+            [ -t 0 ] && {
+                local filename="$1"
+                shift
+                [ "$filename" ] && {
+                    curl $opts -F f:1=@"$filename" $* ix.io/$id
+                    return
+                }
+                echo "^C to cancel, ^D to send."
+            }
+            curl $opts -F f:1='<-' $* ix.io/$id
+        }
+
+        function parse_git_branch {
+          git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\ ->\ \1/'
+        }
+
+        autoload -U colors && colors
+        # PS1 = '[\u@\h \W]\$ ';
+        PROMPT='%{$fg[blue]%}$(date +%H:%M:%S) $(display_jobs_count_if_needed)%B%{$fg[green]%}%n %{$fg[blue]%}%~%{$fg[yellow]%}$(parse_git_branch) %{$reset_color%}';
+      ''; # => .zshrc.
+      shellAliases = {
+        bitbox-bridge="/opt/bitbox-bridge/bin/bitbox-bridge"; # NOTE: is this still needed?
+        checkrepo = "git log --pretty=format: --name-only | sort | uniq -c | sort -rg | head -10";
+        d = "sudo docker";
+        diff = "diff --color=auto";
+        dockerremoveall = "sudo docker system prune -a";
+        e = "helix";
+        g = "git";
+        grep = "grep --color=auto";
+        home-manager-docs = "chromium ~/Desktop/gifs/home-manager.html";
+        k = "kubectl";
+        kube = "kubectl";
+        ls = "ls --color=auto -F";
+        lf = "lfub";
+        lusd = "node /home/izelnakri/cron-jobs/curve-lusd.js"; # NOTE: maybe move to cmd
+        onport = "ps aux | grep";
+        open = "xdg-open";
+        pbcopy = "xclip -selection clipboard"; # TODO: move away from xclip
+        pbpaste = "xclip -selection clipboard -o";
+        scitutor = "sc /usr/share/doc/sc/tutorial.sc";
+        server = "mix phoenix.server";
+        SS = "sudo systemctl";
+        speedtest = "curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -";
+        terminate = "lsof -ti:4200 | xargs kill";
+        todo = "nvim ~/Dropbox/TODO.md";
+        v = "$EDITOR";
+        vi = "nvim";
+        vim = "nvim";
+        weather = "curl http://wttr.in/";
+        YT = "youtube-viewer";
+        x = "sxiv -ft *";
+      };
+      # shellGlobalAliases = {
+
+      # }; # => Similar to programs.zsh.shellAliases, but are substituted anywhere on a line.
       # envExta = ''
       #   export SOMEZSHVARIABLE="something"
       # '';
