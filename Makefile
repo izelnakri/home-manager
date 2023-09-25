@@ -1,4 +1,5 @@
 HOSTNAME = $(shell hostname)
+USERNAME = $(shell whoami)
 
 NIX_FILES = $(shell find . -name '*.nix' -type f)
 
@@ -19,4 +20,10 @@ update:
 	nix flake update
 
 upgrade:
-	make update && make switch
+	make update && make home-switch
+
+home-switch:
+	home-manager switch --flake .
+
+# deploy
+#   make update && nix run .nix run .#apps.nixinate.$1

@@ -1,6 +1,64 @@
-{ pkgs, config, lib, ... }:
+{ pkgs, config, lib, inputs, ... }:
 {
-  system.stateVersion = "23.05";
+  imports = with inputs.self.nixosModules; [
+#     ./disks.nix
+#     ./hardware-configuration.nix
+#     users-izelnakri # This is NOT the /users/path
+#     profiles-tailscale
+#     profiles-sway
+#     profiles-fail2ban
+#     profiles-steam
+#     profiles-wireless
+#     profiles-pipewire
+#     profiles-avahi
+#     mixins-obs
+#     mixins-v4l2loopback
+#     mixins-common
+#     mixins-i3status
+#     mixins-fonts
+#     mixins-bluetooth
+#     mixins-vaapi-intel-hybrid-codec
+#     mixins-zram
+#     editor-nvim
+  ];
+
+  # nixpkgs.overlays = [
+  #   (self: super: {
+  #     mpv-unwrapped = super.mpv-unwrapped.override { ffmpeg_5 = super.ffmpeg_5-full; }; # Allows MPV to open /dev/video*
+  #     sway-unwrapped = super.sway-unwrapped.override { stdenv = super.withCFlags [ "-funroll-loops" "-O3" "-march=x86-64-v3" ] super.llvmPackages_15.stdenv; };
+  #     kitty = super.kitty.override { stdenv = super.withCFlags [ "-funroll-loops" "-O3" "-march=x86-64-v3" ] super.llvmPackages_15.stdenv; };
+  #     nixUnstable = super.nixUnstable.override { stdenv = super.withCFlags [ "-funroll-loops" "-O3" "-march=x86-64-v3" ] super.llvmPackages_15.stdenv; };
+  #   })
+  # ];
+
+  nix.settings = {
+    experimental-features = lib.mkDefault "nix-command flakes repl-flake";
+    max-jobs = lib.mkDefault "auto";
+    cores = lib.mkDefault 0;
+    trusted-users = [ "root" "@wheel" ];
+  };
+
+  nixpkgs = {
+    config = {
+      allowUnsupportedSystem = true;
+      allowUnfree = true;
+    };
+  };
+
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    users = import "${inputs.self}/users";
+    extraSpecialArgs = {
+      inherit inputs;
+      headless = false;
+    };
+  };
+
+  fileSystems."/" = {
+    device = "/dev/disk/by-label/NIXOS_SD";
+    fsType = "ext4"; # lib.mkForce "btrfs" doesnt work for now?
+  };
 
   environment.systemPackages = with pkgs; [
     libarchive
@@ -9,6 +67,9 @@
     git
     bat
     home-manager
+    htop
+    neofetch
+    zsh
   ];
 
   time.timeZone = "Europe/Madrid";
@@ -21,14 +82,31 @@
   };
 
   users = {
-    users.admin = {
-      password = "coolie";
+    users.izelnakri = {
       isNormalUser = true;
       extraGroups = [ "wheel" ];
+      password = "coolie";
+      shell = pkgs.zsh;
+      openssh.authorizedKeys.keys = [
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDP2YFXzWEAwbYvefJzHNw1yu6Z0ZgiBCBFA1pJQ5ajrK18auaOlvCZ6Jqvn/91/Erl6qxc2bHKYNfHPa8YL0U07dZYvEKZ4pqxcpC1aLX29vVTuBQL/e8JenpKtLm6E+/e6x8NKoTb1teADsY/0thZBZSpTWt5q+GeTAkOVYtIFqew5Q7V0pwk+liV6FGHv7XOiGwtG06+KrD1hOwBJIlsMBOPoeye88aKDYnZ864xDCzrOjBALeRCnfXc8RIvCzbMKL78kdsbiowQyPZrc6zPXK1xx0KUNSAeNY6u5U0C6SFf7VikPkNaW7q/YjbbxwSA9ejvAaPcl2TOZnVIh8XaBwCP6jxW9EFljCqwIgjnnk4xE0vIITgZtwff+lTJQ12SqMXBwlD4CpLTo2G9ecUbXgJ6hjt8hsrYyhP+JiGXV45bMOmAVDRcICcCLMfFQQp96RjRGIylXhpUJxjt4AA1K4Op0v5ugxCry5b4mkc7VNMQl1cRCCkj9WE1wCk/qrs= izelnakri@x1-carbon"
+      ];
     };
   };
 
-  # security.polkit.enable = true;
+  programs = {
+    zsh.enable = true;
+  };
+
+  security = {
+    # polkit.enable = true;
+    # pam.enableSSHAgentAuth = true;
+    # users.users.root.openssh.authorizedKeys.keys
+  };
+
+  boot = {
+    binfmt.emulatedSystems = [ "x86_64-linux" ];
+  };
+
   # boot.loader.systemd-boot.enable = true;
   # boot.loader.efi.canTouchEfiVariables = true;
   # boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
@@ -51,7 +129,9 @@
   services = {
     openssh = {
       enable = true;
-      PermitRootLogin = lib.mkForce "no";
+      settings = {
+        PermitRootLogin = lib.mkForce "no";
+      };
     };
     timesyncd.enable = true;
     # flatpak.enable = true;
@@ -87,4 +167,8 @@
   # to be automatically started. Override it with the normal value.
   # [1] https://github.com/NixOS/nixpkgs/blob/9e5aa25/nixos/modules/profiles/installation-device.nix#L76
   systemd.services.sshd.wantedBy = lib.mkOverride 40 [ "multi-user.target" ];
+
+  system.stateVersion = "23.05";
+
+  # users.users.matthew.extraGroups = [ "video" ];
 }

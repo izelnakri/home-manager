@@ -1,0 +1,3 @@
+{
+  izelnakri = import ./izelnakri;
+}

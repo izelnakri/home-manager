@@ -32,11 +32,6 @@
   };
 
   nixpkgs = {
-    config = {
-      allowUnsupportedSystem = true;
-      allowUnfree = true;
-    };
-
     hostPlatform.system = "aarch64-linux";
     buildPlatform.system = "x86_64-linux";
 

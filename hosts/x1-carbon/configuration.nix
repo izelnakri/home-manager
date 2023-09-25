@@ -21,7 +21,7 @@
   };
 
   users = {
-    users.admin = {
+    users.izelnakri = {
       password = "coolie";
       isNormalUser = true;
       extraGroups = [ "wheel" ];
