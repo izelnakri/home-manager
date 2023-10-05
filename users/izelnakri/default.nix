@@ -173,6 +173,13 @@ in {
     ".config/nvim".source = ../../static/.config/nvim;
     ".config/tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
     ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
+    "/.local/share/applications/Alacritty.desktop".text = ''
+      [Desktop Entry]
+      Terminal=false
+      Type=Application
+      Name=Alacritty Terminal
+      Exec=/home/izelnakri/.nix-profile/bin/alacritty
+    '';
 
     # TODO: add colors file for other programs & reference.
     # source to copy or file
