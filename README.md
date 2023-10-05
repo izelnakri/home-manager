@@ -10,15 +10,10 @@
 
   - `viture/` -  My viture neckband.
 
-- `modules/` - [Modules](https://nixos.wiki/wiki/Module) `nixosModules` that
-  appear in the flake, automatically.
+- `modules/` - [Modules](https://nixos.wiki/wiki/Module) `nixosModules` that appear in the flake automatically. Individual files can be
+  imported on imports = [ ... ];
 
-  - `mixins/` - Dotfiles/Configurations. Instead of imperatively configuring
-    `/etc/` or `~/.config`, everything in here is written in Nix instead. This
-    nix code implements the changes I want that would traditionally be done by
-    modifying something in `/etc/` or `~/.config` using `vim`.
-
-  - `helpers/` - Helper nix functions to accomplish certain tasks. Like (nixGL $program) etc.
+  - `functions/` - Helper nix functions to accomplish certain tasks. Like (nixGL $program) etc.
 
 - `secrets/` - [`age`](https://github.com/FiloSottile/age) encrypted secrets,
   made possible by [`agenix`](https://github.com/ryantm/agenix)
@@ -27,8 +22,6 @@
   - `ssot/` - Single Source of Truth, stuff like my SSH Keys, etc.
 
 - `users/` - [home-manager](https://github.com/nix-community/home-manager) configuration per user.
-  - `modules/` - my shared home-manager nix modules
-
   - `$username/` - home-manager configuration for a given user
 
   - `shared/` - shared home-manager configuration for all users
@@ -139,7 +132,8 @@ Add nixGL to registry:
 ```bash
 nix registry add nixgl github:guibou/nixGL
 
-nix run --impure nixgl#nixGLDefault alacritty
+nix run --impure nixgl#nixGLDefault -- alacritty
 ```
+
 
 %% console.colors = []

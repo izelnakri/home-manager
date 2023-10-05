@@ -10,7 +10,7 @@
 # lib = to define helper variables
 { config, pkgs, inputs, nixosModules, ... }:
 let
-  nixGL = import ../modules/nix-gl.nix { inherit pkgs; };
+  wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs; };
 in {
   imports =  [
     inputs.nix-colors.homeManagerModules.default
@@ -229,7 +229,7 @@ in {
   programs = {
     alacritty = {
       enable = true;
-      package = (nixGL pkgs.alacritty);
+      package = (wrapNixGL pkgs.alacritty);
     };
 
     atuin = {
