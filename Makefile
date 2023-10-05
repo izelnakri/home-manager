@@ -22,8 +22,9 @@ update:
 upgrade:
 	make update && make home-switch
 
+# nixGL.auto requires --impure due to builtins.currentTime
 home-switch:
-	home-manager switch --flake .
+	home-manager --impure switch --flake .
 
 # deploy
 #   make update && nix run .nix run .#apps.nixinate.$1

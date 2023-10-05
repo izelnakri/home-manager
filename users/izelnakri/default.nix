@@ -1,9 +1,18 @@
+# TODO: Implement nerdtree fonts with vim(or use lazyvim(?))
+# TODO: How to manage tokens secrets
+
 # do the base color consistency
 
-# Add alacritty, nvim, tmux, zsh config
-{ config, pkgs, inputs, ... }:
-{
-  imports = [
+# Add nvim
+# home.extraOutputsToInstall
+# home.keyboard
+# make path home.sessionPath (?)
+# lib = to define helper variables
+{ config, pkgs, inputs, nixosModules, ... }:
+let
+  nixGL = import ../modules/nix-gl.nix { inherit pkgs; };
+in {
+  imports =  [
     inputs.nix-colors.homeManagerModules.default
   ];
 
@@ -11,6 +20,7 @@
 
   # targets.genericLinux.enable = true;
   nixpkgs.config.allowBroken = true;
+
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.allowUnfreePredicate = (_: true);
 
@@ -18,8 +28,10 @@
   home.homeDirectory = "/home/izelnakri";
   home.stateVersion = "23.05";
   home.packages = with pkgs; [
-    # alacritty
+    asdf-vm
+    atuin
     # bspwm
+    direnv
     # dmenu
     # elinks - text based web browser, is it the best(?)
     # eww - Widget library for unix
@@ -69,7 +81,6 @@
     magic-wormhole
     mpv
     neofetch
-    neovim
     # nfs-utils
     ninja
     nixos-rebuild
@@ -95,7 +106,6 @@
     # swaycons
     syncthing
     terminus-nerdfont
-    tldr
     # timeshift
     tmux
     # touchegg
@@ -140,6 +150,9 @@
       done
     '')
 
+    # TODO: instead just do ls-colors git checkout to ~/.nix-profile/share/LS_COLORS
+    # TODO: also checkout/pull this repo master branch to ~/.config/home-manager
+    # TODO: check if this could be done offline
     # TODO: Fetch LS_COLORS remotely and then copy it to the Nix Store, how to do this sequential or parallel
     # (pkgs.runCommand "ls-colors" {} ''
     #  mkdir -p $out/bin $out/share
@@ -156,6 +169,11 @@
   # ];
 
   home.file = {
+    ".config/alacritty/alacritty.yml".source = ../../static/.config/alacritty/alacritty.yml;
+    ".config/nvim".source = ../../static/.config/nvim;
+    ".config/tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
+    ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
+
     # TODO: add colors file for other programs & reference.
     # source to copy or file
     # # Building this configuration will create a copy of 'dotfiles/screenrc' in
@@ -171,7 +189,7 @@
   };
 
   #  ~/.nix-profile/etc/profile.d/hm-session-vars.sh or /etc/profiles/per-user/izelnakri/etc/profile.d/hm-session-vars.sh
-  home.sessionVariables = {
+  home.sessionVariables = rec {
     BROWSER = "brave";
     EDITOR = "nvim";
     ELIXIR_ERL_OPTIONS = "+fnu";
@@ -182,23 +200,66 @@
     MANPAGER= "bat -l man -p";
     HISTTIMEFORMAT= "%d/%m/%y %T ";
     HISTFILE= "~/.cache/zsh/history";
+    TERM = "xterm-256color";
     TERMINAL = "alacritty";
+    PATH = "$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/bin:/usr/sbin:$PATH";
     POSTGRES_USER = "postgres";
     POSTGRES_PASSWORD = "postgres";
     POSTGRES_HOST = "localhost";
     POSTGRES_PORT = 5432;
-    # PGUSER= $POSTGRES_USER
-    # PGPASSWORD= $POSTGRES_PASSWORD
-    # PGHOST= $POSTGRES_HOST
-    # PGPORT= $POSTGRES_PORT
+    PGUSER = POSTGRES_USER;
+    PGPASSWORD = POSTGRES_PASSWORD;
+    PGHOST = POSTGRES_HOST;
+    PGPORT = POSTGRES_PORT;
     VOLTA_HOME = "$HOME/.volta";
-    PATH = "$HOME/.rbenv/shims:$HOME/.rbenv/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/bin:/usr/sbin:$PATH";
-    TERM = "xterm-256color";
     # ZSH_AUTOSUGGEST_STRATEGY = (history completion)
   };
 
+  fonts.fontconfig.enable = true;
+
+  # NOTE: should I do gtk.enable
+
   programs = {
-    home-manager.enable = true;
+    alacritty = {
+      enable = true;
+      package = (nixGL pkgs.alacritty);
+    };
+
+    atuin = {
+      enable = true;
+      enableZshIntegration = true;
+      # flags & settings
+    };
+    # autorandr(?) -> probably not needed
+    bat.enable = true;
+    # borgmatic(?) -> probably not needed
+    bottom.enable = true;
+    browserpass.enable = true; # => just trying
+    # chromium & settings(if needed, for extension & config)
+    # comodoro # => check this
+    dircolors = {
+      enable = true;
+      enableZshIntegration = true;
+    };
+    direnv = {
+      enable = true;
+      enableZshIntegration = true;
+    };
+    # eww -> use for building your own widgets
+    # foot -> terminal, investigate
+    # finished @ E - eclipse
+    #
+
+    fzf = {
+      enable = true;
+      enableZshIntegration = true;
+    };
+
+    gh = {
+      enable = true;
+      settings.git_protocol = "ssh";
+    };
+
     git = {
       enable = true;
       userName = "Izel Nakri";
@@ -208,7 +269,125 @@
         co = "checkout";
         cm = "commit";
       };
+      # signing = {
+      #   # key = "";
+      #   signByDefault = true;
+      # };
+      # commit = {
+
+      # };
+      # TODO: enable signed commits
     };
+
+    go.enable = true;
+    gpg.enable = true; # NOTE: publicKeys ?
+    helix.enable = true; # configure if needed
+    home-manager.enable = true;
+    htop.enable = true;
+    xplr = {
+      enable = true;
+      # extraConfig, plugins
+    };
+    joshuto = { # TODO: instead maybe use xplr
+      enable = true;
+      # keymap
+      # mimetype
+      # settings, theme
+    };
+    jq.enable = true;
+    lazygit.enable = true; # settings
+    ledger = {
+      enable = true; # learn this, very interesting
+      extraConfig = "--sort date\n--effective\n--date-format %Y-%m-%d";
+      # settings = {
+      #  date-format = "%Y-%m-%d";
+      #  file = [
+      #    "~/finances/journal.ledger"
+      #    "~/finances/assets.ledger"
+      #    "~/finances/income.ledger"
+      #  ];
+      #  sort = "date";
+      #  strict = true;
+      # };
+    };
+    less.enable = true;
+    lsd.enable = true;
+    man.enable = true;
+    mpv.enable = true;
+    ncspot.enable = true;
+    neomutt.enable = true;
+    neovim = { # TODO: BIG CONFIG DO it here from nixcfg
+      enable = true;
+      # coc.enable = true;
+      # coc.settings , suggest.enablePreview, languageserver
+      defaultEditor = true;
+      # extraLuaPackages
+      # plugins
+      viAlias = true;
+      vimAlias = true;
+      withNodeJs = true;
+    };
+    noti.enable = true; # also configure
+    # obs-stuudio
+    pandoc.enable = true;
+    # password-store, settings,
+    # pidgin, pistol, wcal, rbw/bitwarden, rio, vdirsyncer(calendar, contact sync)
+    ripgrep.enable = true;
+    rio = {
+      enable = true;
+      settings = {
+        performance = "Low";
+      };
+    };
+
+    # rofi vs dmenu
+    rtx = { # asdf replacement
+      enable = true;
+      enableZshIntegration = true;
+      # settings
+    };
+    script-directory.enable = true;
+    # fzf replacement: skim?
+    skim = {
+      enable = true;
+      enableZshIntegration = true;
+    };
+    tealdeer.enable = true;
+    tiny = {
+      enable = true;
+      settings = {
+       servers = [
+         {
+           addr = "irc.libera.chat";
+           port = 6697;
+           tls = true;
+           realname = "Izel Nakri";
+           nicks = [ "izelnakri" ];
+         }
+       ];
+       defaults = {
+         nicks = [ "izelnakri" ];
+         realname = "Izel Nakri";
+         join = [];
+         tls = true;
+       };
+      };
+    };
+    translate-shell = {
+      enable = true;
+      settings = {
+        hl = "en";
+        tl = [
+          "es"
+          "fr"
+        ];
+      };
+    };
+    yt-dlp.enable = true;
+    zathura.enable = true; # mappings, options
+
+    # no need for tmux here
+    # lieer, notmuch, mutt, mbsync, mu, msmtp, mujmap, senpai, swaylock, taskwarrior, waybar, wlogout, wofi, qt
 
     # gtk = {
     #   enable = true;
@@ -230,7 +409,13 @@
       enable = true;
       enableAutosuggestions = true;
       enableCompletion = true;
+      historySubstringSearch = {
+        enable = true;
+        searchDownKey = [ "^J" "^[[B" ]; # Ctrl-J, TODO: during insert up/down doesnt work(?) fix it
+        searchUpKey = [ "^K" "^[[A" ]; # Ctrl-K
+      };
       syntaxHighlighting.enable = true;
+
       initExtra = ''
         unsetopt INC_APPEND_HISTORY # Write to the history file immediately, not when the shell exits.
         setopt PROMPT_SUBST # Enable parameter expansion, command substitution and arithmetic expansion in the prompt.
@@ -299,11 +484,30 @@
         }
 
         autoload -U colors && colors
-        # PS1 = '[\u@\h \W]\$ ';
+
         PROMPT='%{$fg[blue]%}$(date +%H:%M:%S) $(display_jobs_count_if_needed)%B%{$fg[green]%}%n %{$fg[blue]%}%~%{$fg[yellow]%}$(parse_git_branch) %{$reset_color%}';
-      ''; # => .zshrc.
+
+        # Edit line in vim with ctrl-e:
+        autoload edit-command-line; zle -N edit-command-line
+        bindkey '^e' edit-command-line
+
+        # Use lf to switch directories and bind it to ctrl-o
+        lfcd () {
+            tmp="$(mktemp)"
+            lf -last-dir-path="$tmp" "$@"
+            if [ -f "$tmp" ]; then
+                dir="$(cat "$tmp")"
+                rm -f "$tmp"
+                [ -d "$dir" ] && [ "$dir" != "$(pwd)" ] && cd "$dir"
+            fi
+        }
+        bindkey -s '^o' 'lfcd\n'
+
+        eval "$(direnv hook zsh)"
+      '';
+
       shellAliases = {
-        bitbox-bridge="/opt/bitbox-bridge/bin/bitbox-bridge"; # NOTE: is this still needed?
+        bitbox-bridge="/opt/bitbox-bridge/bin/bitbox-bridge";
         checkrepo = "git log --pretty=format: --name-only | sort | uniq -c | sort -rg | head -10";
         d = "sudo docker";
         diff = "diff --color=auto";
@@ -311,7 +515,6 @@
         e = "helix";
         g = "git";
         grep = "grep --color=auto";
-        home-manager-docs = "chromium ~/Desktop/gifs/home-manager.html";
         k = "kubectl";
         kube = "kubectl";
         ls = "ls --color=auto -F";
@@ -334,22 +537,98 @@
         YT = "youtube-viewer";
         x = "sxiv -ft *";
       };
-      # shellGlobalAliases = {
-
-      # }; # => Similar to programs.zsh.shellAliases, but are substituted anywhere on a line.
-      # envExta = ''
-      #   export SOMEZSHVARIABLE="something"
-      # '';
+      # shellGlobalAliases # => Similar to programs.zsh.shellAliases, but are substituted anywhere on a line.
     };
   };
 
-  # services.mako = with config.colorScheme.colors; {
-  #   enable = true;
-  #   backgroundColor = "#${base01}";
-  #   borderColor = "#${base0E}";
-  #   borderRadius = 5;
-  #   borderSize = 2;
-  #   textColor = "#${base04}";
-  #   layer = "overlay";
-  # };
+  services = {
+    # flameshot.enable = true;
+    # gpgagent = {
+    #   enable = true;
+    #   enableSSHSupport = true;
+    #   enableZshIntegration = true;
+    # }
+    # syncthing
+
+    # autorandr|kanshi, avizo|dunst|fnott|mako(?) - notification daemon, batsignal, betterlockscreen, borgmatic, comodoro
+    # dropbox, dunst, dwm, etesync-dav(cal, contacts, tasks, notes), flameshot,fusuma(touchpad), gammastep(flux)|sctd|wlsunset,
+    # getmail, git-sync, gpgp-agent, gromit, himalaya, kbfs, nextcloud|owncloud, pantalaimon
+    # pass-secret-service, password-store-sync, pasystrat(pluseaudio tray), pbgopy(copy/paste between devices), plex
+    # polybar(?), poweralertd, pueue, random-background, rsibreak|safeeyes, ssh-agent, swayidle, taskwarrior, unclutter
+    # volnoti, xcape
+
+    # mako = with config.colorScheme.colors; {
+    #   enable = true;
+    #   backgroundColor = "#${base01}";
+    #   borderColor = "#${base0E}";
+    #   borderRadius = 5;
+    #   borderSize = 2;
+    #   textColor = "#${base04}";
+    #   layer = "overlay";
+    # };
+  };
+
+  systemd = {
+    # user.automounts
+    # user.startServices
+  };
+
+  # targets.genericLinux.enable
+
+  wayland = {
+    windowManager.hyprland = {
+      enable = true;
+      enableNvidiaPatches = true;
+      # extraConfig
+      # plugins
+      # settings
+      # sway.config # colors etc look it up, keybindings
+    }; # or just run sway
+    windowManager.sway = {
+      enable = true;
+    };
+  };
+
+  xdg = {
+    enable = true;
+    desktopEntries = {
+     # alacritty = {
+     #   name = "Alacritty";
+     #   genericName = "GPU Terminal";
+     #   exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
+     #   actions = {
+     #     "New Window" = {
+     #       exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
+     #     };
+     #   };
+
+     #   # actions.<name>.exec|icon|name
+     #   # icon
+     #   terminal = false;
+     #   # categories = [ "Application" "Terminal" ];
+     # };
+    };
+  };
+  # Xft.dpi: 144
+  # Xft.antialias: true
+  # Xft.hinting: true
+  # Xft.rgba: rgb
+  # Xft.autohint: true
+  # Xft.hintstyle: hintslight
+  # Xft.lcdfilter: lcddefault
+
+  # xfconf & xresources, xsession(.xprofile) [windowManager.awesome|bspwm|fluxbox|i3|spectrwm|xmonad
+
+ #  builtins.readFile (
+ #   pkgs.fetchFromGitHub {
+ #     owner = "solarized";
+ #     repo = "xresources";
+ #     rev = "025ceddbddf55f2eb4ab40b05889148aab9699fc";
+ #     sha256 = "0lxv37gmh38y9d3l8nbnsm1mskcv10g3i83j0kac0a2qmypv1k9f";
+ #   } + "/Xresources.dark"
+ # )
+
+  # systemd, wayland, xdg, xsession
+
+  manual.html.enable = true;
 }

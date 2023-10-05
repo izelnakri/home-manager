@@ -14,12 +14,16 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixGL = {
+      url = "github:guibou/nixGL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # TODO: make ~/.config/home-manager present with git pulled
   # TODO: make mako & alacritty configured with base16 https://www.youtube.com/watch?v=jO2o0IN0LPE
   # Make everything run as btrfs after home-manager install is complete
-  outputs = inputs@{ self, nixinate, nixpkgs, nixpkgs-unstable, nixos-hardware, home-manager, ... }:
+  outputs = inputs@{ self, nixinate, nixpkgs, nixpkgs-unstable, nixos-hardware, home-manager, nixGL, ... }:
     let
       system = "x86_64-linux";
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -67,6 +71,8 @@
         izelnakri = home-manager.lib.homeManagerConfiguration {
           pkgs = x86Pkgs;
           modules = [
+            { nixpkgs.overlays = [ nixGL.overlay ]; }
+            # hyprland.homeManagerModules.default
             ./users/izelnakri
           ];
           extraSpecialArgs = { inherit inputs; };
