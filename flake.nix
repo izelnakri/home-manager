@@ -18,6 +18,7 @@
       url = "github:guibou/nixGL";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    xremap-flake.url = "github:xremap/nix-flake";
   };
 
   # TODO: make ~/.config/home-manager present with git pulled

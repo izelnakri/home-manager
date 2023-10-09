@@ -353,10 +353,10 @@ live_config_reload: true
 #   - (macOS) /bin/bash --login
 #   - (Linux) user login shell
 #   - (Windows) powershell
-# shell:
-  # program: tmux
-  # args:
-    # - a
+shell:
+  program: tmux
+  args:
+    - a
 #  args:
 #    - --login
 
@@ -500,7 +500,6 @@ key_bindings:
   - { key: N,         mods: Alt,   command: { program: "alacritty", args: [] } }
   - { key: W,        mods: Alt, command: { program: "tmux", args: ["kill-window"] } }
   - { key: T,        mods: Alt, command: { program: "tmux", args: ["new-window"] } }
-  # - { key: P,        mods: Alt, command: { program: "tmux", args: ["kill-pane"] } }
   - { key: Key1, mods: Alt, command: { program: "tmux", args: ["select-window", "-t", "1"] } }
   - { key: Key2, mods: Alt, command: { program: "tmux", args: ["select-window", "-t", "2"] } }
   - { key: Key3, mods: Alt, command: { program: "tmux", args: ["select-window", "-t", "3"] } }

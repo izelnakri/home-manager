@@ -28,6 +28,9 @@ in {
   home.homeDirectory = "/home/izelnakri";
   home.stateVersion = "23.05";
   home.packages = with pkgs; [
+    (wrapNixGL hyprland)
+    gnome.gnome-session
+    (wrapNixGL gnome.gnome-shell) # NOTE: exclude packages(?)
     asdf-vm
     atuin
     # bspwm
@@ -55,9 +58,10 @@ in {
     # groff
     # joplin
     htop
-    # hyprland
+
     # inkspace
     iperf
+    inputs.xremap-flake.packages.${system}.default
     kubectl
     # kubectl-tree
     kubernetes
@@ -101,6 +105,7 @@ in {
     ruby
     rustup
     # sc
+    sd-switch
     # sxiv
     # synergy
     # swaycons
@@ -116,6 +121,7 @@ in {
     # variety
     unzip
     unixtools.nettools
+    watchman
     wget
     vlc
     # xfce.thunar
@@ -170,8 +176,10 @@ in {
 
   home.file = {
     ".config/alacritty/alacritty.yml".source = ../../static/.config/alacritty/alacritty.yml;
+    ".config/hypr/hyprland.conf".source = ../../static/.config/hypr/hyprland.conf;
     ".config/nvim".source = ../../static/.config/nvim;
     ".config/tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
+    ".config/xremap/config.yml".source = ../../static/.config/xremap/config.yml;
     ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
     "/.local/share/applications/Alacritty.desktop".text = ''
       [Desktop Entry]
@@ -254,8 +262,6 @@ in {
     };
     # eww -> use for building your own widgets
     # foot -> terminal, investigate
-    # finished @ E - eclipse
-    #
 
     fzf = {
       enable = true;
@@ -291,6 +297,7 @@ in {
     helix.enable = true; # configure if needed
     home-manager.enable = true;
     htop.enable = true;
+
     xplr = {
       enable = true;
       # extraConfig, plugins
@@ -320,7 +327,9 @@ in {
     less.enable = true;
     lsd.enable = true;
     man.enable = true;
-    mpv.enable = true;
+    mpv = {
+      enable = true;
+    };
     ncspot.enable = true;
     neomutt.enable = true;
     neovim = { # TODO: BIG CONFIG DO it here from nixcfg
@@ -543,6 +552,7 @@ in {
         weather = "curl http://wttr.in/";
         YT = "youtube-viewer";
         x = "sxiv -ft *";
+        gnome-wayland = "dbus-run-session -- gnome-shell --display-server --wayland";
       };
       # shellGlobalAliases # => Similar to programs.zsh.shellAliases, but are substituted anywhere on a line.
     };
@@ -573,19 +583,39 @@ in {
     #   textColor = "#${base04}";
     #   layer = "overlay";
     # };
+
+    xremap = {
+      watch = true;
+      config = {
+        modmap = [
+          {
+            name = "Main Remaps";
+            remap = {
+              CapsLock = {
+                held = "leftctrl";
+                alone = "esc";
+                alone_timeout_millis = 150;
+              };
+            };
+          }
+        ];
+      };
+    };
   };
 
-  systemd = {
-    # user.automounts
-    # user.startServices
+  systemd ={
+    user.startServices = "sd-switch";
   };
 
   # targets.genericLinux.enable
+  # TODO: FIX SOUND for hyprland
 
   wayland = {
     windowManager.hyprland = {
-      enable = true;
-      enableNvidiaPatches = true;
+      # enable = true;
+      # enableNvidiaPatches = true;
+      package = home.packages.hyprland;
+      # TODO: should I do extraConfig = ''''; from builtins?
       # extraConfig
       # plugins
       # settings

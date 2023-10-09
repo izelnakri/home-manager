@@ -1,0 +1,34 @@
+modmap:
+  - name: Main Remaps
+    remap:
+      CapsLock:
+        held: leftctrl
+        alone: esc
+        alone_timeout_millis: 150
+# - name: Application spefic
+#   remap:
+#   application:
+#     only: org.wezlong.wezterm
+# keymap:
+#   - name; general keybindings
+#     remap:
+#       super-d:
+#         remap:
+#           f:
+#             launch: ["firefox"]
+#           super-u: { set_mode: alternative }
+#           super-i:
+#             launch: ["notify-send", "IT IS default MODE"]
+#     mode: default
+
+# X11
+# wmctrl -x -l
+
+# Gnome shell
+# busctl --user call org.gnome.Shell /com/k0kubun/Xremap com.k0kubun.Xremap WMClasses
+
+# Sway
+# swaymsg -t get_tree
+
+# Hyprland
+# hyprctl clients
