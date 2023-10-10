@@ -5,6 +5,8 @@ modmap:
         held: leftctrl
         alone: esc
         alone_timeout_millis: 150
+      PAGEUP: LEFT
+      PAGEDOWN: RIGHT
 # - name: Application spefic
 #   remap:
 #   application:

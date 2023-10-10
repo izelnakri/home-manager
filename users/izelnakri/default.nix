@@ -3,22 +3,21 @@
 
 # do the base color consistency
 
-# Add nvim
 # home.extraOutputsToInstall
-# home.keyboard
-# make path home.sessionPath (?)
 # lib = to define helper variables
-{ config, pkgs, inputs, nixosModules, ... }:
+
+{ config, pkgs, inputs, lib, nixosModules, ... }:
 let
   wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs; };
-in {
+in rec {
   imports =  [
     inputs.nix-colors.homeManagerModules.default
+    inputs.xremap-flake.homeManagerModules.default
   ];
 
   colorScheme = inputs.nix-colors.colorSchemes.gruvbox-dark-medium;
 
-  # targets.genericLinux.enable = true;
+  targets.genericLinux.enable = true;
   nixpkgs.config.allowBroken = true;
 
   nixpkgs.config.allowUnfree = true;
@@ -27,10 +26,18 @@ in {
   home.username = "izelnakri";
   home.homeDirectory = "/home/izelnakri";
   home.stateVersion = "23.05";
+  home.activation = {
+    # NOTE: This shouldnt be needed but unfortunately it is needed
+    restartSystemdServices = lib.hm.dag.entryAfter ["reloadSystemd"] ''
+      $DRY_RUN_CMD ${home.homeDirectory}/.nix-profile/bin/sd activation systemd-reset-services
+    '';
+  };
   home.packages = with pkgs; [
+    # gnome.gnome-session
     (wrapNixGL hyprland)
-    gnome.gnome-session
     (wrapNixGL gnome.gnome-shell) # NOTE: exclude packages(?)
+    monado
+    lightdm
     asdf-vm
     atuin
     # bspwm
@@ -175,12 +182,6 @@ in {
   # ];
 
   home.file = {
-    ".config/alacritty/alacritty.yml".source = ../../static/.config/alacritty/alacritty.yml;
-    ".config/hypr/hyprland.conf".source = ../../static/.config/hypr/hyprland.conf;
-    ".config/nvim".source = ../../static/.config/nvim;
-    ".config/tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
-    ".config/xremap/config.yml".source = ../../static/.config/xremap/config.yml;
-    ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
     "/.local/share/applications/Alacritty.desktop".text = ''
       [Desktop Entry]
       Terminal=false
@@ -188,13 +189,19 @@ in {
       Name=Alacritty Terminal
       Exec=/home/izelnakri/.nix-profile/bin/alacritty
     '';
+    ".config/alacritty/alacritty.yml".source = ../../static/.config/alacritty/alacritty.yml;
+    ".config/hypr/hyprland.conf" = {
+      source = ../../static/.config/hypr/hyprland.conf;
+      onChange = "~/.nix-profile/bin/hyprctl reload";
+    };
+    ".config/nvim".source = ../../static/.config/nvim;
+    ".config/tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
+    ".config/xremap/config.yml".source = ../../static/.config/xremap/config.yml;
+    ".profile".source = ../../static/.profile;
+    ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
+    "scripts".source = ../../static/scripts;
 
     # TODO: add colors file for other programs & reference.
-    # source to copy or file
-    # # Building this configuration will create a copy of 'dotfiles/screenrc' in
-    # # the Nix store. Activating the configuration will then make '~/.screenrc' a
-    # # symlink to the Nix store copy.
-    # ".screenrc".source = dotfiles/screenrc;
 
     # # You can also set the file content immediately.
     # ".gradle/gradle.properties".text = ''
@@ -228,11 +235,12 @@ in {
     PGPORT = POSTGRES_PORT;
     VOLTA_HOME = "$HOME/.volta";
     # ZSH_AUTOSUGGEST_STRATEGY = (history completion)
+
+    # Hint electron apps to use wayland, this probably blurs the text for now
+    NIXOS_OZONE_WL = "1";
   };
 
   fonts.fontconfig.enable = true;
-
-  # NOTE: should I do gtk.enable
 
   programs = {
     alacritty = {
@@ -362,7 +370,14 @@ in {
       enableZshIntegration = true;
       # settings
     };
-    script-directory.enable = true;
+    script-directory = {
+      enable = true;
+      settings = {
+        SD_ROOT = "${config.home.homeDirectory}/scripts";
+        SD_EDITOR = "nvim";
+        SD_CAT = "bat";
+      };
+    };
     # fzf replacement: skim?
     skim = {
       enable = true;
@@ -402,15 +417,7 @@ in {
     yt-dlp.enable = true;
     zathura.enable = true; # mappings, options
 
-    # no need for tmux here
     # lieer, notmuch, mutt, mbsync, mu, msmtp, mujmap, senpai, swaylock, taskwarrior, waybar, wlogout, wofi, qt
-
-    # gtk = {
-    #   enable = true;
-    #   theme.name = "adw-gtk3";
-    #   cursorTheme.name = "Bibata-Modern-Ice";
-    #   iconTheme.name = "GruvboxPlus";
-    # };
 
     # xdg.mimeApps.defaultApplications = {
     #   "text/plain" = [ "neovide.desktop" ];
@@ -603,24 +610,38 @@ in {
     };
   };
 
-  systemd ={
-    user.startServices = "sd-switch";
+  gtk = {
+    enable = true;
+    # theme.name = "adw-gtk3";
+    # cursorTheme.name = "Bibata-Modern-Ice";
+    # iconTheme.name = "GruvboxPlus";
   };
 
-  # targets.genericLinux.enable
+
+  systemd ={
+    user.startServices = "sd-switch";
+
+    # user.services.example = {
+    #   Unit = {
+    #     Description = "Service example";
+    #     PartOf = [];
+    #     After = [];
+    #   };
+    #   Service = {
+    #     Type = "simple";
+    #     ExecStart = pkgs.writeShellScript "example.sh" ''
+    #       #!/bin/sh
+    #       while true; do sleep 5; echo 'hello'; exit 0;done
+    #    '';
+    #     Restart = "always";
+    #   };
+    #   Install.WantedBy = [];
+    # };
+  };
+
   # TODO: FIX SOUND for hyprland
 
   wayland = {
-    windowManager.hyprland = {
-      # enable = true;
-      # enableNvidiaPatches = true;
-      package = home.packages.hyprland;
-      # TODO: should I do extraConfig = ''''; from builtins?
-      # extraConfig
-      # plugins
-      # settings
-      # sway.config # colors etc look it up, keybindings
-    }; # or just run sway
     windowManager.sway = {
       enable = true;
     };
@@ -664,8 +685,6 @@ in {
  #     sha256 = "0lxv37gmh38y9d3l8nbnsm1mskcv10g3i83j0kac0a2qmypv1k9f";
  #   } + "/Xresources.dark"
  # )
-
-  # systemd, wayland, xdg, xsession
 
   manual.html.enable = true;
 }

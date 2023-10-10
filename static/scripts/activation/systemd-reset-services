@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Resets systemd services used by home-manager
+
+#  sd activation systemd-reset-services
+
+/usr/sbin/systemctl --user restart xremap
+# /usr/sbin/systemctl --user restart xremap example

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Starts Hyprland window manager
+
+#  sd activation hyprland
+
+Hyprland

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# foo script description short version
+#
+# This will remove any bla bla
+# To see exactly what this
+# will do, run:
+#
+#     sd foo bar
+
+echo "Hello from bar script, lol"
