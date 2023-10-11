@@ -3,5 +3,5 @@
 
 #  sd activation systemd-reset-services
 
-/usr/sbin/systemctl --user restart xremap
+/usr/sbin/systemctl --user restart xremap waybar
 # /usr/sbin/systemctl --user restart xremap example

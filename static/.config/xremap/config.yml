@@ -1,3 +1,4 @@
+keypress_delay_ms: 0
 modmap:
   - name: Main Remaps
     remap:
@@ -7,6 +8,13 @@ modmap:
         alone_timeout_millis: 150
       PAGEUP: LEFT
       PAGEDOWN: RIGHT
+# keymap:
+#   - name: Testing
+#     remap:
+#       shift-d:
+#         remap:
+#           q:
+#             launch: ["notify-send", "shift-d q pressed!"]
 # - name: Application spefic
 #   remap:
 #   application:

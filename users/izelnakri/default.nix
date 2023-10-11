@@ -34,7 +34,6 @@ in rec {
   };
   home.packages = with pkgs; [
     # gnome.gnome-session
-    (wrapNixGL hyprland)
     (wrapNixGL gnome.gnome-shell) # NOTE: exclude packages(?)
     monado
     lightdm
@@ -65,6 +64,7 @@ in rec {
     # groff
     # joplin
     htop
+    (wrapNixGL hyprland)
 
     # inkspace
     iperf
@@ -99,11 +99,13 @@ in rec {
     nodejs
     mako
     # manix
+    # mpd
     openssl
     # pavucontrol
     # pgmodeler
     # postman
     pass
+    pipewire
     postgresql
     python3Full
     # python.pkgs.pip
@@ -125,12 +127,14 @@ in rec {
     # trash-cli
     qemu
     # playonlinux
+    swww
     # variety
     unzip
     unixtools.nettools
     watchman
     wget
     vlc
+    viu # image viewer
     # xfce.thunar
     zathura
 
@@ -190,13 +194,14 @@ in rec {
       Exec=/home/izelnakri/.nix-profile/bin/alacritty
     '';
     ".config/alacritty/alacritty.yml".source = ../../static/.config/alacritty/alacritty.yml;
-    ".config/hypr/hyprland.conf" = {
-      source = ../../static/.config/hypr/hyprland.conf;
+    ".config/hypr" = {
+      source = ../../static/.config/hypr;
       onChange = "~/.nix-profile/bin/hyprctl reload";
     };
     ".config/nvim".source = ../../static/.config/nvim;
     ".config/tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
     ".config/xremap/config.yml".source = ../../static/.config/xremap/config.yml;
+    ".config/waybar".source = ../../static/.config/waybar;
     ".profile".source = ../../static/.profile;
     ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
     "scripts".source = ../../static/scripts;
@@ -383,7 +388,9 @@ in rec {
       enable = true;
       enableZshIntegration = true;
     };
+
     tealdeer.enable = true;
+
     tiny = {
       enable = true;
       settings = {
@@ -404,6 +411,7 @@ in rec {
        };
       };
     };
+
     translate-shell = {
       enable = true;
       settings = {
@@ -414,6 +422,35 @@ in rec {
         ];
       };
     };
+
+    waybar = { # Inspiration: https://forum.garudalinux.org/uploads/default/optimized/2X/d/d8407cbcc1d56f99f37bd7da681348ace09058e1_2_1380x862.jpeg
+      enable = true;
+      # package
+      # battery, bluetooth, clock, CPU, Disk, Memory, MPD, Network, PulseAudio, Temperature/Weather,
+      # Hyprland, idle_inhibitor(!?), sndio(?), sway, check tray, taskbar(?)
+      # On left: Workspaces
+      # also add flux indicator
+      # onclick pavucontrol(?) -> pulseaudio
+      # start_hidden = true;
+      # height, spacing,
+      # modules-left = ["sway/workspaces" "sway/mode"];
+      # modules-center = ["sway/window"];
+      # modules hyprland  https://github.com/Alexays/Waybar/wiki/Module:-Hyprland
+      # sway/window = {
+      #     "max-length": 50;
+      # };
+      # battery = {
+      #     format = "{capacity}% {icon}";
+      #     format-icons = ["" "" "" "" ""];
+      # };
+      # clock = {
+      #   format-alt = "{:%a, %d. %b  %H:%M}";
+      # };
+      settings = [ (builtins.fromJSON (builtins.readFile ../../static/.config/waybar/config)) ];
+      style = builtins.readFile ../../static/.config/waybar/style.css;
+      systemd.enable = true;
+    };
+
     yt-dlp.enable = true;
     zathura.enable = true; # mappings, options
 
@@ -593,21 +630,12 @@ in rec {
 
     xremap = {
       watch = true;
-      config = {
-        modmap = [
-          {
-            name = "Main Remaps";
-            remap = {
-              CapsLock = {
-                held = "leftctrl";
-                alone = "esc";
-                alone_timeout_millis = 150;
-              };
-            };
-          }
-        ];
-      };
+      yamlConfig = builtins.readFile ../../static/.config/xremap/config.yml;
     };
+
+
+
+
   };
 
   gtk = {
@@ -644,6 +672,7 @@ in rec {
   wayland = {
     windowManager.sway = {
       enable = true;
+      package = (wrapNixGL pkgs.sway);
     };
   };
 
