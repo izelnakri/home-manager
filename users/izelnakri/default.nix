@@ -197,15 +197,6 @@ in rec {
       Name=Alacritty Terminal
       Exec=/home/izelnakri/.nix-profile/bin/alacritty
     '';
-    ".config/alacritty/alacritty.yml".source = ../../static/.config/alacritty/alacritty.yml;
-    ".config/hypr" = {
-      source = ../../static/.config/hypr;
-      onChange = "~/.nix-profile/bin/hyprctl reload";
-    };
-    ".config/nvim".source = ../../static/.config/nvim;
-    ".config/tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
-    ".config/xremap/config.yml".source = ../../static/.config/xremap/config.yml;
-    ".config/waybar".source = ../../static/.config/waybar;
     ".profile".source = ../../static/.profile;
     ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
     "scripts".source = ../../static/scripts;
@@ -341,7 +332,55 @@ in rec {
       #  strict = true;
       # };
     };
+
     less.enable = true;
+
+    # TODO: test all the functionality and move to a rust based one
+    lf = {
+      enable = true;
+      commands = {
+        dragon-out = ''%${pkgs.xdragon}/bin/xdragon -a -x "$fx"'';
+        editor-open = ''$$EDITOR $f'';
+        mkdir = ''
+        ''${{
+          printf "Directory Name: "
+          read DIR
+          mkdir $DIR
+        }}
+        '';
+      };
+
+      # TODO: study these and add Selection path to buffer command + opener with
+      keybindings = {
+        "\\\"" = "";
+        o = "xdg-open";
+        c = "mkdir";
+        "." = "set hidden!";
+        "`" = "mark-load";
+        "\\'" = "mark-load";
+        "<enter>" = "open";
+
+        do = "dragon-out";
+
+        "g~" = "cd";
+        gh = "cd";
+        "g/" = "/";
+
+        ee = "editor-open";
+        V = ''$${pkgs.bat}/bin/bat --paging=always --theme=gruvbox "$f"'';
+      };
+
+      settings = {
+        preview = true;
+        hidden = true;
+        previewer = "${pkgs.ctpv}/bin/ctpv";
+        cleaner = "${pkgs.ctpv}/bin/ctpvclear";
+        drawbox = true;
+        icons = true;
+        ignorecase = true;
+      };
+    };
+
     lsd.enable = true;
     man.enable = true;
     mpv = {
@@ -459,15 +498,6 @@ in rec {
     zathura.enable = true; # mappings, options
 
     # lieer, notmuch, mutt, mbsync, mu, msmtp, mujmap, senpai, swaylock, taskwarrior, waybar, wlogout, wofi, qt
-
-    # xdg.mimeApps.defaultApplications = {
-    #   "text/plain" = [ "neovide.desktop" ];
-    #   "application/pdf" = [ "zathura.desktop" ];
-    #   "image/*" = [ "sxiv.desktop" ];
-    #   "video/png" = [ "mpv.desktop" ];
-    #   "video/jpg" = [ "mpv.desktop" ];
-    #   "video/*" = [ "mpv.desktop" ];
-    # }
 
     zsh = {
       enable = true;
@@ -632,13 +662,15 @@ in rec {
     #   layer = "overlay";
     # };
 
+    avizo = {
+      enable = true;
+      # settings
+    };
+
     xremap = {
       watch = true;
       yamlConfig = builtins.readFile ../../static/.config/xremap/config.yml;
     };
-
-
-
 
   };
 
@@ -680,24 +712,64 @@ in rec {
     };
   };
 
+  # TODO: Research this more
   xdg = {
     enable = true;
-    desktopEntries = {
-     # alacritty = {
-     #   name = "Alacritty";
-     #   genericName = "GPU Terminal";
-     #   exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
-     #   actions = {
-     #     "New Window" = {
-     #       exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
-     #     };
-     #   };
 
-     #   # actions.<name>.exec|icon|name
-     #   # icon
-     #   terminal = false;
-     #   # categories = [ "Application" "Terminal" ];
-     # };
+    configFile = {
+      "lf/icons".source = ../../static/icons;
+      "alacritty/alacritty.yml".source = ../../static/.config/alacritty/alacritty.yml;
+      "hypr" = {
+        source = ../../static/.config/hypr;
+        onChange = "~/.nix-profile/bin/hyprctl reload";
+      };
+      "nvim".source = ../../static/.config/nvim;
+      "tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
+      "xremap/config.yml".source = ../../static/.config/xremap/config.yml;
+      "waybar".source = ../../static/.config/waybar;
+    };
+
+    mimeApps = {
+      enable = true;
+      defaultApplications = {
+        # html -> brave, jpeg -> sxiv, office documents to open office
+        "text/plain" = [ "neovim.desktop" ];
+        "application/pdf" = [ "zathura.desktop" ];
+        "image/*" = [ "sxiv.desktop" ]; # NOTE: probably change sxiv to new one
+        "video/png" = [ "mpv.desktop" ];
+        "video/jpg" = [ "mpv.desktop" ];
+        "video/*" = [ "mpv.desktop" ];
+      };
+    };
+
+    # portal = {
+    #   enable = true;
+    #   extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    # };
+
+    desktopEntries = {
+      zathura = {
+        name = "Zathura";
+        exec = "zathura %U";
+        terminal = false;
+        mimeType = [ "application/pdf" ];
+      };
+     alacritty = {
+       name = "Alacritty";
+       genericName = "GPU Terminal";
+       # move this to normal alacritty now?
+       exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
+       actions = {
+         "New Window" = {
+           exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
+         };
+       };
+
+       # actions.<name>.exec|icon|name
+       # icon
+       terminal = false;
+       categories = [ "Application" "Terminal" ];
+     };
     };
   };
   # Xft.dpi: 144

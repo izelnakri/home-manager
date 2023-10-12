@@ -2,7 +2,7 @@
 
 # initializing wallpaper deamon
 swww init &
-# swww img ~/Wallpapers/gruvbox.png &
+swww img ~/Wallpapers/arch-monk.jpg &
 
 # pkgs.networkmanagerapplet
 # nm-applet --indicator &
