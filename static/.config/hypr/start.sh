@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # initializing wallpaper deamon
-# swww init &
+swww init &
 # swww img ~/Wallpapers/gruvbox.png &
 
 # pkgs.networkmanagerapplet
@@ -16,5 +16,7 @@
 # pkgs.grim, slupr, wl-copy
 
 alacritty
+
+# udiskie &
 
 # also run mako here or dunst(?)

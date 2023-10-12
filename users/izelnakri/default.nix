@@ -65,6 +65,7 @@ in rec {
     # joplin
     htop
     (wrapNixGL hyprland)
+    hyprpicker
 
     # inkspace
     iperf
@@ -92,11 +93,13 @@ in rec {
     magic-wormhole
     mpv
     neofetch
+    (nerdfonts.override { fonts = [ "Noto" ]; }) # maybe add Meslo
     # nfs-utils
     ninja
     nixos-rebuild
     ngrok
     nodejs
+    noto-fonts noto-fonts-emoji
     mako
     # manix
     # mpd
@@ -133,6 +136,7 @@ in rec {
     unixtools.nettools
     watchman
     wget
+    # wl-screenrec # high-perf screen recording tool
     vlc
     viu # image viewer
     # xfce.thunar

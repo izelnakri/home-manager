@@ -7,10 +7,10 @@ Plug 'junegunn/fzf.vim' " TODO: customize this further Lead-P selection should p
 Plug 'tpope/vim-sensible'
 Plug 'itchyny/lightline.vim'
 Plug 'scrooloose/nerdtree'
-" Plug 'ryanoasis/vim-devicons'
+Plug 'ryanoasis/vim-devicons'
 " Plug 'Xuyuanp/nerdtree-git-plugin'
 " Plug 'scrooloose/nerdtree', { 'commit': 'd48ab70' }
-Plug 'ryanoasis/vim-devicons', { 'commit': 'f17eb43' }
+" Plug 'ryanoasis/vim-devicons', { 'commit': 'f17eb43' }
 Plug 'tsony-tsonev/nerdtree-git-plugin'
 " Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'johnstef99/vim-nerdtree-syntax-highlight'
