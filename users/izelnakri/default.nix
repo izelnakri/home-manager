@@ -2,8 +2,6 @@
 # TODO: How to manage tokens secrets
 
 # do the base color consistency
-
-# home.extraOutputsToInstall
 # lib = to define helper variables
 
 { config, pkgs, inputs, lib, nixosModules, ... }:
@@ -39,8 +37,10 @@ in rec {
     lightdm
     asdf-vm
     atuin
+    # avahi (network discovery & connection)
     # bspwm
     direnv
+    # devdocs-desktop
     # dmenu
     # elinks - text based web browser, is it the best(?)
     # eww - Widget library for unix
@@ -61,6 +61,7 @@ in rec {
     gcc
     gh
     gimp
+    grim
     # groff
     # joplin
     htop
@@ -77,6 +78,8 @@ in rec {
     # ktop
     # lens
     lf
+    libevdev
+    localsend
     lsd
     lsof
     lxc
@@ -91,9 +94,10 @@ in rec {
     fzf
     # w3m
     magic-wormhole
-    mpv
+    mpv # Default media player
     neofetch
     (nerdfonts.override { fonts = [ "Noto" ]; }) # maybe add Meslo
+    networkmanagerapplet
     # nfs-utils
     ninja
     nixos-rebuild
@@ -108,7 +112,8 @@ in rec {
     # pgmodeler
     # postman
     pass
-    pipewire
+    # pipewire
+    playerctl
     postgresql
     python3Full
     # python.pkgs.pip
@@ -121,6 +126,9 @@ in rec {
     # sxiv
     # synergy
     # swaycons
+    slurp
+    swappy
+    swww # maybe use programs.wpaperd instead(?)
     syncthing
     terminus-nerdfont
     # timeshift
@@ -130,17 +138,19 @@ in rec {
     # trash-cli
     qemu
     # playonlinux
-    swww
     # variety
     unzip
     unixtools.nettools
     watchman
     wget
+    wl-clipboard
+    wl-screenrec
     # wl-screenrec # high-perf screen recording tool
     vlc
     viu # image viewer
     # xfce.thunar
     zathura
+    zeal
 
     # inputs.agenix.packages.x86_64-linux.default
 
@@ -175,12 +185,10 @@ in rec {
     # TODO: also checkout/pull this repo master branch to ~/.config/home-manager
     # TODO: check if this could be done offline
     # TODO: Fetch LS_COLORS remotely and then copy it to the Nix Store, how to do this sequential or parallel
-    # (pkgs.runCommand "ls-colors" {} ''
-    #  mkdir -p $out/bin $out/share
-    #  ln -s ${pkgs.coreutils}/bin/ls $out/bin/ls
-    #  ln -s ${pkgs.coreutils}/bin/dircolors $out/bin/dircolors
-    #  cp ${../../static/LS_COLORS} $out/share/LS_COLORS
-    # '')
+    (pkgs.runCommand "ls-colors" {} ''
+      mkdir -p $out/bin $out/share
+      cp ${../../static/LS_COLORS} $out/share/LS_COLORS
+    '')
   ];
 
   #  nixpkgs.overlays = [
@@ -597,12 +605,19 @@ in rec {
         }
         bindkey -s '^o' 'lfcd\n'
 
+        export VOLTA_HOME="$HOME/.volta"
+        export PATH="$VOLTA_HOME/bin:$PATH"
+
+        eval $(dircolors ~/.nix-profile/share/LS_COLORS)
         eval "$(direnv hook zsh)"
       '';
 
       shellAliases = {
         bitbox-bridge="/opt/bitbox-bridge/bin/bitbox-bridge";
         checkrepo = "git log --pretty=format: --name-only | sort | uniq -c | sort -rg | head -10";
+        clip = "grim -g \"$(slurp)\" - | convert - -shave 1x1 PNG:- | wl-copy && wl-paste | swappy -f -";
+        clip-record = "wl-screenrec -g \"$(slurp)\" -f /tmp/recording.mp4";
+        colorpicker = "hyprpicker";
         d = "sudo docker";
         diff = "diff --color=auto";
         dockerremoveall = "sudo docker system prune -a";
@@ -622,6 +637,7 @@ in rec {
         server = "mix phoenix.server";
         SS = "sudo systemctl";
         speedtest = "curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -";
+        screenshot = "grim - | convert - -shave 1x1 PNG:- | wl-copy && wl-paste | swappy -f -";
         terminate = "lsof -ti:4200 | xargs kill";
         todo = "nvim ~/Dropbox/TODO.md";
         v = "$EDITOR";
@@ -717,13 +733,14 @@ in rec {
     enable = true;
 
     configFile = {
-      "lf/icons".source = ../../static/icons;
+      "lf/icons".source = ../../static/.config/lf/icons;
       "alacritty/alacritty.yml".source = ../../static/.config/alacritty/alacritty.yml;
       "hypr" = {
         source = ../../static/.config/hypr;
         onChange = "~/.nix-profile/bin/hyprctl reload";
       };
       "nvim".source = ../../static/.config/nvim;
+      "swappy/config".source = ../../static/.config/swappy/config;
       "tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
       "xremap/config.yml".source = ../../static/.config/xremap/config.yml;
       "waybar".source = ../../static/.config/waybar;
@@ -734,7 +751,7 @@ in rec {
       defaultApplications = {
         # html -> brave, jpeg -> sxiv, office documents to open office
         "text/plain" = [ "neovim.desktop" ];
-        "application/pdf" = [ "zathura.desktop" ];
+        "application/pdf" = [ "zathura.desktop" "zathura" ];
         "image/*" = [ "sxiv.desktop" ]; # NOTE: probably change sxiv to new one
         "video/png" = [ "mpv.desktop" ];
         "video/jpg" = [ "mpv.desktop" ];

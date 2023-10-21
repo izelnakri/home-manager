@@ -22,7 +22,8 @@ command! RmSwp
 command! Colors execute 'so $VIMRUNTIME/syntax/hitest.vim'
 
 " copy filename
-command! Name execute ':!echo % | xsel --clipboard --input'
+" command! Name execute ':!echo % | xsel --clipboard --input'
+command! Name execute ':!echo % | wl-copy'
 
 " format code with Prettier
 " nnoremap gp :silent %!prettier --stdin-filepath %<CR>
@@ -78,7 +79,7 @@ nmap <CR> o<Esc>
 " imap ii <Esc>
 
 " TODO: check what this is:
-nmap <Leader>' :s/\'\(.*\)\'/\"\1\"<CR>:nohl<CR>
+nmap <Leader>" :s/\'\(.*\)\"/\"\1\"<CR>:nohl<CR>
 nmap <space> :w<CR>
 
 map <F5> :let &background = ( &background == "dark"? "light" : "dark" )<CR>
@@ -100,7 +101,7 @@ map <Leader>nf :NERDTreeFind<CR>
 map <Leader>nt :NERDTreeToggle<CR>
 nmap <Leader>r :NERDTreeFocus<cr>R<c-w><c-p> " refreshes Nerdtree index
 
-" Neoclide Tab S-Tab Completion toggle
+" TODO: Neoclide Tab S-Tab Completion, does this even work?!?
 imap <C-j> <Tab>
 imap <C-k> <S-Tab>
 
@@ -130,14 +131,14 @@ nnoremap <silent> <Leader>b :call fzf#run({
 \   'down':    len(BufferList()) + 2
 \ })<CR>
 
-" Ale bindings:
+" Ale b
 nnoremap ln :lnext<CR>
 nnoremap lp :lprevious<CR>
 nnoremap lr :lrewind<CR>
 nnoremap lc :lclose<CR>
 nnoremap <leader>lf :ALEFix<CR>
 
-" Test bindings:
+" TODO: Test bindings, does these even work?!
 nmap <silent> t<C-n> :TestNearest<CR>
 nmap <silent> t<C-f> :TestFile<CR>
 nmap <silent> t<C-s> :TestSuite<CR>
@@ -150,7 +151,7 @@ nmap <S-j> <Nop>
 " select current word:
 map <Leader>8 *<S-n>
 
-" Gfigutive stuff
+" TODO: Gfigutive stuff, these commands are changed!!
 map <Leader>gb :Git blame<CR>
 map <Leader>gs :Gstatus<CR>
 map <Leader>gl :0Glog<CR>
@@ -183,7 +184,7 @@ inoremap <C-k> <ESC>:m .-2<CR>==gi
 vnoremap <C-j> :m '>+1<CR>gv=gv
 vnoremap <C-k> :m '<-2<CR>gv=gv
 
-" Coc shortcuts
+" TODO: Coc shortcuts, check and learn these well
 nmap <silent> gd <Plug>(coc-definition)
 nmap <silent> gD :call CocAction('jumpDefinition', 'tab drop')<CR>
 nmap <silent> gy <Plug>(coc-type-definition)
