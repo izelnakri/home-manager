@@ -1,75 +1,86 @@
 {
-    "layer": "top",
-    "position": "top",
-    "modules-left": [ "custom/swaylock", "hyprland/workspaces", "mpris", "hyprland/window"],
-    "modules-right": [ "disk", "memory", "cpu", "wireplumber", "network", "bluetooth", "battery", "custom/weather", "clock" ],
-    "ipc": true,
-    "bar_id": "bar-0",
-    "custom/swaylock": {
-      "format": "⏻ ",
-      "on-click": "brave"
+  "layer": "top",
+  "position": "top",
+  "modules-left": [ "custom/swaylock", "hyprland/workspaces", "hyprland/window"],
+  "modules-right": [ "disk", "memory", "cpu", "wireplumber", "network", "bluetooth", "battery", "custom/weather", "clock" ],
+  "ipc": true,
+  "bar_id": "bar-0",
+  "custom/swaylock": {
+    "format": "⏻ ",
+    "on-click": ""
+  },
+  "disk": {
+    "format": "🗄️ {percentage_used}% [{used}]",
+    "states": {
+      "very-high": 80,
+      "high": 60
     },
-    "clock": {
-      "format": "{:%a, %d. %b  %H:%M}",
-      "format-alt": "{:%a, %d. %b %Y, %H:%M}"
+    "on-click": "tmux kill-session -t disk || alacritty -e tmux new-session -s disk \"zsh -c 'df -h'; zsh\""
+  },
+  "memory": {
+    "format": "📟  {percentage}% [{used:0.1f}G / {total:0.1f}G]",
+    "states": {
+      "very-high": 80,
+      "high": 60
     },
-    "battery": {
-      "interval": 20,
-      "states": {
-        "full": 95,
-        "warning": 30,
-        "critical": 15
-      },
-      "format": "{icon} {capacity}% [{time}]",
-      "format-icons": ["", "", "", "", ""]
+    "on-click": "tmux kill-session -t htop || alacritty -e tmux new-session -s htop \"htop\""
+  },
+  "cpu": {
+    "format": "💻  {usage}% [{avg_frequency} GHz]",
+    "states": {
+      "very-high": 90,
+      "high": 75
     },
-    "bluetooth": {
-      "format-disabled": "",
-      "format-on": "  {controller_alias} ({status})",
-      "format-off": "  {controller_alias} ({status})",
-      "format-connected": "  {controller_alias} ({num_connections}) | {device_enumerate}",
-      "format-connected-battery": " {device_alias} {device_battery_percentage}%",
-      "tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
-      "tooltip-format-connected": "{controller_alias}\n\n{num_connections} connected\n\n{device_enumerate}",
-      "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
-      "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}%"
+    "on-click": "tmux kill-session -t htop || alacritty -e tmux new-session -s htop \"htop\""
+  },
+  "wireplumber": {
+    "format": "{icon}  {volume}%",
+    "format-muted": "",
+    "format-icons": ["", "", ""],
+    "max-volume": 150,
+    "on-click": "tmux kill-session -t wireplumber || alacritty -e tmux new-session -s wireplumber \"wp-ctl\""
+  },
+  "network": {
+    "format": "{ifname}",
+    "format-wifi": "  {essid} ({signalStrength}%)  [➚{bandwidthUpBytes} ➘{bandwidthDownBytes}]",
+    "format-ethernet": "󰊗  {ipaddr}/{cidr}  [➚{bandwidthUpBytes} ➘{bandwidthDownBytes}]",
+    "format-disconnected": "  Disconnected",
+    "tooltip-format": "󰊗 {ifname} via {gwaddr}",
+    "tooltip-format-wifi": " {essid} ({signalStrength}%)",
+    "tooltip-format-ethernet": " {ifname}",
+    "tooltip-format-disconnected": "Disconnected",
+    "on-click": "tmux kill-session -t wifi || alacritty -e tmux new-session -s wifi \"sudo wifi-menu\""
+  },
+  "bluetooth": {
+    "format-disabled": "",
+    "format-on": "  {controller_alias} ({status})",
+    "format-connected": "  {controller_alias} ({num_connections}) | {device_alias}",
+    "format-off": "  {controller_alias} ({status})",
+    "format-connected-battery": " {device_alias} {device_battery_percentage}%",
+    "tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
+    "tooltip-format-connected": "{controller_alias}\n\n{num_connections} connected\n\n{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
+    "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}%",
+    "on-click": "alacritty -e 'bluetoothctl'"
+  },
+  "battery": {
+    "interval": 20,
+    "states": {
+      "full": 95,
+      "warning": 30,
+      "critical": 15
     },
-    "network": {
-      "format": "{ifname}",
-      "format-wifi": "  {essid} ({signalStrength}%)  [➚{bandwidthUpBytes} ➘{bandwidthDownBytes}]",
-      "format-ethernet": "󰊗  {ipaddr}/{cidr}  [➚{bandwidthUpBytes} ➘{bandwidthDownBytes}]",
-      "format-disconnected": "  Disconnected",
-      "tooltip-format": "󰊗 {ifname} via {gwaddr}",
-      "tooltip-format-wifi": " {essid} ({signalStrength}%)",
-      "tooltip-format-ethernet": " {ifname}",
-      "tooltip-format-disconnected": "Disconnected"
-    },
-    "wireplumber": {
-      "format": "{icon}  {volume}%",
-      "format-muted": "",
-      "on-click": "",
-      "format-icons": ["", "", ""],
-      "max-volume": 150
-    },
-    "cpu": {
-      "format": "💻  {usage}% [{avg_frequency} GHz]",
-      "states": {
-        "very-high": 90,
-        "high": 75
-      }
-    },
-    "memory": {
-      "format": "📟  {percentage}% [{used:0.1f}G / {total:0.1f}G]",
-      "states": {
-        "very-high": 80,
-        "high": 60
-      }
-    },
-    "disk": {
-      "format": "🗄️ {percentage_used}% [{used}]",
-      "states": {
-        "very-high": 80,
-        "high": 60
-      }
-    }
+    "format": "{icon} {capacity}% [{time}]",
+    "format-icons": ["", "", "", "", ""]
+  },
+  "custom/weather": {
+    "interval": 1800,
+    "format": "{}",
+    "exec": "curl 'wttr.in/?format=1'",
+    "on-click": "brave https://www.windy.com/40.420/-3.700?39.939,-3.700,8"
+  },
+  "clock": {
+    "format": "{:%a, %d. %b  %H:%M}",
+    "on-click": "tmux kill-session -t clock || alacritty -e tmux new-session -s clock \"zsh -c 'cal -3'; zsh\""
+  }
 }

@@ -39,12 +39,12 @@ label#custom-swaylock {
   padding: 0px 10px;
 }
 
-/* .modules-right { */
-/*   margin-right: 5px; */
-/* } */
-
 .modules-right label {
   padding: 0px 6px;
+}
+
+#custom-weather {
+  color: @waybar_orange_color;
 }
 
 #battery.charging, #battery.charging.warning, #battery.charging.critical {
@@ -57,12 +57,14 @@ label#custom-swaylock {
   background: @waybar_red_color;
 }
 
-#bluetooth.on {
+#bluetooth {
   color: @waybar_blue_color;
 }
+
 #blueetoth.connected, #bluetooth.pairable {
   color: @waybar_green_color;
 }
+
 #blueetoth.off, #bluetooth.disabled {
   color: @waybar_red_color;
 }
