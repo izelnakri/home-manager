@@ -253,7 +253,7 @@ in rec {
   programs = {
     alacritty = {
       enable = true;
-      package = (wrapNixGL pkgs.alacritty);
+      package = (wrapNixGL pkgs.unstable.alacritty);
     };
 
     atuin = {
@@ -734,7 +734,8 @@ in rec {
 
     configFile = {
       "lf/icons".source = ../../static/.config/lf/icons;
-      "alacritty/alacritty.yml".source = ../../static/.config/alacritty/alacritty.yml;
+      # NOTE: This is now redundant to alacritty.nix :
+      "alacritty/alacritty.toml".source = ../../static/.config/alacritty/alacritty.toml;
       "hypr" = {
         source = ../../static/.config/hypr;
         onChange = "~/.nix-profile/bin/hyprctl reload";
