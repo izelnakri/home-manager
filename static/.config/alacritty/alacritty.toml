@@ -26,84 +26,71 @@ style = "Medium"
 [colors]
 draw_bold_text_with_bright_colors = false
 
+[colors.primary]
+background = "#101818"
+bright_foreground = "#ffffff"
+foreground = "#eaeaea"
+
+[colors.cursor]
+cursor = "#993F0B"
+text = "#E6E1C4"
+
+[colors.normal]
+black = "#263238"
+blue = "#89ddff"
+cyan = "#80cbc4"
+green = "#00A600"
+magenta = "#82aaff"
+red = "#ec5f67"
+white = "#cdd3de"
+yellow = "#ffcc00"
+
+[colors.bright]
+black = "#707880"
+blue = "#89ddff"
+cyan = "#80cbc4"
+green = "#00D900"
+magenta = "#82aaff"
+red = "#ec5f67"
+white = "#ffffff"
+yellow = "#ffcc00"
+
 [[colors.indexed_colors]]
-color = "0xea9560"
+color = "#ea9560"
 index = 16
 
 [[colors.indexed_colors]]
-color = "0xec5f67"
+color = "#ec5f67"
 index = 17
 
 [[colors.indexed_colors]]
-color = "0x2c393f"
+color = "#2c393f"
 index = 18
 
 [[colors.indexed_colors]]
-color = "0x37474f"
+color = "#37474f"
 index = 19
 
 [[colors.indexed_colors]]
-color = "0xc9ccd3"
+color = "#c9ccd3"
 index = 20
 
 [[colors.indexed_colors]]
-color = "0xd5dbe5"
+color = "#d5dbe5"
 index = 21
-
-[colors.bright]
-black = "0x707880"
-blue = "0x89ddff"
-cyan = "0x80cbc4"
-green = "0x00D900"
-magenta = "0x82aaff"
-red = "0xec5f67"
-white = "0xffffff"
-yellow = "0xffcc00"
-
-[colors.cursor]
-cursor = "0x993F0B"
-text = "0xE6E1C4"
-
-[colors.normal]
-black = "0x263238"
-blue = "0x89ddff"
-cyan = "0x80cbc4"
-green = "0x00A600"
-magenta = "0x82aaff"
-red = "0xec5f67"
-white = "0xcdd3de"
-yellow = "0xffcc00"
-
-[colors.primary]
-background = "0x101818"
-bright_foreground = "0xffffff"
-foreground = "0xeaeaea"
 
 [selection]
 save_to_clipboard = true
 
 [shell]
 args = ["a"]
-# TODO: make the colors defined from my color scheme and test it with wifi-menu
-# TODO: builtins.replaceString for ricing and maybe do URL Launcher
-# TODO: Make copy/paste work(without vim mode).
 program = "tmux"
-
-[hints]
-alphabet = "jfkdls;ahgurieowpq"
-
-[[hints.enabled]]
-command = "xdg-open"
-hyperlinks = true
-post_processing = true
-regex = "(ipfs:|ipns:|magnet:|mailto:|gemini:|gopher:|https:|http:|news:|file:|git:|ssh:|ftp:)[^\u0000-\u001F\u007F-<>\"\\s{-}\\^⟨⟩`]+"
 
 [hints.enabled.binding]
 key = "U"
 mods = "Alt"
 
-[hints.enabled.mouse]
-enabled = true
+# TODO: Check/test all these bindings
 
 [[keyboard.bindings]]
 action = "Paste"
