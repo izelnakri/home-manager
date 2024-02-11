@@ -1,0 +1,47 @@
+{
+  position = "top"
+  name = "bar-1"
+  start = [
+    {
+      type = "label"
+      label = ""
+      name = "power-btn"
+      on_click = "popup:toggle"
+    }
+    {
+      type = "workspaces"
+      all_monitors = false
+    }
+    {
+      type = "focused"
+      show_icon = false
+      // truncate.max_length =
+    }
+  ]
+  end = [
+    {
+      type = "sys_info"
+
+      interval.memory = 30
+      interval.cpu = 1
+      interval.temps = 5
+      interval.disks = 300
+
+      format = [
+        "󰋊 {disk_used:/} / {disk_total:/} GB ({disk_percent:/}%)"
+        " {memory_used} / {memory_total} GB ({memory_percent}%)"
+        " {cpu_percent}% | {temp_c:k10temp-Tccd1}°C"
+      ]
+    }
+    // volume
+    // network
+    // bluetooth
+    // battery
+    // tray
+    // weather
+    {
+      type = "clock"
+      format = "%d/%m/%Y %H:%M"
+    }
+  ]
+}
