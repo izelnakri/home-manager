@@ -232,7 +232,8 @@ in rec {
     HISTFILE= "~/.cache/zsh/history";
     TERM = "xterm-256color";
     TERMINAL = "alacritty";
-    PATH = "$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/bin:/usr/sbin:$PATH";
+    BIN_PATHS = "$HOME/.volta/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin";
+    PATH = "${config.home.sessionVariables.BIN_PATHS}:$PATH";
     POSTGRES_USER = "postgres";
     POSTGRES_PASSWORD = "postgres";
     POSTGRES_HOST = "localhost";
@@ -605,8 +606,8 @@ in rec {
         }
         bindkey -s '^o' 'lfcd\n'
 
-        export VOLTA_HOME="$HOME/.volta"
-        export PATH="$VOLTA_HOME/bin:$PATH"
+        # TODO: Find another way to get ahead of /$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin in the future:
+        export PATH="$BIN_PATHS:$PATH"
 
         eval $(dircolors ~/.nix-profile/share/LS_COLORS)
         eval "$(direnv hook zsh)"
