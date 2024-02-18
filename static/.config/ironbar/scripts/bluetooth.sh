@@ -1,5 +1,7 @@
 #!/bin/bash
-#
+
+source ~/.config/ironbar/scripts/variables.sh
+
 controller_alias=$(bluetoothctl show | awk '/Alias/ {print $2}')
 bluetooth_status=$(bluetoothctl show | awk '/Powered/ {print $2}')
 
@@ -20,6 +22,6 @@ fi
 IFS=$'\n'
 for device in $devices; do
     read -r percentage <<< "$percentages"
-    echo -n " $device ($percentage%), "
+    echo -n "<span color='$green_color'> $device ($percentage%)</span>, "
     percentages=$(echo "$percentages" | sed '1d')  # Remove the first line after each iteration
 done | sed 's/, $//'

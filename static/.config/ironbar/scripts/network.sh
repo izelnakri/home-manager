@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source ~/.config/ironbar/scripts/variables.sh
+
+# NOTE: Dependnecy: vnstat
 get_wireless_network() {
     iwgetid -r
 }
@@ -23,7 +26,7 @@ main() {
         outgoing_traffic=$(get_outgoing_traffic)
         incoming_traffic=$(get_incoming_traffic)
 
-        printf "  %s (%s%%) [➚%s ➘%s]\n" "$wireless_network" "$signal_strength" "$outgoing_traffic" "$incoming_traffic"
+        printf "<span color='$green_color'>  %s (%s%%) [➚%s ➘%s]\n" "$wireless_network" "$signal_strength" "$outgoing_traffic" "$incoming_traffic</span>"
     else
         echo " Disconnected"
     fi

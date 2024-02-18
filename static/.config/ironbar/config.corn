@@ -1,5 +1,7 @@
+// implement on_clicks
 {
   position = "top"
+  // autohide = 0
   name = "bar-1"
   start = [
     {
@@ -20,28 +22,60 @@
   ]
   end = [
     {
-      type = "sys_info"
-
-      interval.memory = 30
-      interval.cpu = 1
-      interval.temps = 5
-      interval.disks = 300
-
-      format = [
-        "󰋊 {disk_used:/} / {disk_total:/} GB ({disk_percent:/}%)"
-        " {memory_used} / {memory_total} GB ({memory_percent}%)"
-        " {cpu_percent}% | {temp_c:k10temp-Tccd1}°C"
-      ]
+      type = "script"
+      name = "disk"
+      interval = 2500
+      cmd = "sh ~/.config/ironbar/scripts/disk.sh"
     }
-    // volume
-    // network
-    // bluetooth
-    // battery
-    // tray
-    // weather
     {
+      type = "script"
+      name = "memory"
+      interval = 2500
+      cmd = "sh ~/.config/ironbar/scripts/memory.sh"
+    }
+    {
+      type = "script"
+      name = "cpu"
+      interval = 2500
+      cmd = "sh ~/.config/ironbar/scripts/cpu.sh"
+    }
+    {
+      type = "script"
+      name = "volume"
+      interval = 2500
+      cmd = "sh ~/.config/ironbar/scripts/volume.sh"
+    }
+    {
+      type = "script"
+      name = "network"
+      interval = 2500
+      cmd = "sh ~/.config/ironbar/scripts/network.sh"
+    }
+    {
+      type = "script"
+      name = "bluetooth"
+      interval = 2500
+      cmd = "sh ~/.config/ironbar/scripts/bluetooth.sh"
+    }
+    {
+      type = "script"
+      name = "battery"
+      interval = 30000
+      cmd = "sh ~/.config/ironbar/scripts/battery.sh"
+    }
+    {
+      type = "tray"
+    }
+    {
+      type = "script"
+      name = "weather"
+      interval = 1200000
+      cmd = "curl 'wttr.in/?format=1'"
+    }
+    {
+      name = "clock"
       type = "clock"
-      format = "%d/%m/%Y %H:%M"
+      format = "%a, %d. %b  %H:%M"
     }
   ]
 }

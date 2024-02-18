@@ -1,5 +1,10 @@
 #!/bin/bash
 
+source ~/.config/ironbar/scripts/variables.sh
+
+# NOTE: Dependency: acpi
+# label = " {{5000:cat /sys/class/power_supply/BAT0/capacity}}% [{{5000:cat /sys/class/power_supply/BAT0/status}}]"
+
 shorten_time_format() {
     local time_format=$1
     local hours=$(echo $time_format | awk -F':' '{print $1}')
@@ -28,24 +33,23 @@ get_battery_status() {
         elif [ $battery_percent -gt 50 ]; then
             echo ""
         elif [ $battery_percent -gt 30 ]; then
-            echo ""
+            echo "<span color='$orange_color'></span>"
         else
-            echo ""
+            echo "<span color='$red_color'></span>"
         fi
     }
 
-    if [ "$battery_percent" -eq 100 ]; then
-        echo "$(get_battery_icon) $battery_percent%"
-        return
-    fi
-
     if [ "$battery_status" == "Charging" ]; then
+        if [ "$battery_percent" -eq 100 ]; then
+            echo "$(get_battery_icon) $battery_percent%"
+            return
+        fi
         time_to_full=$(acpi -b | grep -o -P '(\d+:\d+:\d+|\d+:\d+|\d+\s(?:minute|min|hour|h))' | head -1)
         if [ -z "$time_to_full" ]; then
-            echo "$(get_battery_icon) $battery_percent% [Calculating]"
+            echo "<span bgcolor='$green_background_color'>z$(get_battery_icon) $battery_percent% [Calculating]</span>"
         else
             time_to_full_short=$(shorten_time_format "$time_to_full")
-            echo "$(get_battery_icon) $battery_percent% [$time_to_full_short]"
+            echo "<span bgcolor='$green_background_color'>$(get_battery_icon) $battery_percent% [$time_to_full_short]</span>"
         fi
     else
         time_to_empty=$(acpi -b | grep -o -P '(\d+:\d+:\d+|\d+:\d+|\d+\s(?:minute|min|hour|h))' | head -1)

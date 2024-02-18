@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# NOTE: Dependency: pamixer
 volume_info=$(pamixer --get-volume)
 mute_status=$(pamixer --get-mute)
 
