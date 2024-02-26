@@ -8,6 +8,8 @@
 @define-color waybar_yellow_color #D9D762;
 @define-color waybar_brown_color #947659;
 
+/* Implement bottom inset border on hover to labels */
+
 * {
   font-family: Noto Sans ,FontAwesome, Helvetica, Arial, sans-serif;
   color: @waybar_text_color;
@@ -29,6 +31,7 @@ window#waybar {
   background: @waybar_blue_color;
   border: none;
   transition: none;
+  border-bottom: 2px inset @waybar_text_color;
 }
 
 .modules-left #window {
@@ -41,6 +44,10 @@ label#custom-swaylock {
 
 .modules-right label {
   padding: 0px 6px;
+}
+.modules-right label:hover, .modules-right label:active, .modules-right #network:hover {
+  background: @waybar_orange_color;
+  /* box-shadow: inset 0 0 2px @waybar_orange_color; */
 }
 
 #custom-weather {
@@ -60,20 +67,24 @@ label#custom-swaylock {
 #bluetooth {
   color: @waybar_blue_color;
 }
-
-#blueetoth.connected, #bluetooth.pairable {
+#bluetooth.connected, #bluetooth.pairable {
   color: @waybar_green_color;
 }
-
-#blueetoth.off, #bluetooth.disabled {
+#bluetooth.off, #bluetooth.disabled {
   color: @waybar_red_color;
 }
-#blueetoth.disconnected {
+#bluetooth.disconnected {
   color: @waybar_orange_color;
 }
 
-#network.ethernet, #network.wifi {
+#network {
   color: @waybar_blue_color;
+}
+#network.linked, #network.ethernet, #network.wifi {
+  color: @waybar_green_color;
+}
+#network.disabled {
+  color: @waybar_red_color;
 }
 
 #cpu.very-high, #memory.very-high, #disk.very-high {

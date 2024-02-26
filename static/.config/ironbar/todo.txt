@@ -1,0 +1,38 @@
+- types: label, box, button
+- widgets -> []
+
+Module {
+  name: string
+  class: string
+  type: "custom" | "script" | "label" | "box" | "button"
+  on_click_left: CommandString
+  bars: Widget[]
+}
+
+Widget {
+  type: 'label' | 'box' | 'button';
+  widgets: Widget[],
+  class: String,
+  label: HTMLString,
+  on_click: CommandString,
+  tooltip: HTMLString,
+  orientation: 'vertical',
+  popup?: Widget[]
+}
+
+- Check a way to build HTML -> Widget representation [Limitattion: No dynamic classes/pango markup is limited to span with no class currently]
+
+// Also couldnt make the battery charging take full height, pango markup is limiting it to span *with* no class
+// No dynamic classes
+// notifications & dropbox
+// waybar/sway idle module
+// investigate hyprlock
+- Spotify Implement MPRIS Module with libplayerctl: https://www.reddit.com/r/swaywm/comments/ni0vso/waybar_spotify_tracktitle/ | https://github.com/altdesktop/playerctl
+- ETH price, DOT price, EUR price, LUSD, LQTY
+- Build emoji picker
+- notifications bar
+- dropbox
+- gtk-layer-shell popups
+
+"exec": "waybar-wttr.py",
+"exec-if": "/usr/lib/systemd/systemd-networkd-wait-online --ignore=lo --timeout=600 --operational-state=dormant",

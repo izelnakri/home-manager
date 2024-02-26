@@ -1,14 +1,14 @@
-// implement on_clicks
 {
   position = "top"
-  // autohide = 0
+  height = 35
+  autohide = 0
   name = "bar-1"
   start = [
     {
       type = "label"
       label = ""
       name = "power-btn"
-      on_click = "popup:toggle"
+      on_click_left = "wlogout"
     }
     {
       type = "workspaces"
@@ -17,7 +17,9 @@
     {
       type = "focused"
       show_icon = false
-      // truncate.max_length =
+      truncate.mode = "end"
+      truncate.max_length = 140
+      on_click_left = "hyprctl activeworkspace -j | jq -r '.lastwindowtitle' | wl-copy"
     }
   ]
   end = [
@@ -26,36 +28,42 @@
       name = "disk"
       interval = 2500
       cmd = "sh ~/.config/ironbar/scripts/disk.sh"
+      on_click_left = "tmux kill-session -t disk || alacritty -e tmux new-session -s disk \"zsh -c 'df -h'; zsh\""
     }
     {
       type = "script"
       name = "memory"
       interval = 2500
       cmd = "sh ~/.config/ironbar/scripts/memory.sh"
+      on_click_left = "tmux kill-session -t htop || alacritty -e tmux new-session -s htop \"htop\""
     }
     {
       type = "script"
       name = "cpu"
       interval = 2500
       cmd = "sh ~/.config/ironbar/scripts/cpu.sh"
+      on_click_left = "tmux kill-session -t htop || alacritty -e tmux new-session -s htop \"htop\""
     }
     {
       type = "script"
       name = "volume"
       interval = 2500
       cmd = "sh ~/.config/ironbar/scripts/volume.sh"
+      on_click_left = "tmux kill-session -t wireplumber || alacritty -e tmux new-session -s wireplumber \"pw-cli\""
     }
     {
       type = "script"
       name = "network"
       interval = 2500
       cmd = "sh ~/.config/ironbar/scripts/network.sh"
+      on_click_left = "tmux kill-session -t wifi || alacritty -e tmux new-session -s wifi \"sudo wifi-menu\""
     }
     {
       type = "script"
       name = "bluetooth"
       interval = 2500
       cmd = "sh ~/.config/ironbar/scripts/bluetooth.sh"
+      on_click_left = "alacritty -e 'bluetoothctl'"
     }
     {
       type = "script"
@@ -71,6 +79,7 @@
       name = "weather"
       interval = 1200000
       cmd = "curl 'wttr.in/?format=1'"
+      on_click_left = "brave https://wttr.in"
     }
     {
       name = "clock"

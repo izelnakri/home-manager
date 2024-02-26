@@ -1,112 +1,94 @@
-@define-color waybar_base_color #101818;
-@define-color waybar_text_color #E6E1C4;
-@define-color waybar_green_background_color #0d372d;
-@define-color waybar_green_color #7DAF9C;
-@define-color waybar_blue_color #6C99BB;
-@define-color waybar_red_color #EF5D32;
-@define-color waybar_orange_color #EFAC32;
-@define-color waybar_yellow_color #D9D762;
-@define-color waybar_brown_color #947659;
+@define-color ironbar_base_color #101818;
+@define-color ironbar_text_color #E6E1C4;
+@define-color ironbar_green_background_color #0d372d;
+@define-color ironbar_green_color #7DAF9C;
+@define-color ironbar_blue_color #6C99BB;
+@define-color ironbar_red_color #EF5D32;
+@define-color ironbar_orange_color #EFAC32;
+@define-color ironbar_yellow_color #D9D762;
+@define-color ironbar_brown_color #947659;
+
+/* Implement bottom inset border on hover to labels */
+
+/* .bg-green { */
+/*   background: @ironbar_green_background_color; */
+/* } */
+
+/* .blue { */
+/*   background: @ironbar_blue_color; */
+/* } */
+
+/* .orange { */
+/*   background: @ironbar_orange_color; */
+/* } */
+
+/* .red { */
+/*   background: @ironbar_red_color; */
+/* } */
 
 * {
   font-family: Noto Sans, FontAwesome, Helvetica, Arial, sans-serif;
-  color: @waybar_text_color;
+  color: @ironbar_text_color;
   font-size: 13px;
-  font-weight: bold;
+  font-weight: 600;
   border-radius: 0px;
 }
 
 .background {
-  background: @waybar_base_color;
+  background: @ironbar_base_color;
 }
 
-/* #bar #start .widget { */
-/*   padding: 0px 8px; */
-/* } */
-
-#power-btn {
-  padding: 0px 10px;
+#bar #start .widget {
+  padding: 0px 8px; /* left buttons right padding */
 }
 
 .workspaces .item {
   box-shadow: inherit;
   border: none;
-  background: @waybar_base_color;
-  padding: 0 10px;
+  background: @ironbar_base_color;
+  padding: 0px 9px; /* true rectangle padding */
 }
 
 .workspaces .item.focused {
-  background: @waybar_green_background_color;
+  background: @ironbar_green_background_color;
 }
 
 .workspaces .item:hover {
   box-shadow: inherit;
   text-shadow: inherit;
-  background: @waybar_blue_color;
+  background: @ironbar_blue_color;
   border: none;
   transition: none;
 }
 
 .focused.widget {
-  padding: 0px 10px;
+  padding: 0px 1px; /* Title left/right padding */
 }
 
-
-#bar #end label {
-  padding: 0px 6px;
+#disk, #memory, #cpu, #volume, #network, #bluetooth, #battery {
+  padding: 0px 5px
 }
 
-/* .modules-right label { */
-/*   padding: 0px 6px; */
-/* } */
-/* .modules-right label:hover, .modules-right label:active, .modules-right #network:hover { */
-/*   background: @waybar_orange_color; */
-/*   [> box-shadow: inset 0 0 2px @waybar_orange_color; <] */
-/* } */
+#battery span {
+  background: red;
+  border: solid 1px red;
+}
 
-/* #custom-weather { */
-/*   color: @waybar_orange_color; */
-/* } */
+#bluetooth, #network {
+  color: @ironbar_blue_color;
+}
 
-/* #battery.charging, #battery.charging.warning, #battery.charging.critical { */
-/*   background: @waybar_green_background_color; */
-/* } */
-/* #battery.warning { */
-/*   background: @waybar_orange_color; */
-/* } */
-/* #battery.critical { */
-/*   background: @waybar_red_color; */
-/* } */
+#bluetooth .connected, #bluetooth .connected {
+  color: @ironbar_green_color;
+}
 
-/* #bluetooth { */
-/*   color: @waybar_blue_color; */
-/* } */
-/* #bluetooth.connected, #bluetooth.pairable { */
-/*   color: @waybar_green_color; */
-/* } */
-/* #bluetooth.off, #bluetooth.disabled { */
-/*   color: @waybar_red_color; */
-/* } */
-/* #bluetooth.disconnected { */
-/*   color: @waybar_orange_color; */
-/* } */
+#weather {
+  color: @ironbar_orange_color;
+  padding-top: 0.5px; /* adjust top alignment */
+}
 
-/* #network { */
-/*   color: @waybar_blue_color; */
-/* } */
-/* #network.linked, #network.ethernet, #network.wifi { */
-/*   color: @waybar_green_color; */
-/* } */
-/* #network.disabled { */
-/*   color: @waybar_red_color; */
-/* } */
-
-/* #cpu.very-high, #memory.very-high, #disk.very-high { */
-/*   color: @waybar_red_color; */
-/* } */
-/* #cpu.high, #memory.high, #disk.high { */
-/*   color: @waybar_orange_color; */
-/* } */
-/* #cpu, #memory { */
-/*   color: @waybar_green_color; */
-/* } */
+#clock {
+  background: @ironbar_base_color;
+  border: none;
+  box-shadow: inherit;
+}

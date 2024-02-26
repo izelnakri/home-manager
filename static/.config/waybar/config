@@ -7,7 +7,7 @@
   "bar_id": "bar-0",
   "custom/swaylock": {
     "format": "⏻ ",
-    "on-click": ""
+    "on-click": "wlogout"
   },
   "disk": {
     "format": "🗄️ {percentage_used}% [{used}]",
@@ -38,7 +38,7 @@
     "format-muted": "",
     "format-icons": ["", "", ""],
     "max-volume": 150,
-    "on-click": "tmux kill-session -t wireplumber || alacritty -e tmux new-session -s wireplumber \"wp-ctl\""
+    "on-click": "tmux kill-session -t wireplumber || alacritty -e tmux new-session -s wireplumber \"pw-cli\""
   },
   "network": {
     "format": "{ifname}",
@@ -54,7 +54,7 @@
   "bluetooth": {
     "format-disabled": "",
     "format-on": "  {controller_alias} ({status})",
-    "format-connected": "  {controller_alias} ({num_connections}) | {device_alias}",
+    "format-connected": "  {num_connections}: {device_alias}",
     "format-off": "  {controller_alias} ({status})",
     "format-connected-battery": " {device_alias} {device_battery_percentage}%",
     "tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
@@ -62,6 +62,11 @@
     "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
     "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}%",
     "on-click": "alacritty -e 'bluetoothctl'"
+  },
+  "tray": {
+    "icon-size": 21,
+    "spacing": 10,
+    "show-passive-items": true
   },
   "battery": {
     "interval": 20,

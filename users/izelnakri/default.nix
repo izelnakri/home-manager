@@ -65,12 +65,13 @@ in rec {
     # groff
     # joplin
     htop
-    (wrapNixGL hyprland)
+    (wrapNixGL unstable.hyprland)
     hyprpicker
 
     # inkspace
-    iperf
     inputs.xremap-flake.packages.${system}.default
+    iperf
+    unstable.ironbar
     kubectl
     # kubectl-tree
     kubernetes
