@@ -5,9 +5,9 @@ swww init &
 swww img ~/Wallpapers/arch-monk.jpg &
 
 # pkgs.networkmanagerapplet
-# nm-applet --indicator &
+nm-applet --indicator &
 
-# waybar &
+ironbar &
 
 # dunst # replace with mako
 

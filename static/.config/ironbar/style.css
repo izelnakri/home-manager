@@ -39,7 +39,7 @@
 }
 
 #bar #start .widget {
-  padding: 0px 8px; /* left buttons right padding */
+  padding: 0px 7px; /* left buttons right padding */
 }
 
 .workspaces .item {
@@ -62,7 +62,7 @@
 }
 
 .focused.widget {
-  padding: 0px 1px; /* Title left/right padding */
+  padding: 0px 1px 0px 0px; /* Title left/right padding */
 }
 
 #disk, #memory, #cpu, #volume, #network, #bluetooth, #battery {

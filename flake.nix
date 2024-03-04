@@ -2,8 +2,8 @@
   description = "Izel's personal cluster of machines & system configurations";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/23.11";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixinate = {
       url = "github:matthewcroughan/nixinate";
@@ -11,7 +11,7 @@
     };
     nix-colors.url = "github:misterio77/nix-colors";
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-23.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixGL = {
@@ -51,7 +51,7 @@
         pi4-nas = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
           modules = [
-            ({ config, pkgs, ... }: { nixpkgs.overlays = [ overlay-unstable ]; })
+            ({ config, pkgs, ... }: { nixpkgs.overlays = [ overlay-unstable nixGL.overlay ]; })
             nixos-hardware.nixosModules.raspberry-pi-4
             ./hosts/izels-pi4/configuration.nix
             home-manager.nixosModules.home-manager
@@ -72,7 +72,7 @@
         izelnakri = home-manager.lib.homeManagerConfiguration {
           pkgs = x86Pkgs;
           modules = [
-            { nixpkgs.overlays = [ nixGL.overlay ]; }
+            { nixpkgs.overlays = [ overlay-unstable nixGL.overlay ]; }
             # hyprland.homeManagerModules.default
             ./users/izelnakri
           ];

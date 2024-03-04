@@ -2,7 +2,7 @@
   position = "top"
   height = 35
   autohide = 0
-  name = "bar-1"
+  name = "top-bar"
   start = [
     {
       type = "label"
