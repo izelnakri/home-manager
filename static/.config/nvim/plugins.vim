@@ -4,16 +4,18 @@ call plug#begin('~/.vim/plugged')
 
 Plug 'junegunn/fzf', { 'do' : './install --bin' }
 Plug 'junegunn/fzf.vim' " TODO: customize this further Lead-P selection should prefill right side, advanced ripgrep, search/replace
+Plug 'norcalli/nvim-colorizer.lua'
 Plug 'tpope/vim-sensible'
 Plug 'itchyny/lightline.vim'
 Plug 'scrooloose/nerdtree'
-Plug 'ryanoasis/vim-devicons'
-" Plug 'Xuyuanp/nerdtree-git-plugin'
 " Plug 'scrooloose/nerdtree', { 'commit': 'd48ab70' }
-" Plug 'ryanoasis/vim-devicons', { 'commit': 'f17eb43' }
+" Plug 'ryanoasis/vim-devicons'
+Plug 'ryanoasis/vim-devicons', { 'commit': 'f17eb43' }
+" TODO: these three are problematic:
+" Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'tsony-tsonev/nerdtree-git-plugin'
 " Plug 'Xuyuanp/nerdtree-git-plugin'
-Plug 'johnstef99/vim-nerdtree-syntax-highlight'
+Plug 'johnstef99/vim-nerdtree-syntax-highlight' " What is this?
 Plug 'benmills/vimux' " tmux integration, is this really needed(?)
 Plug 'Yggdroot/indentLine'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
@@ -81,6 +83,8 @@ let g:NERDTreeChDirMode=2
 let g:NERDTreeShowHidden=1
 let g:NERDTreeGitStatusWithFlags = 0
 let g:WebDevIconsUnicodeDecorateFolderNodes = 1
+let g:webdevicons_conceal_nerdtree_brackets = 1
+
 let g:NERDTreeGitStatusNodeColorization = 1
 let g:NERDTreeColorMapCustom = {
   \ "Modified"  : ["#ff8700", "208", "NONE", "NONE"],
@@ -164,6 +168,7 @@ let g:lightline = {
 \ }
 
 lua << EOF
+require'colorizer'.setup()
 local map = require('mini.map')
 map.setup({
   integrations = {

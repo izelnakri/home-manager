@@ -123,6 +123,10 @@ Pretty print a nix file:
 nix eval --file ./entry.nix | nixfmt
 # or
 nix eval --file ./entry.nix --json | xq
+# retract lambdas and repeated placeholders:
+nix eval --file ./entry.nix | sed -r 's/<LAMBDA>/"LOL"/g' | sed -r 's/«repeated»/"REPEATED"/g' | nixfmt
+# if the target file is a lambda, you can run it with:
+nix eval --expr 'import ./target-file.nix' --impure | sed -r 's/<LAMBDA>/"LOL"/g' | sed -r 's/«repeated»/"REPEATED"/g' | nixfmt
 ```
 
 ## NixGL - home-manager GL support/mess

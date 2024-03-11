@@ -102,7 +102,7 @@
   };
 
   security = {
-    # polkit.enable = true;
+    polkit.enable = true;
     # pam.enableSSHAgentAuth = true;
     # users.users.root.openssh.authorizedKeys.keys
   };

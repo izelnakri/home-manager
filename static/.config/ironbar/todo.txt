@@ -1,5 +1,5 @@
-- types: label, box, button
-- widgets -> []
+put a border on hover items
+on_click date styling
 
 Module {
   name: string
@@ -20,7 +20,7 @@ Widget {
   popup?: Widget[]
 }
 
-- Check a way to build HTML -> Widget representation [Limitattion: No dynamic classes/pango markup is limited to span with no class currently]
+- Check a way to build HTML -> Widget representation [Limitation: No dynamic classes/pango markup is limited to span with no class currently]
 
 // Also couldnt make the battery charging take full height, pango markup is limiting it to span *with* no class
 // No dynamic classes

@@ -1,0 +1,124 @@
+- fix ironbar calendar styling
+- fix alacritty errors
+- fix shared coloring for alacritty etc
+
+# Move from lightdm to GDM
+# NetworkManager vs netctl
+# top bar email notifications(inbox, spam), discord notifications
+
+# make dropbox work
+
+# CTLR-J doesnt work sometimes on the shell
+
+# Gnome setup
+# Research overlays and nix pill derivations more, make raspberry pi touchscreen work, make display Manager/Sway/Hyperland work
+# system.userActivationScripts(?) or home.activation !! -> to make ~/.config/home-manager available as a checked out/git pull repository
+# transfer private ssh and gpg key securely to new server
+
+- make touchscreen work
+- make a static ip so people can log-in from a cheap VPN(also make it run nix)
+- investigate VR window manager
+- investigate sway & hyperland
+- set up android dev
+- add swap to raspberry pi 4, make btrfs, install the screen, add wayland, hyperland, install home-manager on nixos-build, also allow remote updates
+
+- swap file config: https://gist.github.com/plmercereau/0c8e6ed376dc77617a7231af319e3d29
+
+"${builtins.fetchGit { url = "https://github.com/NixOS/nixos-hardware.git"; }}/raspberry-pi/4"
+
+try to chroot into an sd card OS and change wireless settings or compile stuff
+how to connect to rpi from usbc
+
+Important: RPI3 USB-Gadget mode: https://discourse.nixos.org/t/looking-for-help-to-create-a-raspberry-pi-with-usb-ethernet/27039/9
+
+- make it so that ~/.config/home-manager has the latest git pulled version always
+- remove sudo password need for izelnakri
+
+
+
+
+
+home-manager.users.tmplt.xsession = {
+  enable = true;
+  windowManager.xmonad = {
+    enable = true;
+    enableContribAndExtras = true;
+    extraPackages = self: [ self.xmobar ];
+  };
+};
+
+xsession!! is very important
+
+services.xserver = {
+  enable = true;
+  autorun = false;
+  displayManager.startx.enable = true;
+};
+
+
+   xserver = {
+        enable = true;
+  #      autorun = false;
+        videoDrivers = [ "nvidia" ];
+
+        layout = "us";
+        xkbOptions = "eurosign:e";
+        libinput = {
+          enable = true;
+          disableWhileTyping = true;
+          naturalScrolling = true;
+          additionalOptions = ''
+            Option "PalmDetection" "True"
+          '';
+        };
+        desktopManager = {
+          default = "none";
+          xterm.enable = false;
+        };
+        displayManager = {
+          lightdm = {
+            enable = true;
+            greeter.enable = false;
+            autoLogin.enable = true;
+            autoLogin.user = "mudrii";
+          };
+        };
+
+        windowManager = {
+          default = "i3";
+          i3.enable = true;
+          i3.package = pkgs.i3-gaps;
+          i3.extraPackages = with pkgs; [
+            dmenu #application launcher most people use
+            i3lock #default i3 screen locker
+            i3status-rust
+            i3-gaps
+            i3lock-fancy
+            rofi
+...
+...
+...
+
+
+
+  # Enable the X11 windowing system.
+  services.xserver = {
+    enable = true;
+    layout = "us";
+    videoDrivers = [ "nvidia" ];
+    displayManager.lightdm.enable = true;
+    windowManager.i3.enable = true;
+  };
+
+
+  hardware.opengl.setLdLibraryPath = true;
+
+# alacritty should open relative directory or files when pressed Alt-U just like links
+# open it in relevant pane
+#
+#
+# tmux kill-session -t volume || alacritty -e tmux new-session -s volume "zsh -c 'ls -lah .';tmux split-pane -h; tail -f ~/FOOD"
+
+https://blog.habets.se/2022/02/SSH-over-Bluetooth-cleanly.html
+
+- Do this tutorial: https://www.shuttle.rs/blog/2023/10/16/graphql-in-rust

@@ -1,9 +1,31 @@
-# TODO: Implement nerdtree fonts with vim(or use lazyvim(?))
+# read the file, transform text -> write the file (no formatting needed, just needing to find the token) => better standard function, docs(not in nix), might be faster(?)
+# configs from a folder(with each program.nix) -> returns an object
+# make it compatible with snowflake standard
+
+# Copy/paste, nvim chatgpt suggestion filling
+
+# For application launcher use tofi or rofi-wayland or anyrun, do Hyprland desktop portal
+# https://wiki.hyprland.org/Useful-Utilities/Clipboard-Managers/
+# TODO: Fix nvim copy/paste yanked thing cannot be pasted currently, and copied thing doesnt go to yanked stuff, only copy/paste works in insert mode, also yank pase across panels dont work
+# http://wiki.hyprland.org/Useful-Utilities/Other/#automatically-mounting-using-udiskie
+# make lightdm & gnome work with home-manager
+# implement latte-dock(?)
+
+# dunst or mako & libnotify
+# wl-clipboard
+# rofi-wayland
+# research swaygrab, swaymsg
+
+# implement git checkout
+
+# implement touchscreen (do it on hosts/raspberry-pi)
 # TODO: How to manage tokens secrets
+# lazyvim
 
 # do the base color consistency
 # lib = to define helper variables
 
+# cmus media player? or other
 { config, pkgs, inputs, lib, nixosModules, ... }:
 let
   wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs; };
@@ -11,9 +33,10 @@ in rec {
   imports =  [
     inputs.nix-colors.homeManagerModules.default
     inputs.xremap-flake.homeManagerModules.default
+    # ../../modules/alacritty.nix
   ];
 
-  colorScheme = inputs.nix-colors.colorSchemes.gruvbox-dark-medium;
+  colorScheme = inputs.nix-colors.colorSchemes.gruvbox-dark-medium; # NOTE: color: alacritty, zsh, tmux, mako, waybar, lf, nvim, bat
 
   targets.genericLinux.enable = true;
   nixpkgs.config.allowBroken = true;
@@ -23,7 +46,7 @@ in rec {
 
   home.username = "izelnakri";
   home.homeDirectory = "/home/izelnakri";
-  home.stateVersion = "23.05";
+  home.stateVersion = "23.11";
   home.activation = {
     # NOTE: This shouldnt be needed but unfortunately it is needed
     restartSystemdServices = lib.hm.dag.entryAfter ["reloadSystemd"] ''
@@ -33,11 +56,12 @@ in rec {
   home.packages = with pkgs; [
     # gnome.gnome-session
     (wrapNixGL gnome.gnome-shell) # NOTE: exclude packages(?)
-    monado
     lightdm
     asdf-vm
     atuin
     # avahi (network discovery & connection)
+    bat
+    unstable.brave # previous reference: inputs.nixpkgs.legacyPackages.x86_64-linux.brave
     # bspwm
     direnv
     # devdocs-desktop
@@ -45,22 +69,27 @@ in rec {
     # elinks - text based web browser, is it the best(?)
     # eww - Widget library for unix
     # flameshot
-    inputs.nixpkgs.legacyPackages.x86_64-linux.brave
     chromium
     comma
-    deno
+    # deno
     # dunst
     # dwm
     # emacs29
     # emacs-doom
-    elixir_1_15
+    unstable.elixir_1_16
     # helix
+    (wrapNixGL unstable.hyprlock)
+    unstable.hypridle
+    fd
     flatpak
     fontconfig
     freetype
+    fx
+    fzf
     gcc
     gh
     gimp
+    gpsd
     grim
     # groff
     # joplin
@@ -87,13 +116,7 @@ in rec {
     lxcfs
     lxd
     # lutris
-    ripgrep
-    rsync
-    fd
-    fx
-    bat
-    fzf
-    # w3m
+    monado
     magic-wormhole
     mpv # Default media player
     neofetch
@@ -106,7 +129,7 @@ in rec {
     nodejs
     noto-fonts noto-fonts-emoji
     mako
-    # manix
+    unstable.manix
     # mpd
     openssl
     # pavucontrol
@@ -116,9 +139,14 @@ in rec {
     # pipewire
     playerctl
     postgresql
+    unstable.pulumi-bin
+    pspg
     python3Full
     # python.pkgs.pip
     # rofi - dmenu replacement, window switcher
+    ripgrep
+    rsync
+    # w3m
     rpiplay
     ruby
     rustup
@@ -129,7 +157,8 @@ in rec {
     # swaycons
     slurp
     swappy
-    swww # maybe use programs.wpaperd instead(?)
+    swaylock
+    swww # wallpaper: maybe use programs.wpaperd instead(?)
     syncthing
     terminus-nerdfont
     # timeshift
@@ -147,8 +176,10 @@ in rec {
     wl-clipboard
     wl-screenrec
     # wl-screenrec # high-perf screen recording tool
-    vlc
     viu # image viewer
+    vlc
+    vnstat
+    volta
     # xfce.thunar
     zathura
     zeal
@@ -181,6 +212,9 @@ in rec {
         main
       done
     '')
+
+    # Display manager options: SDDM, GDM, LightDM | run first without a DM, use LY or Lemurs for TTY login?
+    # lightdm-webkit-theme-litarvan
 
     # TODO: instead just do ls-colors git checkout to ~/.nix-profile/share/LS_COLORS
     # TODO: also checkout/pull this repo master branch to ~/.config/home-manager
@@ -228,6 +262,8 @@ in rec {
     FZF_DEFAULT_COMMAND = "fd --type f";
     GDK_SCALE = 2;
     # LF_ICONS
+    # LANG = "en_US.UTF-8";
+    # LC_ALL = "en_US.UTF-8";
     MANPAGER= "bat -l man -p";
     HISTTIMEFORMAT= "%d/%m/%y %T ";
     HISTFILE= "~/.cache/zsh/history";
@@ -293,12 +329,23 @@ in rec {
 
     git = {
       enable = true;
+      attributes = [
+        "*.sqlite diff=sqlite3"
+      ];
       userName = "Izel Nakri";
       userEmail = "contact@izelnakri.com";
       aliases = {
         pu = "push";
         co = "checkout";
         cm = "commit";
+      };
+      extraConfig = {
+        dif = {
+          sqlite3 = {
+            binary = true;
+            textconv = "echo .dump | sqlite3";
+          };
+        };
       };
       # signing = {
       #   # key = "";
@@ -318,6 +365,13 @@ in rec {
 
     xplr = {
       enable = true;
+      extraConfig = ''
+        require("wl-clipboard").setup {
+          copy_command = "wl-copy -t text/uri-list",
+          paste_command = "wl-paste",
+          keep_selection = true,
+        }
+      '';
       # extraConfig, plugins
     };
     joshuto = { # TODO: instead maybe use xplr
@@ -363,7 +417,7 @@ in rec {
       # TODO: study these and add Selection path to buffer command + opener with
       keybindings = {
         "\\\"" = "";
-        o = "xdg-open";
+        o = ""; # xdg-open
         c = "mkdir";
         "." = "set hidden!";
         "`" = "mark-load";
@@ -442,6 +496,10 @@ in rec {
       enableZshIntegration = true;
     };
 
+    swaylock = {
+      enable = true;
+    };
+
     tealdeer.enable = true;
 
     tiny = {
@@ -502,6 +560,10 @@ in rec {
       settings = [ (builtins.fromJSON (builtins.readFile ../../static/.config/waybar/config)) ];
       style = builtins.readFile ../../static/.config/waybar/style.css;
       systemd.enable = true;
+    };
+
+    wlogout = {
+      enable = true;
     };
 
     yt-dlp.enable = true;
@@ -617,7 +679,7 @@ in rec {
       shellAliases = {
         bitbox-bridge="/opt/bitbox-bridge/bin/bitbox-bridge";
         checkrepo = "git log --pretty=format: --name-only | sort | uniq -c | sort -rg | head -10";
-        clip = "grim -g \"$(slurp)\" - | convert - -shave 1x1 PNG:- | wl-copy && wl-paste | swappy -f -";
+        clip = "slurp | grim -g - - | wl-copy && wl-paste | swappy -f -";
         clip-record = "wl-screenrec -g \"$(slurp)\" -f /tmp/recording.mp4";
         colorpicker = "hyprpicker";
         d = "sudo docker";
@@ -649,6 +711,7 @@ in rec {
         YT = "youtube-viewer";
         x = "sxiv -ft *";
         gnome-wayland = "dbus-run-session -- gnome-shell --display-server --wayland";
+        gitfetch = "onefetch";
       };
       # shellGlobalAliases # => Similar to programs.zsh.shellAliases, but are substituted anywhere on a line.
     };
@@ -685,8 +748,32 @@ in rec {
       # settings
     };
 
+    # hypridle = {
+    #   enable = true;
+
+    #   listeners = [
+    #     {
+    #       timeout = 10;
+    #       onTimeout = "${pkgs.unstable.hyprlock}";
+    #     }
+    #     {
+    #       timeout = 20;
+    #       onTimeout = "systemctl suspend";
+    #     }
+    #   ];
+    # };
+
+    # swayidle = {
+    #   enable = true;
+    #   # timeouts = [
+    #   #   { timeout = 30000; command = "${pkgs.swaylock}/bin/swaylock -fF"; }
+    #   # ];
+    # };
+
     xremap = {
       watch = true;
+      withWlroots = true;
+      # debug = true;
       yamlConfig = builtins.readFile ../../static/.config/xremap/config.yml;
     };
 
@@ -699,10 +786,24 @@ in rec {
     # iconTheme.name = "GruvboxPlus";
   };
 
-
   systemd ={
     user.startServices = "sd-switch";
+    user.services = {
+      hypridle = {
+        Unit = {
+          Description = "Hypridle deamon";
+          After = ["graphical-session.target"];
+        };
 
+        Service = {
+          ExecStart = "${pkgs.unstable.hypridle}/bin/hypridle";
+          Restart = "always";
+          RestartSec = "10";
+        };
+
+        Install.WantedBy = [ "default.target" ];
+      };
+    };
     # user.services.example = {
     #   Unit = {
     #     Description = "Service example";
@@ -727,6 +828,20 @@ in rec {
     windowManager.sway = {
       enable = true;
       package = (wrapNixGL pkgs.sway);
+      # config
+      # config.assigns, config.bars.*.colors.activeWorkspace
+      # bars.*.colors.background
+      # config.bars.*.command (fully customizable)
+      # config.keybindings
+      # config.keycodebindings
+      # config.menu #-> launcher
+      # config.modes
+      # config.modifier, config.output
+      # config.seat
+      # config.startup
+      # config.terminal
+      # config.window
+      # swaynag
     };
   };
 
@@ -736,17 +851,20 @@ in rec {
 
     configFile = {
       "lf/icons".source = ../../static/.config/lf/icons;
-      # NOTE: This is now redundant to alacritty.nix :
-      "alacritty/alacritty.toml".source = ../../static/.config/alacritty/alacritty.toml;
+      "alacritty/alacritty.toml".source = ../../static/.config/alacritty/alacritty.toml; # TODO: remove this when moved to alacrtty.nix
       "hypr" = {
         source = ../../static/.config/hypr;
         onChange = "~/.nix-profile/bin/hyprctl reload";
       };
       "nvim".source = ../../static/.config/nvim;
       "swappy/config".source = ../../static/.config/swappy/config;
+      "swaylock/config".source = ../../static/.config/swaylock/config;
+      # "wlogout/config".source = ../../static/.config/wlogout/config; # https://github.com/nabakdev/dotfiles/blob/main/.config/wlogout/style.css
       "tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
       "xremap/config.yml".source = ../../static/.config/xremap/config.yml;
       "waybar".source = ../../static/.config/waybar;
+      "ironbar".source = ../../static/.config/ironbar;
+      "wlogout".source = ../../static/.config/wlogout;
     };
 
     mimeApps = {
@@ -766,30 +884,22 @@ in rec {
     #   enable = true;
     #   extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
     # };
-
     desktopEntries = {
-      zathura = {
-        name = "Zathura";
-        exec = "zathura %U";
-        terminal = false;
-        mimeType = [ "application/pdf" ];
-      };
-     alacritty = {
-       name = "Alacritty";
-       genericName = "GPU Terminal";
-       # move this to normal alacritty now?
-       exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
-       actions = {
-         "New Window" = {
-           exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
-         };
-       };
+     # alacritty = {
+     #   name = "Alacritty";
+     #   genericName = "GPU Terminal";
+     #   exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
+     #   actions = {
+     #     "New Window" = {
+     #       exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
+     #     };
+     #   };
 
-       # actions.<name>.exec|icon|name
-       # icon
-       terminal = false;
-       categories = [ "Application" "Terminal" ];
-     };
+     #   # actions.<name>.exec|icon|name
+     #   # icon
+     #   terminal = false;
+     #   # categories = [ "Application" "Terminal" ];
+     # };
     };
   };
   # Xft.dpi: 144
@@ -813,3 +923,47 @@ in rec {
 
   manual.html.enable = true;
 }
+
+# check these:
+# gnome3.gnome-tweak-tool
+# control-center, applet, common, background, file-manager
+# gnome.adwaita-icon-theme
+# dconf.enable
+# gnomeExtensions.appindicator
+# gnome.gnome-settings-daemon
+
+# # extensions
+# gnomeExtensions.appindicator
+# gnomeExtensions.dash-to-dock
+# gdm or lightdm
+
+# https://wiki.gnome.org/Projects/GnomeShell/CheatSheet
+# Super+m: show notification list
+# Super+a: show application grid
+# Alt+Tab: cycle active applications
+# Alt+` (the key above Tab on US keyboard layouts): cycle windows of the application in the foreground
+# Alt+F2, then enter r or restart: restart the shell in case of graphical shell problems (only in X/legacy mode, not in Wayland mode).
+
+
+
+# maybe add polkit-kde-agent as heavily suggested by hyprland, Qt Wayland support(?), xdg-desktop-portal-hyprland https://wiki.hyprland.org/Useful-Utilities/Hyprland-desktop-portal
+
+# [Unit]
+# Description=WPA supplicant
+# Before=network.target
+# After=dbus.service
+# Wants=network.target
+# IgnoreOnIsolate=true
+
+# [Service]
+# Type=dbus
+# BusName=fi.w1.wpa_supplicant1
+# ExecStart=/usr/bin/wpa_supplicant -u -s -O /run/wpa_supplicant
+
+# [Install]
+# WantedBy=multi-user.target
+# Alias=dbus-fi.w1.wpa_supplicant1.service
+
+# Sound configuration done outside of home-manager due to complex pipewire, alsa, pulse, jack setup with avizo
+# bluez try this in nix first
+# polkit might be necessary for swaylock(?)
