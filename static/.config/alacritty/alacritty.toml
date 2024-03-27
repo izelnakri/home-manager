@@ -1,5 +1,5 @@
 # TODO: builtins.replaceString for ricing and maybe do URL Launcher
-# TODO: Make copy/paste work(without vim mode).
+# TODO: Make copy/paste work(without vim mode) [wl-copy, wl-paste]
 [env]
 LANG = "en_US.UTF-8"
 LC_ALL = "en_US.UTF-8"
@@ -16,12 +16,13 @@ style = "ExtraBold"
 [font.normal]
 family = "NotoSansM Nerd Font Mono"
 style = "Medium"
-# italic:
-#   family: "NotoSans NF Med"
-#   style: "Medium Italic"
-# italic_bold:
-#   family: "NotoSans NF ExtBd"
-#   style: "ExtraBold Italic"
+
+# [font.italic]
+# family = "NotoSans NF Med"
+# style = "Medium Italic"
+# [font.italic_bold]
+# family = "NotoSans NF ExtBd"
+# style = "ExtraBold Italic"
 
 [colors]
 draw_bold_text_with_bright_colors = false
@@ -55,30 +56,6 @@ red = "#ec5f67"
 white = "#ffffff"
 yellow = "#ffcc00"
 
-[[colors.indexed_colors]]
-color = "#ea9560"
-index = 16
-
-[[colors.indexed_colors]]
-color = "#ec5f67"
-index = 17
-
-[[colors.indexed_colors]]
-color = "#2c393f"
-index = 18
-
-[[colors.indexed_colors]]
-color = "#37474f"
-index = 19
-
-[[colors.indexed_colors]]
-color = "#c9ccd3"
-index = 20
-
-[[colors.indexed_colors]]
-color = "#d5dbe5"
-index = 21
-
 [selection]
 save_to_clipboard = true
 
@@ -86,175 +63,116 @@ save_to_clipboard = true
 args = ["a"]
 program = "tmux"
 
-[hints.enabled.binding]
-key = "U"
-mods = "Alt"
-
 # TODO: Check/test all these bindings
-
-[[keyboard.bindings]]
-action = "Paste"
-key = "Paste"
+# TODO: Make tmux bindings passthrough via Alt + / and defined in alacritty
 
 [[keyboard.bindings]]
 action = "Paste"
 key = "V"
 mods = "Control"
 
-[[keyboard.bindings]]
-action = "Copy"
-key = "Copy"
+# [[keyboard.bindings]]
+# action = "Copy"
+# key = "Copy"
+
+# [[keyboard.bindings]]
+# action = "Paste"
+# key = "Paste"
 
 [[keyboard.bindings]]
 key = "N"
 mods = "Alt"
-
-[keyboard.bindings.command]
-program = "alacritty"
+command = { program = "alacritty" }
 
 [[keyboard.bindings]]
 key = "W"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["kill-window"]
-program = "tmux"
+command = { program = "tmux", args = ["kill-window"] }
 
 [[keyboard.bindings]]
 key = "T"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["new-window"]
-program = "tmux"
+command = { program = "tmux", args = ["new-window"] }
 
 [[keyboard.bindings]]
 key = "Key1"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t", "1"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t", "1"] }
 
 [[keyboard.bindings]]
 key = "Key2"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t", "2"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t", "2"] }
 
 [[keyboard.bindings]]
 key = "Key3"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t", "3"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t", "3"] }
 
 [[keyboard.bindings]]
 key = "Key4"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t", "4"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t", "4"] }
 
 [[keyboard.bindings]]
 key = "Key5"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t", "5"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t", "5"] }
 
 [[keyboard.bindings]]
 key = "Key6"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t", "6"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t", "6"] }
 
 [[keyboard.bindings]]
 key = "Key7"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t", "7"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t", "7"] }
 
 [[keyboard.bindings]]
 key = "Key8"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t", "8"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t", "8"] }
 
 [[keyboard.bindings]]
 key = "Key9"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t", "9"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t", "9"] }
 
 [[keyboard.bindings]]
 key = "LBracket"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t:-"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t:-"] }
 
 [[keyboard.bindings]]
 key = "RBracket"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-window", "-t:+"]
-program = "tmux"
+command = { program = "tmux", args = ["select-window", "-t:+"] }
 
 [[keyboard.bindings]]
 key = "H"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-pane", "-L"]
-program = "tmux"
+command = { program = "tmux", args = ["select-pane", "-L"] }
 
 [[keyboard.bindings]]
 key = "J"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-pane", "-D"]
-program = "tmux"
+command = { program = "tmux", args = ["select-pane", "-D"] }
 
 [[keyboard.bindings]]
 key = "K"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-pane", "-U"]
-program = "tmux"
+command = { program = "tmux", args = ["select-pane", "-U"] }
 
 [[keyboard.bindings]]
 key = "L"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["select-pane", "-R"]
-program = "tmux"
+command = { program = "tmux", args = ["select-pane", "-R"] }
 
 [[keyboard.bindings]]
 key = "Y"
 mods = "Alt"
-
-[keyboard.bindings.command]
-args = ["setw", "synchronize-panes"]
-program = "tmux"
+command = { program = "tmux", args = ["setw", "synchronize-panes"] }
 
 [[keyboard.bindings]]
 chars = "\u0001z"
@@ -278,5 +196,13 @@ key = "PageUp"
 chars = "\u0001["
 key = "LBracket"
 mods = "Control"
-# - { key: K, mods: Control, action: ClearHistory }
-# - { key: P,        mods: Alt, command: { program: "tmux", args: ["kill-pane"] } }
+
+# [[keyboard.bindings]]
+# key = "K"
+# mods = "Control"
+# action = "ClearHistory"
+
+[[keyboard.bindings]]
+key = "P"
+mods = "Alt"
+command = { program = "tmux", args = ["kill-pane"] }
