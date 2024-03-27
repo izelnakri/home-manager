@@ -140,4 +140,18 @@ nix run --impure nixgl#nixGLDefault -- alacritty
 ```
 
 
+### Nix Debugging:
+
+```bash
+readlink -f `which waybar`
+nix-store -q --tree `which hello`
+nix-store -q --references `which hello` # runtime dependencies
+nix-store -q --referrers `which hello` # all referrers that touches the binary
+nix-store -q --tree `which hello` # tree of dependencies
+nix-instantiate hello.nix
+nix-store -q --references /nix/store/z77vn965a59irqnrrjvbspiyl2rph0jp-hello.drv
+```
+
+
+
 %% console.colors = []

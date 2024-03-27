@@ -575,6 +575,7 @@ in rec {
       enable = true;
       enableAutosuggestions = true;
       enableCompletion = true;
+      defaultKeymap = "viins";
       historySubstringSearch = {
         enable = true;
         searchDownKey = [ "^J" "^[[B" ]; # Ctrl-J, TODO: during insert up/down doesnt work(?) fix it
@@ -674,6 +675,10 @@ in rec {
 
         eval $(dircolors ~/.nix-profile/share/LS_COLORS)
         eval "$(direnv hook zsh)"
+
+        # Enable history up/down on vim insert mode
+        bindkey -M vicmd "^k" history-search-forward
+        bindkey -M vicmd "^j" history-search-backward
       '';
 
       shellAliases = {
@@ -776,7 +781,6 @@ in rec {
       # debug = true;
       yamlConfig = builtins.readFile ../../static/.config/xremap/config.yml;
     };
-
   };
 
   gtk = {
@@ -858,10 +862,10 @@ in rec {
       };
       "nvim".source = ../../static/.config/nvim;
       "swappy/config".source = ../../static/.config/swappy/config;
-      "swaylock/config".source = ../../static/.config/swaylock/config;
+      # "swaylock/config".source = ../../static/.config/swaylock/config;
       # "wlogout/config".source = ../../static/.config/wlogout/config; # https://github.com/nabakdev/dotfiles/blob/main/.config/wlogout/style.css
       "tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
-      "xremap/config.yml".source = ../../static/.config/xremap/config.yml;
+      # "xremap/config.yml".source = ../../static/.config/xremap/config.yml;
       "waybar".source = ../../static/.config/waybar;
       "ironbar".source = ../../static/.config/ironbar;
       "wlogout".source = ../../static/.config/wlogout;
