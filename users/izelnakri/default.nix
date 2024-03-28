@@ -29,6 +29,7 @@
 { config, pkgs, inputs, lib, nixosModules, ... }:
 let
   wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs; };
+  replaceColorReferences = import ../../modules/functions/replace-color-references.nix;
 in rec {
   imports =  [
     inputs.nix-colors.homeManagerModules.default
@@ -36,7 +37,7 @@ in rec {
     # ../../modules/alacritty.nix
   ];
 
-  colorScheme = inputs.nix-colors.colorSchemes.gruvbox-dark-medium; # NOTE: color: alacritty, zsh, tmux, mako, waybar, lf, nvim, bat
+  colorScheme = inputs.nix-colors.lib.schemeFromYAML "parrots-of-paradise" (builtins.readFile ../../static/parrots-of-paradise.yaml);
 
   targets.genericLinux.enable = true;
   nixpkgs.config.allowBroken = true;
@@ -855,7 +856,8 @@ in rec {
 
     configFile = {
       "lf/icons".source = ../../static/.config/lf/icons;
-      "alacritty/alacritty.toml".source = ../../static/.config/alacritty/alacritty.toml; # TODO: remove this when moved to alacrtty.nix
+
+      "alacritty/alacritty.toml".text = (replaceColorReferences (builtins.readFile ../../static/.config/alacritty/alacritty.toml) config.colorScheme.palette);
       "hypr" = {
         source = ../../static/.config/hypr;
         onChange = "~/.nix-profile/bin/hyprctl reload";

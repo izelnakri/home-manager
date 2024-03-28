@@ -1,0 +1,36 @@
+name: "Parrots of Paradise"
+author: "Izel Nakri(contact@izelnakri.com), izelnakri (https://github.com/izelnakri)"
+base00: "101818" # ----  | dark
+base01: "3A6359" # ---   | dark greenish
+base02: "09251f" #       | highlight_background
+base03: "585858" # ---   | grey
+base04: "ABAB8E" # +     | desaturated yellowish
+base05: "D9D9B3" # ++    | light yellowish
+base06: "FFFFFF" # +++   | white
+base07: "F5F5F5" # ++++  | lighter_white
+base08: "EF5D32" # red
+base09: "FFA500" # orange
+base0A: "FFD700" # yellow
+base0B: "00875f" # green
+base0C: "7DAF9C" # cyan
+base0D: "6C99BB" # blue
+base0E: "8A2BE2" # purple
+base0F: "A0522D" # brown
+
+# Old scheme
+# base00: "#101818" # ----  | dark
+# base01: "#09251f" #       | highlight_background
+# base02: "#585858" # ---   | grey
+# base03: "#504945" # --    | dark_grey
+# base04: "#bdae93" # +     | dark_special_color
+# base05: "#d5c4a1" # ++    | light_special_color
+# base06: "#d6d6d6" # +++   | white
+# base07: "#E6EC4" # ++++  | darker_white
+# base08: "#EF5D32" # red
+# base09: "#EFAC32" # orange
+# base0A: "#D9D762" # yellow
+# base0B: "#00875f" # green
+# base0C: "#7DAF9C" # cyan
+# base0D: "#6C99BB" # blue
+# base0E: "#5f00af" # purple
+# base0F: "947659" # brown
