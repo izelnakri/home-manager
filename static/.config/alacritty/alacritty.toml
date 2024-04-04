@@ -28,23 +28,23 @@ style = "Medium"
 draw_bold_text_with_bright_colors = false
 
 [colors.primary]
-background = "#101818"
-bright_foreground = "#ffffff"
-foreground = "#eaeaea"
+background = "#{{base00}}"
+bright_foreground = "#ffffff" # TODO: use brighter nix function
+foreground = "#eaeaea" # TODO: use the white color from my palette
 
 [colors.cursor]
 cursor = "#993F0B"
-text = "#E6E1C4"
+text = "#{{base07}}"
 
 [colors.normal]
-black = "#263238"
-blue = "#89ddff"
-cyan = "#80cbc4"
-green = "#00A600"
-magenta = "#82aaff"
-red = "#ec5f67"
-white = "#cdd3de"
-yellow = "#ffcc00"
+black = "#{{base01}}"
+blue = "#{{base0D}}"
+cyan = "#{{base0C}}"
+green = "#{{base0B}}"
+magenta = "#{{base0E}}"
+red = "#{{base08}}"
+white = "#{{base06}}"
+yellow = "#{{base0A}}"
 
 [colors.bright]
 black = "#707880"

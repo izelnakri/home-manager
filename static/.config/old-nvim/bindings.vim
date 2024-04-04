@@ -19,7 +19,7 @@ command! RmSwp
   \ execute '!rm /var/tmp/*.swp'
 
 " shows colors
-command! Colors execute 'so $VIMRUNTIME/syntax/hitest.vim'
+command! Colors execute 'so $vimruntime/syntax/hitest.vim'
 
 " copy filename
 " command! Name execute ':!echo % | xsel --clipboard --input'

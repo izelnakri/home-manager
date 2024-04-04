@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Decrypt & mount your backup portable SSD drive
+#
+# This will decrypt & mount your drive to /mnt/drive, run:
+#
+#     sd drive decrypt
+
+sudo cryptsetup luksOpen /dev/sda1 portableSSD
+sudo mount /dev/mapper/portableSSD /mnt/drive

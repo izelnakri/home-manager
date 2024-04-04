@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# BTRFS System backup to a drive
+#
+# This will generate a BTRFS snapshot by date and back it up to mounted drive, run:
+#
+#     sd drive backup
+
+current_date=$(date +%Y-%m-%d)
+
+# last_backup =  # make this work so -p $last_backup could work
+
+sudo btrfs subvolume snapshot -r /home /backup/home.$current_date
+
+# sudo btrfs send -v /backup/home.$current_date | pv | sudo btrfs receive /mnt/drive
+
+sudo btrfs send -v /backup/home.$current_date | sudo btrfs receive /mnt/drive

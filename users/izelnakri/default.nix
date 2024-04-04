@@ -1,8 +1,5 @@
-# read the file, transform text -> write the file (no formatting needed, just needing to find the token) => better standard function, docs(not in nix), might be faster(?)
 # configs from a folder(with each program.nix) -> returns an object
 # make it compatible with snowflake standard
-
-# Copy/paste, nvim chatgpt suggestion filling
 
 # For application launcher use tofi or rofi-wayland or anyrun, do Hyprland desktop portal
 # https://wiki.hyprland.org/Useful-Utilities/Clipboard-Managers/
@@ -90,6 +87,7 @@ in rec {
     gcc
     gh
     gimp
+    unstable.gitui
     gpsd
     grim
     # groff
@@ -100,6 +98,7 @@ in rec {
 
     # inkspace
     inputs.xremap-flake.packages.${system}.default
+    (wrapNixGL unstable.imagemagick)
     iperf
     unstable.ironbar
     kubectl
@@ -116,6 +115,7 @@ in rec {
     lxc
     lxcfs
     lxd
+    lua
     # lutris
     monado
     magic-wormhole
@@ -140,7 +140,7 @@ in rec {
     # pipewire
     playerctl
     postgresql
-    unstable.pulumi-bin
+    # unstable.pulumi-bin
     pspg
     python3Full
     # python.pkgs.pip
@@ -163,10 +163,11 @@ in rec {
     syncthing
     terminus-nerdfont
     # timeshift
-    tmux
+    unstable.tmux
     # touchegg
     # transmission
     # trash-cli
+    unstable.tree-sitter
     qemu
     # playonlinux
     # variety
@@ -577,12 +578,19 @@ in rec {
       enableAutosuggestions = true;
       enableCompletion = true;
       defaultKeymap = "viins";
-      historySubstringSearch = {
-        enable = true;
-        searchDownKey = [ "^J" "^[[B" ]; # Ctrl-J, TODO: during insert up/down doesnt work(?) fix it
-        searchUpKey = [ "^K" "^[[A" ]; # Ctrl-K
-      };
+      # historySubstringSearch = {
+      # enable = true;
+      # searchDownKey = [ "^J" "^[[B" ]; # Ctrl-J, TODO: during insert up/down doesnt work(?) fix it
+      # searchUpKey = [ "^K" "^[[A" ]; # Ctrl-K
+      # };
       syntaxHighlighting.enable = true;
+      plugins = [
+        {
+          name = "vi-mode";
+          src = pkgs.unstable.zsh-vi-mode;
+          file = "share/zsh-vi-mode/zsh-vi-mode.plugin.zsh";
+        }
+      ];
 
       initExtra = ''
         unsetopt INC_APPEND_HISTORY # Write to the history file immediately, not when the shell exits.
@@ -655,10 +663,6 @@ in rec {
 
         PROMPT='%{$fg[blue]%}$(date +%H:%M:%S) $(display_jobs_count_if_needed)%B%{$fg[green]%}%n %{$fg[blue]%}%~%{$fg[yellow]%}$(parse_git_branch) %{$reset_color%}';
 
-        # Edit line in vim with ctrl-e:
-        autoload edit-command-line; zle -N edit-command-line
-        bindkey '^e' edit-command-line
-
         # Use lf to switch directories and bind it to ctrl-o
         lfcd () {
             tmp="$(mktemp)"
@@ -677,9 +681,21 @@ in rec {
         eval $(dircolors ~/.nix-profile/share/LS_COLORS)
         eval "$(direnv hook zsh)"
 
-        # Enable history up/down on vim insert mode
-        bindkey -M vicmd "^k" history-search-forward
-        bindkey -M vicmd "^j" history-search-backward
+        # Maybe move this above: Edit line in vim with ctrl-e:
+        autoload edit-command-line; zle -N edit-command-line
+        bindkey '^e' edit-command-line
+
+        # Temporary zvm hacks for yanking & history search stuff until zsh implements them:
+        zvm_vi_yank () {
+          zvm_yank
+          echo "$CUTBUFFER" | wl-copy -n
+          zvm_exit_visual_mode
+        }
+        zvm_after_lazy_keybindings() {
+          bindkey -M vicmd '^k' up-line-or-search
+          bindkey -M vicmd '^j' down-line-or-search
+        }
+        zvm_after_init_commands+=("bindkey '^k' up-line-or-search" "bindkey '^j' down-line-or-search")
       '';
 
       shellAliases = {
@@ -855,19 +871,18 @@ in rec {
     enable = true;
 
     configFile = {
-      "lf/icons".source = ../../static/.config/lf/icons;
-
       "alacritty/alacritty.toml".text = (replaceColorReferences (builtins.readFile ../../static/.config/alacritty/alacritty.toml) config.colorScheme.palette);
       "hypr" = {
         source = ../../static/.config/hypr;
         onChange = "~/.nix-profile/bin/hyprctl reload";
       };
-      "nvim".source = ../../static/.config/nvim;
+      "lf/icons".source = ../../static/.config/lf/icons;
+      "lazygit".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/home-manager/static/.config/lazygit";
+      "nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/home-manager/static/.config/nvim";
+      "gitui".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/home-manager/static/.config/gitui";
       "swappy/config".source = ../../static/.config/swappy/config;
-      # "swaylock/config".source = ../../static/.config/swaylock/config;
       # "wlogout/config".source = ../../static/.config/wlogout/config; # https://github.com/nabakdev/dotfiles/blob/main/.config/wlogout/style.css
       "tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
-      # "xremap/config.yml".source = ../../static/.config/xremap/config.yml;
       "waybar".source = ../../static/.config/waybar;
       "ironbar".source = ../../static/.config/ironbar;
       "wlogout".source = ../../static/.config/wlogout;
