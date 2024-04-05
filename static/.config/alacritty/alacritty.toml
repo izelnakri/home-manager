@@ -1,5 +1,4 @@
-# TODO: builtins.replaceString for ricing and maybe do URL Launcher
-# TODO: Make copy/paste work(without vim mode) [wl-copy, wl-paste]
+# yellow and blue needs to change(?) why they become default for sudo-wifi?!
 [env]
 LANG = "en_US.UTF-8"
 LC_ALL = "en_US.UTF-8"
@@ -29,15 +28,17 @@ draw_bold_text_with_bright_colors = false
 
 [colors.primary]
 background = "#{{base00}}"
-bright_foreground = "#ffffff" # TODO: use brighter nix function
-foreground = "#eaeaea" # TODO: use the white color from my palette
+bright_foreground = "#{{base06}}" # TODO: use brighter nix function
+foreground = "#{{base05}}"        # TODO: use the white color from my palette
+# bright_foreground = "#ffffff" # TODO: use brighter nix function
+# foreground = "#eaeaea" # TODO: use the white color from my palette
 
 [colors.cursor]
-cursor = "#993F0B"
-text = "#{{base07}}"
+cursor = "#993F0B"   # Probably: base09
+text = "#{{base05}}"
 
 [colors.normal]
-black = "#{{base01}}"
+black = "#{{base02}}"
 blue = "#{{base0D}}"
 cyan = "#{{base0C}}"
 green = "#{{base0B}}"
@@ -47,14 +48,14 @@ white = "#{{base06}}"
 yellow = "#{{base0A}}"
 
 [colors.bright]
-black = "#707880"
-blue = "#89ddff"
-cyan = "#80cbc4"
-green = "#00D900"
-magenta = "#82aaff"
-red = "#ec5f67"
-white = "#ffffff"
-yellow = "#ffcc00"
+black = "#071d16"   # #{{base10}}
+blue = "#0075CA"    # #{{base16}}
+cyan = "#4DABAA"    # #{{base15}}
+green = "#00A94F"   # #{{base14}}
+magenta = "#964FC6" # #{{base17}}
+red = "#FF5A5F"     # #{{base12}}
+white = "#F5F9F5"   # #{{base07}}
+yellow = "#FFA41B"  # #{{base13}}
 
 [selection]
 save_to_clipboard = true

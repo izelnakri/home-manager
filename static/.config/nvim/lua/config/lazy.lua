@@ -1,4 +1,4 @@
--- TODO: gitui, colors & snippets, missing plugins lookup, setup masonry
+-- TODO: colors & snippets, missing plugins lookup, setup masonry
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
@@ -21,7 +21,7 @@ require("lazy").setup({
 
     { import = "lazyvim.plugins.extras.editor.aerial" }, -- NOTE: Maybe outline is better: { import = "lazyvim.plugins.extras.editor.outline" },
     { import = "lazyvim.plugins.extras.editor.leap" },
-    { import = "lazyvim.plugins.extras.editor.mini-diff" },
+    { import = "lazyvim.plugins.extras.editor.mini-diff" }, -- Note: https://github.com/lewis6991/gitsigns.nvim better(?)
     { import = "lazyvim.plugins.extras.editor.navic" },
 
     { import = "lazyvim.plugins.extras.lang.ansible" },
@@ -39,7 +39,7 @@ require("lazy").setup({
     -- { import = "lazyvim.plugins.extras.ui.mini-animate" },
     -- import/override with your plugins
     -- TODO: Learn Trouble & Trouble v3
-    { import = "lazyvim.plugins.extras.util.gitui" },
+    -- { import = "lazyvim.plugins.extras.util.gitui" },
     { import = "plugins" },
   },
   defaults = {

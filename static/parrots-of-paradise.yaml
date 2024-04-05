@@ -1,23 +1,41 @@
 name: "Parrots of Paradise"
 author: "Izel Nakri(contact@izelnakri.com), izelnakri (https://github.com/izelnakri)"
-base00: "101818" # ----  | dark
-base01: "3A6359" # ---   | dark greenish
-base02: "09251f" #       | highlight_background
-base03: "585858" # ---   | grey
-base04: "ABAB8E" # +     | desaturated yellowish
-base05: "D9D9B3" # ++    | light yellowish
-base06: "FFFFFF" # +++   | white
-base07: "F5F5F5" # ++++  | lighter_white
-base08: "EF5D32" # red
-base09: "FFA500" # orange
-base0A: "FFD700" # yellow
-base0B: "00875f" # green
-base0C: "7DAF9C" # cyan
-base0D: "6C99BB" # blue
-base0E: "8A2BE2" # purple
-base0F: "A0522D" # brown
+base00: "09251f" # | Default background, dark -- dark green/black
+base01: "0d372d" # | Lighter Background (Used for status bars) -- slightly lighter shade of dark green/black
+base02: "101818" # | ---: Selection Background -- dark green/black
+base03: "5E6E5E" # | Comments, Invisibles, Line Highlighting -- a muted greenish-gray for better readability
+base04: "485848" # | +: Dark Foreground (Used for status bars) -- darker shade for contrast with light text
+base05: "D6E3C6" # | ++: Default Foreground, Caret, Delimiters, Operators -- light gray for primary text
+base06: "E3EFE1" # | +++: Light Foreground (Not often used) -- even lighter gray for secondary text
+base07: "F5F9F5" # | ++++: The Lightest Foreground (Not often used) -- very light gray for background
+base08: "EF5D32" # | red: Variables, XML Tags, Markup Link Text, Markup Lists, Diff Deleted -- bright red for emphasis
+base09: "EFAA32" # | orange: Integers, Boolean, Constants, XML Attributes, Markup Link Url -- warm orange for visibility
+base0A: "FFD580" # | yellow: Classes, Markup Bold, Search Text Background -- softer yellow for less strain
+base0B: "BDD93A" # | green: Strings, Inherited Class, Markup Code, Diff Inserted -- vibrant green for clarity
+base0C: "9ED795" # | cyan: Support, Regular Expressions, Escape Characters, Markup Quotes -- soothing cyan for contrast
+base0D: "85B1DD" # | blue: Functions, Methods, Attribute IDs, Headings -- calm blue for readability
+base0E: "B389D6" # | purple: Keywords, Storage, Selector, Markup Italic, Diff Changed -- rich purple for distinction
+base0F: "A87C50" # | brown: Deprecated Highlighting for Methods and Functions, Opening/Closing Embedded Language Tags -- earthy brown for deprecated elements
 
-# Old scheme
+# Old used scheme, which was ok without nvim theming but not great:
+# base00: "#101818" # ----  | dark
+# base01: "#3A6359" # ---   | dark greenish
+# base02: "#09251f" #       | highlight_background
+# base03: "#585858" # ---   | grey
+# base04: "#ABAB8E" # +     | desaturated yellowish
+# base05: "#D9D9B3" # ++    | light yellowish
+# base06: "#FFFFFF" # +++   | white
+# base07: "#F5F5F5" # ++++  | lighter_white
+# base08: "#EF5D32" # red
+# base09: "#FFA500" # orange
+# base0A: "#FFD700" # yellow
+# base0B: "#00875f" # green
+# base0C: "#7DAF9C" # cyan
+# base0D: "#6C99BB" # blue
+# base0E: "#8A2BE2" # purple
+# base0F: "#A0522D" # brown
+
+# Assumed Old scheme
 # base00: "#101818" # ----  | dark
 # base01: "#09251f" #       | highlight_background
 # base02: "#585858" # ---   | grey
@@ -33,4 +51,75 @@ base0F: "A0522D" # brown
 # base0C: "#7DAF9C" # cyan
 # base0D: "#6C99BB" # blue
 # base0E: "#5f00af" # purple
-# base0F: "947659" # brown
+# base0F: "#947659" # brown
+
+# Real old scheme: (There #09251f should be either base01 or base02, #0d372d should be either base01 or base02, Maybe use these colors too: #585858, #00875f)
+# base00: "#101818"  | Default background, dark -- this should be dark green/black, is this it?
+# base01: ""         | Lighter Background (Used for status bars)
+# base02: ""         | ---: Selection Background
+# base03: "#947659"  | Comments, Invisibles, Line Highlighting
+# base04: ""         | +: Dark Foreground (Used for status bars)
+# base05: "#E6E1C4"  | ++: Default Foreground, Caret, Delimiters, Operators
+# base06: ""         | +++: Light Foreground (Not often used)
+# base07: ""         | ++++: The Lightest Foreground (Not often used)
+# base08: "#EF5D32"  | red: Variables, XML Tags, Markup Link Text, Markup Lists, Diff Deleted
+# base09: ""         | orange: Integers, Boolean, Constants, XML Attributes, Markup Link Url
+# base0A: "#EFAC32"  | yellow: Classes, Markup Bold, Search Text Background
+# base0B: "#D9D762"  | green: Strings, Inherited Class, Markup Code, Diff Inserted
+# base0C: "#7DAF9C"  | cyan: Support, Regular Expressions, Escape Characters, Markup Quotes
+# base0D: "#6C99BB"  | blue: Functions, Methods, Attribute IDs, Headings
+# base0E: ""         | purple: Keywords, Storage, Selector, Markup Italic, Diff Changed
+# base0F: ""         | brown: Deprecated Highlighting for Methods and Functions, Opening/Closing Embedded Language Tags, e.g., `<?php ?>`
+# base10: ""         | darker_black: Darker Background
+# base11: ""         | darkest_black: The Darkest Background
+# base12: ""         | bright_red: NA
+# base13: ""         | bright_yellow: NA
+# base14: ""         | bright_green: NA
+# base15: ""         | bright_cyan: NA
+# base16: ""         | bright_blue: NA
+# base17: ""         | bright_purple: NA
+# https://github.com/tinted-theming/base24/blob/master/styling.md
+
+# ChatGPT Suggested scheme:
+# base00: "#09251f"  | Default background, dark -- dark green/black
+# base01: "#0d372d"  | Lighter Background (Used for status bars) -- slightly lighter shade of dark green/black
+# base02: "#101818"  | ---: Selection Background -- dark green/black
+# base03: "#5E6E5E"  | Comments, Invisibles, Line Highlighting -- a muted greenish-gray for better readability
+# base04: "#485848"  | +: Dark Foreground (Used for status bars) -- darker shade for contrast with light text
+# base05: "#D6E3C6"  | ++: Default Foreground, Caret, Delimiters, Operators -- light gray for primary text
+# base06: "#E3EFE1"  | +++: Light Foreground (Not often used) -- even lighter gray for secondary text
+# base07: "#F5F9F5"  | ++++: The Lightest Foreground (Not often used) -- very light gray for background
+# base08: "#EF5D32"  | red: Variables, XML Tags, Markup Link Text, Markup Lists, Diff Deleted -- bright red for emphasis
+# base09: "#EFAA32"  | orange: Integers, Boolean, Constants, XML Attributes, Markup Link Url -- warm orange for visibility
+# base0A: "#FFD580"  | yellow: Classes, Markup Bold, Search Text Background -- softer yellow for less strain
+# base0B: "#BDD93A"  | green: Strings, Inherited Class, Markup Code, Diff Inserted -- vibrant green for clarity
+# base0C: "#9ED795"  | cyan: Support, Regular Expressions, Escape Characters, Markup Quotes -- soothing cyan for contrast
+# base0D: "#85B1DD"  | blue: Functions, Methods, Attribute IDs, Headings -- calm blue for readability
+# base0E: "#B389D6"  | purple: Keywords, Storage, Selector, Markup Italic, Diff Changed -- rich purple for distinction
+# base0F: "#A87C50"  | brown: Deprecated Highlighting for Methods and Functions, Opening/Closing Embedded Language Tags -- earthy brown for deprecated elements
+# base10: "#071d16" | darker_black: Darker Background -- slightly darker shade of dark green/black
+# base11: "#000000" | darkest_black: The Darkest Background -- black
+# base12: "#FF5A5F" | bright_red: Error, Tag Matching, Non-Captured Groups -- bright red for critical elements
+# base13: "#FFA41B" | bright_yellow: Debugging, Regex Quantifiers, Escape Characters -- bright yellow for attention
+# base14: "#00A94F" | bright_green: Diff Changed, Operators, Punctuation -- vibrant green for visibility
+# base15: "#4DABAA" | bright_cyan: Diff Inserted, Diff Inserted Indicator, Markup Quotes -- cyan for contrast
+# base16: "#0075CA" | bright_blue: Diff Header, Markup Underline, Diff Changed Indicator -- bright blue for differentiation
+# base17: "#964FC6" | bright_purple: Diff Deleted, Markup Strike-through, Special Keyword -- bright purple for emphasis
+
+# Wrong scheme from tmux
+# base00=default   # - Default
+# base01='#151515' # - Lighter Background (Used for status bars)
+# base02='#202020' # - Selection Background base03='#303030' # - Comments, Invisibles, Line Highlighting
+# base03='#303030' # - Comments, Invisibles, Line Highlighting
+# base04='#505050' # - Dark Foreground (Used for status bars)
+# base05='#D0D0D0' # - Default Foreground, Caret, Delimiters, Operators
+# base06='#E0E0E0' # - Light Foreground (Not often used)
+# base07='#F5F5F5' # - Light Background (Not often used)
+# base08='#AC4142' # - Variables, XML Tags, Markup Link Text, Markup Lists, Diff Deleted
+# base09='#D28445' # - Integers, Boolean, Constants, XML Attributes, Markup Link Url
+# base0A='#F4BF75' # - Classes, Markup Bold, Search Text Background
+# base0B='#90A959' # - Strings, Inherited Class, Markup Code, Diff
+# base0C='#75B5AA' # - Support, Regular Expressions, Escape Characters, Markup Quotes
+# base0D='#6A9FB5' # - Functions, Methods, Attribute IDs, Headings
+# base0E='#AA759F' # - Keywords, Storage, Selector, Markup Italic, Diff Changed
+# base0F='#8F5536' # - Deprecated, Opening/Closing Embedded Language Tags, e.g. <? php ?>

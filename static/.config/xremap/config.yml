@@ -1,1 +1,65 @@
-/nix/store/9gw8pq36kdy1c150ywll141phfzxdy24-home-manager-files/.config/xremap/config.yml
+keypress_delay_ms: 0
+modmap:
+  - name: Main Remaps
+    remap:
+      CapsLock:
+        held: leftctrl
+        alone: esc
+        alone_timeout_millis: 150
+      PAGEUP: LEFT
+      PAGEDOWN: RIGHT
+keymap:
+  - name: Toggle Top Bar
+    application:
+    exact_match: true
+    remap:
+      alt-b:
+        launch: ["bash", "-c", "/home/izelnakri/.nix-profile/bin/ironbar set-visible -v top-bar && sleep 4 && /home/izelnakri/.nix-profile/bin/ironbar set-visible top-bar"]
+      KEY_F1:
+        launch: ["bash", "-c", "/home/izelnakri/.nix-profile/bin/volumectl toggle-mute"]
+      KEY_F2:
+        launch: ["bash", "-c", "/home/izelnakri/.nix-profile/bin/volumectl -u down"]
+      KEY_F3:
+        launch: ["bash", "-c", "/home/izelnakri/.nix-profile/bin/volumectl -u up"]
+      KEY_F4:
+        launch: ["bash", "-c", "/home/izelnakri/.nix-profile/bin/volumectl -m toggle-mute"]
+      KEY_F5:
+        launch: ["bash", "-c", "/home/izelnakri/.nix-profile/bin/lightctl down"]
+      KEY_F6:
+        launch: ["bash", "-c", "/home/izelnakri/.nix-profile/bin/lightctl up"]
+# keymap:
+#   - name: Testing
+#     map:
+#       shift-d:
+#         remap:
+#           q:
+#             launch: ["notify-send", "shift-d q pressed!"]
+# - name: Application spefic
+#   remap:
+#   application:
+#     only: org.wezlong.wezterm
+# keymap:
+#   - name; general keybindings
+#     remap:
+#       super-d:
+#         remap:
+#           f:
+#             launch: ["firefox"]
+#           super-u: { set_mode: alternative }
+#           super-i:
+#             launch: ["notify-send", "IT IS default MODE"]
+#     mode: default
+
+# window-f to screenshot
+# windiw-s and prt-sc to clip
+
+# X11
+# wmctrl -x -l
+
+# Gnome shell
+
+# Sway
+# swaymsg -t get_tree
+
+# Hyprland
+# hyprctl clients

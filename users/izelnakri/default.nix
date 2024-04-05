@@ -1,4 +1,7 @@
-# configs from a folder(with each program.nix) -> returns an object
+# lazyvim commands/keybindings/config, git cliff integration(for paper_trail, also check lsp this way)
+# TODO: implement/configure BAT correctly, make it the PAGER
+# Gitui customization(needs Ctrl-D, drop staged/unstaged file, proper edit window)
+# LSP & documentation viewer, go to definition, missing plugins, surround, linter, chatgpt suggestions
 # make it compatible with snowflake standard
 
 # For application launcher use tofi or rofi-wayland or anyrun, do Hyprland desktop portal
@@ -173,6 +176,7 @@ in rec {
     # variety
     unzip
     unixtools.nettools
+    xh # http tool
     watchman
     wget
     wl-clipboard
@@ -282,6 +286,7 @@ in rec {
     PGHOST = POSTGRES_HOST;
     PGPORT = POSTGRES_PORT;
     VOLTA_HOME = "$HOME/.volta";
+
     # ZSH_AUTOSUGGEST_STRATEGY = (history completion)
 
     # Hint electron apps to use wayland, this probably blurs the text for now
@@ -331,6 +336,26 @@ in rec {
 
     git = {
       enable = true;
+
+      delta = {
+        enable = true;
+        options = {
+          features = "decorations line-numbers";
+          decorations = {
+            hunk-header-style = "omit";
+            line-numbers-left-format = "";
+            line-numbers-right-format = "{np:^4}";
+            file-style = "#EFAA32 #0d372d bold";
+            file-decoration-style = "";
+            hunk-header-decoration-style = "";
+            navigate = true;
+            hyperlinks = true;
+            paging = "always";
+            # maybe add pager
+            # tabs [maybe, default: 8]
+          };
+        };
+      };
       attributes = [
         "*.sqlite diff=sqlite3"
       ];
@@ -342,7 +367,8 @@ in rec {
         cm = "commit";
       };
       extraConfig = {
-        dif = {
+        diff = {
+          colorMoved = "default"
           sqlite3 = {
             binary = true;
             textconv = "echo .dump | sqlite3";
@@ -383,7 +409,11 @@ in rec {
       # settings, theme
     };
     jq.enable = true;
-    lazygit.enable = true; # settings
+    lazygit = {
+      enable = true;
+      package = pkgs.unstable.lazygit;
+      # settings
+    };
     ledger = {
       enable = true; # learn this, very interesting
       extraConfig = "--sort date\n--effective\n--date-format %Y-%m-%d";
@@ -662,6 +692,7 @@ in rec {
         autoload -U colors && colors
 
         PROMPT='%{$fg[blue]%}$(date +%H:%M:%S) $(display_jobs_count_if_needed)%B%{$fg[green]%}%n %{$fg[blue]%}%~%{$fg[yellow]%}$(parse_git_branch) %{$reset_color%}';
+        ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#${config.colorScheme.palette.base03},bold";
 
         # Use lf to switch directories and bind it to ctrl-o
         lfcd () {
@@ -882,7 +913,7 @@ in rec {
       "gitui".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/home-manager/static/.config/gitui";
       "swappy/config".source = ../../static/.config/swappy/config;
       # "wlogout/config".source = ../../static/.config/wlogout/config; # https://github.com/nabakdev/dotfiles/blob/main/.config/wlogout/style.css
-      "tmux/theme.conf".source = ../../static/.config/tmux/theme.conf;
+      "tmux/theme.conf".text = (replaceColorReferences (builtins.readFile ../../static/.config/tmux/theme.conf) config.colorScheme.palette);
       "waybar".source = ../../static/.config/waybar;
       "ironbar".source = ../../static/.config/ironbar;
       "wlogout".source = ../../static/.config/wlogout;

@@ -1,0 +1,45 @@
+# Make stage/unstage coloring correct
+# NOTE: read git-clif and git-flow integration with lazygit
+gui:
+  scrollHeight: 10
+  scrollOffBehavior: "jump"
+  sidePanelWidth: 0.25
+  nerdFontsVersion: "3" # nerd fonts version to use ("2" or "3"); empty means don't show nerd font icons
+  border: "single" # one of 'single' | 'double' | 'rounded' | 'hidden'
+git:
+  paging:
+    colorArg: always
+    pager: delta --dark --paging=never
+    # useConfig: true
+  parseEmoji: true
+refresher:
+  refreshInterval: 6 # File/submodule refresh interval in seconds. Auto-refresh can be disabled via option 'git.autoRefresh'.
+keybinding:
+  universal:
+    quit: "<C-q>" # exists the program
+    quit-alt1: "<c-c>" # alternative/alias of quit
+    return: "<esc>" # exit prompt, also acts as return to previous menu
+    prevPage: "<c-u>" # go to next page in list
+    nextPage: "<c-d>" # go to previous page in list
+    prevBlock: "N" # goto the previous block / panel
+    nextBlock: "n" # goto the next block / panel
+    # scrollLeft: "<c-h>" # scroll left within list view
+    scrollRight: "<c-l>" # scroll right within list view
+    gotoTop: "g" # go to top of list
+    gotoBottom: "G" # go to bottom of list
+    select: "<space>"
+    goInto: "l"
+    copyToClipboard: "y"
+    rangeSelectUp: "K"
+    rangeSelectDown: "J"
+  files:
+    openStatusFilter: "s"
+# Example:
+#
+# Branch name: feature/AB-123
+# Commit message: [AB-123] Adding feature
+# git:
+#   commitPrefixes:
+#     my_project: # This is repository folder name
+#       pattern: "^\\w+\\/(\\w+-\\w+).*"
+#       replace: '[$1] '

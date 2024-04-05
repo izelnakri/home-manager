@@ -66,13 +66,13 @@
       on_click_left = "alacritty -e 'bluetoothctl'"
     }
     {
+      type = "tray"
+    }
+    {
       type = "script"
       name = "battery"
       interval = 30000
       cmd = "sh ~/.config/ironbar/scripts/battery.sh"
-    }
-    {
-      type = "tray"
     }
     {
       type = "script"

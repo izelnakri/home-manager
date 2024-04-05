@@ -3,7 +3,6 @@
 - fix shared coloring for alacritty etc
 
 # Move from lightdm to GDM
-# NetworkManager vs netctl
 # top bar email notifications(inbox, spam), discord notifications
 
 # make dropbox work
