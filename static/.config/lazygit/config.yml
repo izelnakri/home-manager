@@ -1,6 +1,7 @@
 # Make stage/unstage coloring correct
 # NOTE: read git-clif and git-flow integration with lazygit
 gui:
+  expandFocusedSidePanel: true
   scrollHeight: 10
   scrollOffBehavior: "jump"
   sidePanelWidth: 0.25
@@ -9,8 +10,8 @@ gui:
 git:
   paging:
     colorArg: always
-    pager: delta --dark --paging=never
     # useConfig: true
+    pager: delta --dark --paging=never
   parseEmoji: true
 refresher:
   refreshInterval: 6 # File/submodule refresh interval in seconds. Auto-refresh can be disabled via option 'git.autoRefresh'.
@@ -23,7 +24,6 @@ keybinding:
     nextPage: "<c-d>" # go to previous page in list
     prevBlock: "N" # goto the previous block / panel
     nextBlock: "n" # goto the next block / panel
-    # scrollLeft: "<c-h>" # scroll left within list view
     scrollRight: "<c-l>" # scroll right within list view
     gotoTop: "g" # go to top of list
     gotoBottom: "G" # go to bottom of list
@@ -32,8 +32,13 @@ keybinding:
     copyToClipboard: "y"
     rangeSelectUp: "K"
     rangeSelectDown: "J"
+    increaseContextInDiffView: <c-k>
+    decreaseContextInDiffView: <c-j>
   files:
     openStatusFilter: "s"
+    viewStashOptions: "<c-s>"
+  stash:
+    popStash: "p"
 # Example:
 #
 # Branch name: feature/AB-123

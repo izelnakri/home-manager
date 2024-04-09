@@ -26,18 +26,20 @@
 # lib = to define helper variables
 
 # cmus media player? or other
-{ config, pkgs, inputs, lib, nixosModules, ... }:
+{ config, pkgs, inputs, lib, ... }: # nixosModules
 let
   wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs; };
-  replaceColorReferences = import ../../modules/functions/replace-color-references.nix;
+  replaceColorReferences =
+    import ../../modules/functions/replace-color-references.nix;
 in rec {
-  imports =  [
+  imports = [
     inputs.nix-colors.homeManagerModules.default
     inputs.xremap-flake.homeManagerModules.default
     # ../../modules/alacritty.nix
   ];
 
-  colorScheme = inputs.nix-colors.lib.schemeFromYAML "parrots-of-paradise" (builtins.readFile ../../static/parrots-of-paradise.yaml);
+  colorScheme = inputs.nix-colors.lib.schemeFromYAML "parrots-of-paradise"
+    (builtins.readFile ../../static/parrots-of-paradise.yaml);
 
   targets.genericLinux.enable = true;
   nixpkgs.config.allowBroken = true;
@@ -50,7 +52,7 @@ in rec {
   home.stateVersion = "23.11";
   home.activation = {
     # NOTE: This shouldnt be needed but unfortunately it is needed
-    restartSystemdServices = lib.hm.dag.entryAfter ["reloadSystemd"] ''
+    restartSystemdServices = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
       $DRY_RUN_CMD ${home.homeDirectory}/.nix-profile/bin/sd activation systemd-reset-services
     '';
   };
@@ -90,6 +92,7 @@ in rec {
     gcc
     gh
     gimp
+    unstable.git-cliff
     unstable.gitui
     gpsd
     grim
@@ -119,6 +122,7 @@ in rec {
     lxcfs
     lxd
     lua
+    unstable.luajitPackages.luarocks
     # lutris
     monado
     magic-wormhole
@@ -131,7 +135,8 @@ in rec {
     nixos-rebuild
     ngrok
     nodejs
-    noto-fonts noto-fonts-emoji
+    noto-fonts
+    noto-fonts-emoji
     mako
     unstable.manix
     # mpd
@@ -202,10 +207,10 @@ in rec {
       set -e
 
       #Configuration
-      FILE="''$HOME/Dropbox/flashcard.csv"
+      FILE="$HOME/Dropbox/flashcard.csv"
 
       main() {
-        IFS=''$'||'; read -a q <<<$(shuf -n 1 "''$FILE")
+        IFS=$'||'; read -a q <<<$(shuf -n 1 "$FILE")
         echo "========================================"
         echo "Category: ''${q[0]}"
         echo "Question: ''${q[2]}"
@@ -226,7 +231,7 @@ in rec {
     # TODO: also checkout/pull this repo master branch to ~/.config/home-manager
     # TODO: check if this could be done offline
     # TODO: Fetch LS_COLORS remotely and then copy it to the Nix Store, how to do this sequential or parallel
-    (pkgs.runCommand "ls-colors" {} ''
+    (pkgs.runCommand "ls-colors" { } ''
       mkdir -p $out/bin $out/share
       cp ${../../static/LS_COLORS} $out/share/LS_COLORS
     '')
@@ -264,18 +269,20 @@ in rec {
     BROWSER = "brave";
     EDITOR = "nvim";
     ELIXIR_ERL_OPTIONS = "+fnu";
-    ERL_AFLAGS = "-kernel shell_history enabled -kernel shell_history_file_bytes 1024000";
+    ERL_AFLAGS =
+      "-kernel shell_history enabled -kernel shell_history_file_bytes 1024000";
     FZF_DEFAULT_COMMAND = "fd --type f";
     GDK_SCALE = 2;
     # LF_ICONS
     # LANG = "en_US.UTF-8";
     # LC_ALL = "en_US.UTF-8";
-    MANPAGER= "bat -l man -p";
-    HISTTIMEFORMAT= "%d/%m/%y %T ";
-    HISTFILE= "~/.cache/zsh/history";
+    MANPAGER = "bat -l man -p";
+    HISTTIMEFORMAT = "%d/%m/%y %T ";
+    HISTFILE = "~/.cache/zsh/history";
     TERM = "xterm-256color";
     TERMINAL = "alacritty";
-    BIN_PATHS = "$HOME/.volta/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin";
+    BIN_PATHS =
+      "$HOME/.volta/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin";
     PATH = "${config.home.sessionVariables.BIN_PATHS}:$PATH";
     POSTGRES_USER = "postgres";
     POSTGRES_PASSWORD = "postgres";
@@ -351,14 +358,13 @@ in rec {
             navigate = true;
             hyperlinks = true;
             paging = "always";
+            pager = "bat";
             # maybe add pager
             # tabs [maybe, default: 8]
           };
         };
       };
-      attributes = [
-        "*.sqlite diff=sqlite3"
-      ];
+      attributes = [ "*.sqlite diff=sqlite3" ];
       userName = "Izel Nakri";
       userEmail = "contact@izelnakri.com";
       aliases = {
@@ -368,7 +374,7 @@ in rec {
       };
       extraConfig = {
         diff = {
-          colorMoved = "default"
+          colorMoved = "default";
           sqlite3 = {
             binary = true;
             textconv = "echo .dump | sqlite3";
@@ -416,7 +422,10 @@ in rec {
     };
     ledger = {
       enable = true; # learn this, very interesting
-      extraConfig = "--sort date\n--effective\n--date-format %Y-%m-%d";
+      extraConfig = ''
+        --sort date
+        --effective
+        --date-format %Y-%m-%d'';
       # settings = {
       #  date-format = "%Y-%m-%d";
       #  file = [
@@ -436,13 +445,13 @@ in rec {
       enable = true;
       commands = {
         dragon-out = ''%${pkgs.xdragon}/bin/xdragon -a -x "$fx"'';
-        editor-open = ''$$EDITOR $f'';
+        editor-open = "$$EDITOR $f";
         mkdir = ''
-        ''${{
-          printf "Directory Name: "
-          read DIR
-          mkdir $DIR
-        }}
+          ''${{
+            printf "Directory Name: "
+            read DIR
+            mkdir $DIR
+          }}
         '';
       };
 
@@ -463,7 +472,7 @@ in rec {
         "g/" = "/";
 
         ee = "editor-open";
-        V = ''$${pkgs.bat}/bin/bat --paging=always --theme=gruvbox "$f"'';
+        V = ''$''${pkgs.bat}/bin/bat --paging=always --theme=gruvbox "$f"'';
       };
 
       settings = {
@@ -479,9 +488,7 @@ in rec {
 
     lsd.enable = true;
     man.enable = true;
-    mpv = {
-      enable = true;
-    };
+    mpv = { enable = true; };
     ncspot.enable = true;
     neomutt.enable = true;
     neovim = { # TODO: BIG CONFIG DO it here from nixcfg
@@ -503,9 +510,7 @@ in rec {
     ripgrep.enable = true;
     rio = {
       enable = true;
-      settings = {
-        performance = "Low";
-      };
+      settings = { performance = "Low"; };
     };
 
     # rofi vs dmenu
@@ -528,30 +533,26 @@ in rec {
       enableZshIntegration = true;
     };
 
-    swaylock = {
-      enable = true;
-    };
+    swaylock = { enable = true; };
 
     tealdeer.enable = true;
 
     tiny = {
       enable = true;
       settings = {
-       servers = [
-         {
-           addr = "irc.libera.chat";
-           port = 6697;
-           tls = true;
-           realname = "Izel Nakri";
-           nicks = [ "izelnakri" ];
-         }
-       ];
-       defaults = {
-         nicks = [ "izelnakri" ];
-         realname = "Izel Nakri";
-         join = [];
-         tls = true;
-       };
+        servers = [{
+          addr = "irc.libera.chat";
+          port = 6697;
+          tls = true;
+          realname = "Izel Nakri";
+          nicks = [ "izelnakri" ];
+        }];
+        defaults = {
+          nicks = [ "izelnakri" ];
+          realname = "Izel Nakri";
+          join = [ ];
+          tls = true;
+        };
       };
     };
 
@@ -559,44 +560,43 @@ in rec {
       enable = true;
       settings = {
         hl = "en";
-        tl = [
-          "es"
-          "fr"
-        ];
+        tl = [ "es" "fr" ];
       };
     };
 
-    waybar = { # Inspiration: https://forum.garudalinux.org/uploads/default/optimized/2X/d/d8407cbcc1d56f99f37bd7da681348ace09058e1_2_1380x862.jpeg
-      enable = true;
-      # package
-      # battery, bluetooth, clock, CPU, Disk, Memory, MPD, Network, PulseAudio, Temperature/Weather,
-      # Hyprland, idle_inhibitor(!?), sndio(?), sway, check tray, taskbar(?)
-      # On left: Workspaces
-      # also add flux indicator
-      # onclick pavucontrol(?) -> pulseaudio
-      # start_hidden = true;
-      # height, spacing,
-      # modules-left = ["sway/workspaces" "sway/mode"];
-      # modules-center = ["sway/window"];
-      # modules hyprland  https://github.com/Alexays/Waybar/wiki/Module:-Hyprland
-      # sway/window = {
-      #     "max-length": 50;
-      # };
-      # battery = {
-      #     format = "{capacity}% {icon}";
-      #     format-icons = ["" "" "" "" ""];
-      # };
-      # clock = {
-      #   format-alt = "{:%a, %d. %b  %H:%M}";
-      # };
-      settings = [ (builtins.fromJSON (builtins.readFile ../../static/.config/waybar/config)) ];
-      style = builtins.readFile ../../static/.config/waybar/style.css;
-      systemd.enable = true;
-    };
+    waybar =
+      { # Inspiration: https://forum.garudalinux.org/uploads/default/optimized/2X/d/d8407cbcc1d56f99f37bd7da681348ace09058e1_2_1380x862.jpeg
+        enable = true;
+        # package
+        # battery, bluetooth, clock, CPU, Disk, Memory, MPD, Network, PulseAudio, Temperature/Weather,
+        # Hyprland, idle_inhibitor(!?), sndio(?), sway, check tray, taskbar(?)
+        # On left: Workspaces
+        # also add flux indicator
+        # onclick pavucontrol(?) -> pulseaudio
+        # start_hidden = true;
+        # height, spacing,
+        # modules-left = ["sway/workspaces" "sway/mode"];
+        # modules-center = ["sway/window"];
+        # modules hyprland  https://github.com/Alexays/Waybar/wiki/Module:-Hyprland
+        # sway/window = {
+        #     "max-length": 50;
+        # };
+        # battery = {
+        #     format = "{capacity}% {icon}";
+        #     format-icons = ["" "" "" "" ""];
+        # };
+        # clock = {
+        #   format-alt = "{:%a, %d. %b  %H:%M}";
+        # };
+        settings = [
+          (builtins.fromJSON
+            (builtins.readFile ../../static/.config/waybar/config))
+        ];
+        style = builtins.readFile ../../static/.config/waybar/style.css;
+        systemd.enable = true;
+      };
 
-    wlogout = {
-      enable = true;
-    };
+    wlogout = { enable = true; };
 
     yt-dlp.enable = true;
     zathura.enable = true; # mappings, options
@@ -614,13 +614,11 @@ in rec {
       # searchUpKey = [ "^K" "^[[A" ]; # Ctrl-K
       # };
       syntaxHighlighting.enable = true;
-      plugins = [
-        {
-          name = "vi-mode";
-          src = pkgs.unstable.zsh-vi-mode;
-          file = "share/zsh-vi-mode/zsh-vi-mode.plugin.zsh";
-        }
-      ];
+      plugins = [{
+        name = "vi-mode";
+        src = pkgs.unstable.zsh-vi-mode;
+        file = "share/zsh-vi-mode/zsh-vi-mode.plugin.zsh";
+      }];
 
       initExtra = ''
         unsetopt INC_APPEND_HISTORY # Write to the history file immediately, not when the shell exits.
@@ -730,10 +728,11 @@ in rec {
       '';
 
       shellAliases = {
-        bitbox-bridge="/opt/bitbox-bridge/bin/bitbox-bridge";
-        checkrepo = "git log --pretty=format: --name-only | sort | uniq -c | sort -rg | head -10";
+        bitbox-bridge = "/opt/bitbox-bridge/bin/bitbox-bridge";
+        checkrepo =
+          "git log --pretty=format: --name-only | sort | uniq -c | sort -rg | head -10";
         clip = "slurp | grim -g - - | wl-copy && wl-paste | swappy -f -";
-        clip-record = "wl-screenrec -g \"$(slurp)\" -f /tmp/recording.mp4";
+        clip-record = ''wl-screenrec -g "$(slurp)" -f /tmp/recording.mp4'';
         colorpicker = "hyprpicker";
         d = "sudo docker";
         diff = "diff --color=auto";
@@ -745,7 +744,8 @@ in rec {
         kube = "kubectl";
         ls = "ls --color=auto -F";
         lf = "lfub";
-        lusd = "node /home/izelnakri/cron-jobs/curve-lusd.js"; # NOTE: maybe move to cmd
+        lusd =
+          "node /home/izelnakri/cron-jobs/curve-lusd.js"; # NOTE: maybe move to cmd
         onport = "ps aux | grep";
         open = "xdg-open";
         pbcopy = "xclip -selection clipboard"; # TODO: move away from xclip
@@ -753,8 +753,10 @@ in rec {
         scitutor = "sc /usr/share/doc/sc/tutorial.sc";
         server = "mix phoenix.server";
         SS = "sudo systemctl";
-        speedtest = "curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -";
-        screenshot = "grim - | convert - -shave 1x1 PNG:- | wl-copy && wl-paste | swappy -f -";
+        speedtest =
+          "curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -";
+        screenshot =
+          "grim - | convert - -shave 1x1 PNG:- | wl-copy && wl-paste | swappy -f -";
         terminate = "lsof -ti:4200 | xargs kill";
         todo = "nvim ~/Dropbox/TODO.md";
         v = "$EDITOR";
@@ -763,7 +765,8 @@ in rec {
         weather = "curl http://wttr.in/";
         YT = "youtube-viewer";
         x = "sxiv -ft *";
-        gnome-wayland = "dbus-run-session -- gnome-shell --display-server --wayland";
+        gnome-wayland =
+          "dbus-run-session -- gnome-shell --display-server --wayland";
         gitfetch = "onefetch";
       };
       # shellGlobalAliases # => Similar to programs.zsh.shellAliases, but are substituted anywhere on a line.
@@ -838,13 +841,13 @@ in rec {
     # iconTheme.name = "GruvboxPlus";
   };
 
-  systemd ={
+  systemd = {
     user.startServices = "sd-switch";
     user.services = {
       hypridle = {
         Unit = {
           Description = "Hypridle deamon";
-          After = ["graphical-session.target"];
+          After = [ "graphical-session.target" ];
         };
 
         Service = {
@@ -902,18 +905,25 @@ in rec {
     enable = true;
 
     configFile = {
-      "alacritty/alacritty.toml".text = (replaceColorReferences (builtins.readFile ../../static/.config/alacritty/alacritty.toml) config.colorScheme.palette);
+      "alacritty/alacritty.toml".text = (replaceColorReferences
+        (builtins.readFile ../../static/.config/alacritty/alacritty.toml)
+        config.colorScheme.palette);
       "hypr" = {
         source = ../../static/.config/hypr;
         onChange = "~/.nix-profile/bin/hyprctl reload";
       };
       "lf/icons".source = ../../static/.config/lf/icons;
-      "lazygit".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/home-manager/static/.config/lazygit";
-      "nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/home-manager/static/.config/nvim";
-      "gitui".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/home-manager/static/.config/gitui";
+      "lazygit".source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/.config/home-manager/static/.config/lazygit";
+      "nvim".source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/.config/home-manager/static/.config/nvim";
+      "gitui".source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/.config/home-manager/static/.config/gitui";
       "swappy/config".source = ../../static/.config/swappy/config;
       # "wlogout/config".source = ../../static/.config/wlogout/config; # https://github.com/nabakdev/dotfiles/blob/main/.config/wlogout/style.css
-      "tmux/theme.conf".text = (replaceColorReferences (builtins.readFile ../../static/.config/tmux/theme.conf) config.colorScheme.palette);
+      "tmux/theme.conf".text = (replaceColorReferences
+        (builtins.readFile ../../static/.config/tmux/theme.conf)
+        config.colorScheme.palette);
       "waybar".source = ../../static/.config/waybar;
       "ironbar".source = ../../static/.config/ironbar;
       "wlogout".source = ../../static/.config/wlogout;
@@ -937,21 +947,21 @@ in rec {
     #   extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
     # };
     desktopEntries = {
-     # alacritty = {
-     #   name = "Alacritty";
-     #   genericName = "GPU Terminal";
-     #   exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
-     #   actions = {
-     #     "New Window" = {
-     #       exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
-     #     };
-     #   };
+      # alacritty = {
+      #   name = "Alacritty";
+      #   genericName = "GPU Terminal";
+      #   exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
+      #   actions = {
+      #     "New Window" = {
+      #       exec = "nix run github:guibou/nixGL#nixGLIntel -- alacritty";
+      #     };
+      #   };
 
-     #   # actions.<name>.exec|icon|name
-     #   # icon
-     #   terminal = false;
-     #   # categories = [ "Application" "Terminal" ];
-     # };
+      #   # actions.<name>.exec|icon|name
+      #   # icon
+      #   terminal = false;
+      #   # categories = [ "Application" "Terminal" ];
+      # };
     };
   };
   # Xft.dpi: 144
@@ -964,14 +974,14 @@ in rec {
 
   # xfconf & xresources, xsession(.xprofile) [windowManager.awesome|bspwm|fluxbox|i3|spectrwm|xmonad
 
- #  builtins.readFile (
- #   pkgs.fetchFromGitHub {
- #     owner = "solarized";
- #     repo = "xresources";
- #     rev = "025ceddbddf55f2eb4ab40b05889148aab9699fc";
- #     sha256 = "0lxv37gmh38y9d3l8nbnsm1mskcv10g3i83j0kac0a2qmypv1k9f";
- #   } + "/Xresources.dark"
- # )
+  #  builtins.readFile (
+  #   pkgs.fetchFromGitHub {
+  #     owner = "solarized";
+  #     repo = "xresources";
+  #     rev = "025ceddbddf55f2eb4ab40b05889148aab9699fc";
+  #     sha256 = "0lxv37gmh38y9d3l8nbnsm1mskcv10g3i83j0kac0a2qmypv1k9f";
+  #   } + "/Xresources.dark"
+  # )
 
   manual.html.enable = true;
 }
@@ -995,8 +1005,6 @@ in rec {
 # Alt+Tab: cycle active applications
 # Alt+` (the key above Tab on US keyboard layouts): cycle windows of the application in the foreground
 # Alt+F2, then enter r or restart: restart the shell in case of graphical shell problems (only in X/legacy mode, not in Wayland mode).
-
-
 
 # maybe add polkit-kde-agent as heavily suggested by hyprland, Qt Wayland support(?), xdg-desktop-portal-hyprland https://wiki.hyprland.org/Useful-Utilities/Hyprland-desktop-portal
 

@@ -1,6 +1,4 @@
 -- Plugins to check:
--- norcalli/nvim-colorizer.lua
--- mg979/vim-visual-multi
 -- ervandew/supertab
 -- junegunn/vim-github-dashboard
 -- nelstrom/vim-visual-star-search
@@ -12,17 +10,11 @@
 
 -- TREESITTER - do it now (https://www.lazyvim.org/plugins/treesitter)
 -- show git signs next to changes gitsigns.nvim?
--- check trouble.nvim for quicklist
--- todo stuff (todo-comments.nvim)
--- telescope go up and down and config
--- spectre
 -- nvim-lint
 -- LSP
 -- statusline (lualine.nvim)
 -- LazyVim extras
--- lualine theming
 
--- since this is just an example spec, don't actually load anything here and return an empty spec
 -- stylua: ignore
 if true then return {} end
 

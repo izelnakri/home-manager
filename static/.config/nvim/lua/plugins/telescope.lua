@@ -20,7 +20,10 @@ return {
 
     return {
       defaults = {
-        layout_config = { prompt_position = "top" },
+        sorting_strategy = "ascending",
+        layout_config = {
+          prompt_position = "top",
+        },
         mappings = {
           i = {
             ["<C-j>"] = actions.move_selection_next,

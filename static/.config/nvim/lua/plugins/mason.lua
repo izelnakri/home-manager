@@ -23,7 +23,6 @@ return {
         "lua-language-server",
         "markdownlint",
         "marksman",
-        "nixpkgs-fmt",
         "shfmt",
         "solargraph",
         "solidity",

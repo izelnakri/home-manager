@@ -1,4 +1,14 @@
--- TODO: colors & snippets, missing plugins lookup, setup masonry
+-- TODO: Implement K - documentation scoll(without enter) and go-to-definition
+-- TODO: colors & snippets, missing plugins lookup, finish masonry
+-- Keys to remember: <l-xx> <l-fb> [b ]b <l-cr> <l-st> <l-sh> <wgf> navigate for file , <l-cr> for replacing code node, <C-q> visual block mo, <C-e> abort cmp
+-- <l-ft> Terminal
+-- and wincmd file and remuve it from bottom left?
+-- macro q (smt)| q | 3@q
+-- C-] moves in vim docs, C-t goes back
+
+-- echasnovski/mini.trailspace = to trim whitespace, probably not needed
+-- nvim-cmp big deal, check all plugins: https://github.com/hrsh7th/nvim-cmp/wiki/List-of-sources
+
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
@@ -21,7 +31,7 @@ require("lazy").setup({
 
     { import = "lazyvim.plugins.extras.editor.aerial" }, -- NOTE: Maybe outline is better: { import = "lazyvim.plugins.extras.editor.outline" },
     { import = "lazyvim.plugins.extras.editor.leap" },
-    { import = "lazyvim.plugins.extras.editor.mini-diff" }, -- Note: https://github.com/lewis6991/gitsigns.nvim better(?)
+    { import = "lazyvim.plugins.extras.editor.mini-diff" }, -- Note: https://github.com/lewis6991/gitsigns.nvim better(?) - YES: utilize these keymaps: https://www.youtube.com/watch?v=6pAG3BHurdM&list=PLnu5gT9QrFg36OehOdECFvxFFeMHhb_07&index=11
     { import = "lazyvim.plugins.extras.editor.navic" },
 
     { import = "lazyvim.plugins.extras.lang.ansible" },
