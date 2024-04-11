@@ -4,3 +4,5 @@
 
 vim.opt.relativenumber = false
 vim.opt.showcmd = true -- Enable showing the command line in the status bar
+
+-- TODO: check fix on save for linter errors, also show on save linter errors down panel

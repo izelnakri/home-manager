@@ -1,13 +1,15 @@
+-- TODO: devdocs solution, styling, ai and language linting/debugging tests for each project
+-- TODO: add 'metakirby5/codi.vim' if inlay hinting isnt sufficient.
+--
 -- TODO: Implement K - documentation scoll(without enter) and go-to-definition
--- TODO: colors & snippets, missing plugins lookup, finish masonry
--- Keys to remember: <l-xx> <l-fb> [b ]b <l-cr> <l-st> <l-sh> <wgf> navigate for file , <l-cr> for replacing code node, <C-q> visual block mo, <C-e> abort cmp
--- <l-ft> Terminal
--- and wincmd file and remuve it from bottom left?
+-- TODO: colors & snippets
+-- Keys to remember: <l-xx> [b ]b <l-cr> <l-sh> <wgf> navigate for file , <l-cr> for replacing code node, <C-q> visual block mo, <C-e> abort cmp
+-- and wincmd file and remove it from bottom left?
 -- macro q (smt)| q | 3@q
 -- C-] moves in vim docs, C-t goes back
-
--- echasnovski/mini.trailspace = to trim whitespace, probably not needed
--- nvim-cmp big deal, check all plugins: https://github.com/hrsh7th/nvim-cmp/wiki/List-of-sources
+-- <leader>tr | <leader>tt | <leader>ts | <leader>tl | ]e [e , r reruns, a attaches test result
+-- <leader>td debug nearest test | yellow arrow -> <leader>dO step over | <leader>dt terminate
+-- :InspectTree, <C-space> | <bs>, ]f, va=
 
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 
@@ -23,16 +25,19 @@ require("lazy").setup({
     -- add LazyVim and import its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins", opts = { colorscheme = "gruvbox" } },
     { import = "lazyvim.plugins.extras.coding.codeium" }, -- Add Auth
-    { import = "lazyvim.plugins.extras.coding.native_snippets" },
-    { import = "lazyvim.plugins.extras.coding.yanky" },
-
+    {
+      import = "lazyvim.plugins.extras.coding.native_snippets",
+    },
+    {
+      import = "lazyvim.plugins.extras.coding.yanky",
+    },
     { import = "lazyvim.plugins.extras.dap.core" },
     { import = "lazyvim.plugins.extras.dap.nlua" },
 
-    { import = "lazyvim.plugins.extras.editor.aerial" }, -- NOTE: Maybe outline is better: { import = "lazyvim.plugins.extras.editor.outline" },
+    { import = "lazyvim.plugins.extras.editor.aerial" },
     { import = "lazyvim.plugins.extras.editor.leap" },
-    { import = "lazyvim.plugins.extras.editor.mini-diff" }, -- Note: https://github.com/lewis6991/gitsigns.nvim better(?) - YES: utilize these keymaps: https://www.youtube.com/watch?v=6pAG3BHurdM&list=PLnu5gT9QrFg36OehOdECFvxFFeMHhb_07&index=11
     { import = "lazyvim.plugins.extras.editor.navic" },
+    { import = "lazyvim.plugins.extras.editor.trouble-v3" },
 
     { import = "lazyvim.plugins.extras.lang.ansible" },
     { import = "lazyvim.plugins.extras.lang.docker" },
@@ -45,10 +50,7 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.lang.typescript" },
     { import = "lazyvim.plugins.extras.lang.yaml" },
 
-    -- import any extras modules here
-    -- { import = "lazyvim.plugins.extras.ui.mini-animate" },
-    -- import/override with your plugins
-    -- TODO: Learn Trouble & Trouble v3
+    -- TODO: check ~/Github/poem-tutorial/src/main data structure debugging functionality, implement it here
     -- { import = "lazyvim.plugins.extras.util.gitui" },
     { import = "plugins" },
   },

@@ -1,20 +1,3 @@
--- Plugins to check:
--- ervandew/supertab
--- junegunn/vim-github-dashboard
--- nelstrom/vim-visual-star-search
--- tpope/vim-dadbod
--- github/copilot.vim
--- rhysd/devdocs.vim
--- echasnovski/mini.nvim
--- vimwiki/vimwiki
-
--- TREESITTER - do it now (https://www.lazyvim.org/plugins/treesitter)
--- show git signs next to changes gitsigns.nvim?
--- nvim-lint
--- LSP
--- statusline (lualine.nvim)
--- LazyVim extras
-
 -- stylua: ignore
 if true then return {} end
 

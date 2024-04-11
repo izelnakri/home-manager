@@ -11,6 +11,23 @@
 # make lightdm & gnome work with home-manager
 # implement latte-dock(?)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # dunst or mako & libnotify
 # wl-clipboard
 # rofi-wayland
@@ -283,6 +300,7 @@ in rec {
     TERMINAL = "alacritty";
     BIN_PATHS =
       "$HOME/.volta/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin";
+    IZEL = "test";
     PATH = "${config.home.sessionVariables.BIN_PATHS}:$PATH";
     POSTGRES_USER = "postgres";
     POSTGRES_PASSWORD = "postgres";
@@ -299,6 +317,15 @@ in rec {
     # Hint electron apps to use wayland, this probably blurs the text for now
     NIXOS_OZONE_WL = "1";
   };
+
+
+
+
+
+
+
+
+
 
   fonts.fontconfig.enable = true;
 

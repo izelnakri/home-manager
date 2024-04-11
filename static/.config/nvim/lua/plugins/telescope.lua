@@ -1,7 +1,6 @@
 return {
   "nvim-telescope/telescope.nvim",
   keys = {
-    { "<leader><leader>", false },
     {
       "<leader><leader>",
       LazyVim.telescope("files", { cwd = false }),

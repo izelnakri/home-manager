@@ -1,4 +1,4 @@
--- <leader-m> n selects, q / Q goes back(make sure it goes to the beginning of the word) then change it
+-- NOTE: <leader-m> n selects, q / Q goes back(make sure it goes to the beginning of the word) then change it
 return {
   {
     "smoka7/multicursors.nvim",
