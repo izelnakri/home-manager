@@ -13,6 +13,13 @@ return {
       end,
       desc = "Find Plugin File",
     },
+    {
+      "<leader>fn",
+      function()
+        vim.cmd.Telescope("notify")
+      end,
+      desc = "Search Notification history",
+    },
   },
   opts = function()
     local actions = require("telescope.actions")
