@@ -51,6 +51,7 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.lang.rust" },
     { import = "lazyvim.plugins.extras.lang.typescript" },
     { import = "lazyvim.plugins.extras.lang.yaml" },
+    { import = "lazyvim.plugins.extras.ui.edgy" },
 
     -- TODO: check ~/Github/poem-tutorial/src/main data structure debugging functionality, implement it here
     -- { import = "lazyvim.plugins.extras.util.gitui" },

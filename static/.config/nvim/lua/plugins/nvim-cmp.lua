@@ -2,9 +2,13 @@
 return {
   {
     "L3MON4D3/LuaSnip",
+    dependencies = { "rafamadriz/friendly-snippets" },
     keys = function()
       return {}
     end,
+  },
+  {
+    "David-Kunz/cmp-npm",
   },
   {
     "hrsh7th/nvim-cmp",
@@ -15,6 +19,7 @@ return {
     ---@param opts cmp.ConfigSchema
     opts = function(_, opts)
       table.insert(opts.sources, { name = "emoji" })
+      table.insert(opts.sources, { name = "npm", keyword_length = 4 })
 
       local cmp = require("cmp")
       opts.mapping = vim.tbl_extend("force", opts.mapping, {
