@@ -1,4 +1,3 @@
--- Read up on cmp sources
 return {
   {
     "L3MON4D3/LuaSnip",
@@ -18,12 +17,34 @@ return {
     event = { "InsertEnter", "CmdlineEnter" },
     ---@param opts cmp.ConfigSchema
     opts = function(_, opts)
+      vim.api.nvim_set_hl(0, "CmpGhostText", { link = "Comment", default = true })
       table.insert(opts.sources, { name = "emoji" })
       table.insert(opts.sources, { name = "npm", keyword_length = 4 })
 
       local cmp = require("cmp")
+
       opts.mapping = vim.tbl_extend("force", opts.mapping, {
-        ["<C-j>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+        ["<C-f>"] = function()
+          if cmp.visible() then
+            return (cmp.mapping.confirm({ select = true }))()
+          else
+            return (cmp.mapping.complete())()
+          end
+        end,
+        ["<CR>"] = cmp.mapping(function(fallback)
+          if cmp.visible() then
+            return (cmp.mapping.confirm({ select = true }))()
+          end
+
+          fallback()
+        end),
+        ["<C-j>"] = function()
+          if cmp.visible() then
+            return (cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }))()
+          else
+            return (cmp.mapping.complete())()
+          end
+        end,
         ["<C-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
         ["<Tab>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
         ["<S-Tab>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
