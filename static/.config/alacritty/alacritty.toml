@@ -176,14 +176,9 @@ mods = "Alt"
 command = { program = "tmux", args = ["setw", "synchronize-panes"] }
 
 [[keyboard.bindings]]
-chars = "\u0001z"
 key = "Z"
 mods = "Alt"
-
-[[keyboard.bindings]]
-chars = "\u001BOC"
-key = "F"
-mods = "Control"
+command = { program = "tmux", args = ["resize-pane", "-Z"] }
 
 [[keyboard.bindings]]
 chars = "\u001BOC"
@@ -193,15 +188,11 @@ key = "PageDown"
 chars = "\u001BOD"
 key = "PageUp"
 
-[[keyboard.bindings]]
-chars = "\u0001["
-key = "LBracket"
-mods = "Control"
-
+# What is this? Removed for now
 # [[keyboard.bindings]]
-# key = "K"
+# chars = "\u0001["
+# key = "LBracket"
 # mods = "Control"
-# action = "ClearHistory"
 
 [[keyboard.bindings]]
 key = "P"
