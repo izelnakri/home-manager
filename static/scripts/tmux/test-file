@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+# Test the file open in the current nvim pane

@@ -14,7 +14,7 @@ return {
       desc = "Find Plugin File",
     },
     {
-      "<leader>fn",
+      "<leader>snn",
       function()
         vim.cmd.Telescope("notify")
       end,

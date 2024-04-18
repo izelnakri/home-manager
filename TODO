@@ -1,13 +1,24 @@
+Implement AI chat
+Setup DAP & testing for node & deno for memoria, qunitx
+devdocs
+Linting, show errors better on Trouble v3
+
+devdocs, ai, setup linting/lsp/debug better
+
+Try GitUI one more time, create github issues, create Github Issues for LazyGit maybe use Magit more as a last resort
+Telescope up/down
+
+mako, rofi & other tools
+complete memoria
+
+json <> nix <> pkl ok
+however yaml is problematic in nix(?) find way to read and turn it into nix
+
 - fix ironbar calendar styling
-- fix alacritty errors
-- fix shared coloring for alacritty etc
 
 # Move from lightdm to GDM
 # top bar email notifications(inbox, spam), discord notifications
-
 # make dropbox work
-
-# CTLR-J doesnt work sometimes on the shell
 
 # Gnome setup
 # Research overlays and nix pill derivations more, make raspberry pi touchscreen work, make display Manager/Sway/Hyperland work
@@ -17,25 +28,18 @@
 - make touchscreen work
 - make a static ip so people can log-in from a cheap VPN(also make it run nix)
 - investigate VR window manager
-- investigate sway & hyperland
 - set up android dev
-- add swap to raspberry pi 4, make btrfs, install the screen, add wayland, hyperland, install home-manager on nixos-build, also allow remote updates
+- add swap to raspberry pi 4, make btrfs, install the screen, install home-manager on nixos-build, also allow remote updates
 
 - swap file config: https://gist.github.com/plmercereau/0c8e6ed376dc77617a7231af319e3d29
 
 "${builtins.fetchGit { url = "https://github.com/NixOS/nixos-hardware.git"; }}/raspberry-pi/4"
 
-try to chroot into an sd card OS and change wireless settings or compile stuff
 how to connect to rpi from usbc
-
 Important: RPI3 USB-Gadget mode: https://discourse.nixos.org/t/looking-for-help-to-create-a-raspberry-pi-with-usb-ethernet/27039/9
 
 - make it so that ~/.config/home-manager has the latest git pulled version always
 - remove sudo password need for izelnakri
-
-
-
-
 
 home-manager.users.tmplt.xsession = {
   enable = true;
@@ -112,9 +116,7 @@ services.xserver = {
 
   hardware.opengl.setLdLibraryPath = true;
 
-# alacritty should open relative directory or files when pressed Alt-U just like links
 # open it in relevant pane
-#
 #
 # tmux kill-session -t volume || alacritty -e tmux new-session -s volume "zsh -c 'ls -lah .';tmux split-pane -h; tail -f ~/FOOD"
 

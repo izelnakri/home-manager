@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+
+# Test the file on the pane in vim or the project in another tmux pane
+#
+# You need to be in a tmux session to execute this script.
+# The script gets your vim file and run the relevant unit test for the file(or project) in another logically sensible
+# tmux pane.If there are no other panes available(as in pane with no running process), run the test command in a new
+# pane nearby.This script works when a ruby, node.js, elixir, rust, python & nix file open on the current terminal.
+# If current directory has no file open in vim but current directory is one of the target programming language projects,
+# Then it runs the project tests in current pane.
+
+if [ -z "$TMUX" ]; then
+  echo "You need to be in a tmux session to execute this script."
+  exit 1
+fi
+
+# Get the current active pane ID
+source_pane=$(tmux display-message -p '#P')
+
+# Get the file currently open in Vim in the active pane
+vim_file=$(tmux capture-pane -J -p -t "$source_pane" | awk -F '[ "]' '/^%"[0-9]+/{print $2}')
+current_directory=$(pwd)
+
+# If no Vim file is found, use the current directory of the active pane
+if [ -z "$vim_file" ]; then
+  current_directory=$(tmux display-message -p -t "$source_pane" '#{pane_current_path}')
+fi
+
+# Function to check if a project file exists in the current or parent directories
+find_project_file() {
+  local dir="$1"
+  while [ "$dir" != "/" ]; do
+    if [ -f "$dir/Gemfile" ]; then
+      echo "ruby"
+      return
+    elif [ -f "$dir/package.json" ]; then
+      echo "nodejs"
+      return
+    elif [ -f "$dir/mix.exs" ]; then
+      echo "elixir"
+      return
+    elif [ -f "$dir/Cargo.toml" ]; then
+      echo "rust"
+      return
+    elif [ -f "$dir/requirements.txt" ]; then
+      echo "python"
+      return
+    elif [ -f "$dir/default.nix" ]; then
+      echo "nix"
+      return
+    elif [ -f "$dir/Makefile" ] && grep -qE '^\s*test:' "$dir/Makefile"; then
+      echo "makefile"
+      return
+    fi
+    dir=$(dirname "$dir")
+  done
+  echo "unknown"
+}
+
+# Determine the project type based on the project file
+project_type=$(find_project_file "$current_directory")
+
+# If project type is "unknown," exit
+if [ "$project_type" == "unknown" ]; then
+  echo "No file open in Vim, and the current directory is not in a recognized project."
+  exit 1
+fi
+
+# Determine the appropriate test command based on the project type
+case "$project_type" in
+  ruby)
+    test_command="bundle exec rspec"
+    ;;
+  nodejs)
+    test_command="npm test"
+    ;;
+  elixir)
+    test_command="mix test"
+    ;;
+  rust)
+    test_command="cargo test"
+    ;;
+  python)
+    test_command="python -m unittest discover"
+    ;;
+  nix)
+    test_command="nix-build"
+    ;;
+  makefile)
+    test_command="make test"
+    ;;
+esac
+
+# Find an available tmux pane without a running Vim process
+available_pane=""
+panes_to_skip=""
+
+while IFS= read -r pane; do
+  pane_id="${pane%%:*}"
+  if [ "$pane_id" == "$source_pane" ]; then
+    panes_to_skip="1"
+    continue
+  fi
+  if [ -n "$panes_to_skip" ]; then
+    pane_pid="$(tmux list-panes -t "$pane_id" -F "#{pane_pid}")"
+    pane_command="$(tmux list-panes -t "$pane_id" -F "#{pane_current_command}")"
+    if [ -z "$pane_pid" ] || [[ "$pane_command" == "sh" || "$pane_command" == "bash" || "$pane_command" == "zsh" ]]; then
+      available_pane="$pane_id"
+      break
+    fi
+  fi
+done < <(tmux list-panes -F '#{pane_id}' | grep -v "$source_pane")
+
+# If no available pane found, create a new one
+if [ -z "$available_pane" ]; then
+  tmux split-window -v
+  available_pane=$(tmux list-panes -F '#{pane_in_mode}#{?pane_dead,,1}' | grep -v "$source_pane" | head -n 1)
+fi
+
+echo "Running $test_command in pane $available_pane"
+
+# Send the test command to the selected pane
+tmux send-keys -t "$available_pane" "cd \"$current_directory\" && $test_command" C-m

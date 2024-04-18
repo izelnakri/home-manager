@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# foo script description short version
+#
+# This will remove any bla bla
+# To see exactly what this
+# will do, run:
+#
+#     sd foo bar
+
+CURRENT_WINDOW=$(tmux display-message -p "#I")
+CURRENT_PANE=$TMUX_PANE
+# TOTAL_PANES_IN_WINDOW =
+
+# 0, 3, 1, 2

@@ -27,7 +27,9 @@ require("lazy").setup({
   spec = {
     -- add LazyVim and import its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins", opts = { colorscheme = "gruvbox" } },
-    { import = "lazyvim.plugins.extras.coding.codeium" }, -- Add Auth
+
+    { import = "lazyvim.plugins.extras.coding.codeium" },
+    { import = "lazyvim.plugins.extras.coding.copilot" },
     {
       import = "lazyvim.plugins.extras.coding.native_snippets", -- NOTE: Maybe add friendly snippets
     },
