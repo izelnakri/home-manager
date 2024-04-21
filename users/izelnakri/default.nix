@@ -82,6 +82,7 @@ in rec {
     # avahi (network discovery & connection)
     bat
     unstable.brave # previous reference: inputs.nixpkgs.legacyPackages.x86_64-linux.brave
+    unstable.browsh
     # bspwm
     direnv
     # devdocs-desktop
@@ -132,6 +133,7 @@ in rec {
     # lens
     lf
     libevdev
+    libnotify
     localsend
     lsd
     lsof
@@ -151,12 +153,14 @@ in rec {
     ninja
     nixos-rebuild
     ngrok
+    unstable.nh # amazing nh nix helper, search, diff, switch etc, nom shell/nom develop
     nodejs
     noto-fonts
     noto-fonts-emoji
     mako
     unstable.manix
     # mpd
+    unstable.ollama
     openssl
     # pavucontrol
     # pgmodeler
@@ -187,6 +191,7 @@ in rec {
     swww # wallpaper: maybe use programs.wpaperd instead(?)
     syncthing
     terminus-nerdfont
+    tree
     # timeshift
     unstable.tmux
     # touchegg
@@ -317,15 +322,6 @@ in rec {
     # Hint electron apps to use wayland, this probably blurs the text for now
     NIXOS_OZONE_WL = "1";
   };
-
-
-
-
-
-
-
-
-
 
   fonts.fontconfig.enable = true;
 
@@ -520,6 +516,7 @@ in rec {
     neomutt.enable = true;
     neovim = { # TODO: BIG CONFIG DO it here from nixcfg
       enable = true;
+      package = pkgs.unstable.neovim-unwrapped;
       # coc.enable = true;
       # coc.settings , suggest.enablePreview, languageserver
       defaultEditor = true;
@@ -947,6 +944,7 @@ in rec {
       "gitui".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/gitui";
       "swappy/config".source = ../../static/.config/swappy/config;
+      "system-colors.json".text = (builtins.toJSON config.colorScheme.palette);
       # "wlogout/config".source = ../../static/.config/wlogout/config; # https://github.com/nabakdev/dotfiles/blob/main/.config/wlogout/style.css
       "tmux/theme.conf".text = (replaceColorReferences
         (builtins.readFile ../../static/.config/tmux/theme.conf)

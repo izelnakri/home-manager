@@ -67,9 +67,18 @@ return {
       hi("Keyword", { fg = palette.base08, bg = nil, attr = nil, sp = nil })
       hi("Number", { fg = palette.base0C, bg = nil, attr = nil, sp = nil })
       hi("Macro", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
+      hi("SpecialChar", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
       hi("String", { fg = palette.base0A, bg = nil, attr = nil, sp = nil })
       hi("Structure", { fg = palette.base0C, bg = nil, attr = nil, sp = nil })
       hi("Type", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
+      hi("Tag", { fg = palette.base0D, bg = nil, attr = nil, sp = nil })
+
+      hi("@markup.heading", { fg = palette.base0D, bg = nil, attr = "bold", sp = nil })
+      hi("@markup.link.label", { fg = palette.base0C, bg = nil, attr = "underline", sp = nil })
+      hi("@markup.link.url", { fg = palette.base0E, bg = nil, attr = nil, sp = nil })
+      hi("@markup.list", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
+      hi("@markup.raw", { fg = palette.base06, bg = nil, attr = "bold", sp = nil })
+      hi("@markup.strong", { fg = palette.base03, bg = nil, attr = "bold", sp = nil })
 
       hi("DiffChange", { fg = palette.base09, bg = palette.base01, attr = nil, sp = nil })
       hi("NeoTreeGitModified", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
@@ -82,9 +91,13 @@ return {
       hi("DiagnosticUnderlineWarn", { fg = nil, bg = nil, attr = "underline", sp = palette.base09 })
       hi("NoiceConfirmBorder", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
 
+      hi("NotifyWARNBorder", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
+      hi("NotifyWARNIcon", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
+      hi("NotifyWARNTitle", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
+
       hi("WhichKeyGroup", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
       hi("GitSignsChange", { fg = palette.base09, bg = palette.base01, attr = nil, sp = nil })
-      hi("NeoTreeGitUntracked", { fg = palette.base0E, bg = nil, attr = nil, sp = nil })
+      hi("NeoTreeGitUntracked", { fg = palette.base0F, bg = nil, attr = nil, sp = nil })
     end,
   },
 }

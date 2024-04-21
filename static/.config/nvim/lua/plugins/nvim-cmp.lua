@@ -23,7 +23,8 @@ return {
 
       local cmp = require("cmp")
 
-      opts.mapping = vim.tbl_extend("force", opts.mapping, {
+      -- TODO: Should this be only on insert mode?
+      opts.mapping = cmp.mapping.preset.insert({
         ["<C-f>"] = function()
           if cmp.visible() then
             return (cmp.mapping.confirm({ select = true }))()
