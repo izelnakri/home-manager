@@ -80,6 +80,12 @@ mods = "Control"
 # action = "Paste"
 # key = "Paste"
 
+# This is ESSENTIAL for not trigger ESC for tmux copy-mode, couldnt do it in tmux.conf
+[[keyboard.bindings]]
+chars = "\u0001["
+key = "LBracket"
+mods = "Alt"
+
 [[keyboard.bindings]]
 key = "N"
 mods = "Alt"
@@ -187,12 +193,6 @@ key = "PageDown"
 [[keyboard.bindings]]
 chars = "\u001BOD"
 key = "PageUp"
-
-# What is this? Removed for now
-# [[keyboard.bindings]]
-# chars = "\u0001["
-# key = "LBracket"
-# mods = "Control"
 
 [[keyboard.bindings]]
 key = "P"

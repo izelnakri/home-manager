@@ -24,7 +24,8 @@
   # TODO: make ~/.config/home-manager present with git pulled
   # TODO: make mako & alacritty configured with base16 https://www.youtube.com/watch?v=jO2o0IN0LPE
   # Make everything run as btrfs after home-manager install is complete
-  outputs = inputs@{ self, nixinate, nixpkgs, nixpkgs-unstable, nixos-hardware, home-manager, nixGL, ... }:
+  outputs = inputs@{ self, nixinate, nixpkgs, nixpkgs-unstable, nixos-hardware
+    , home-manager, nixGL, ... }:
     let
       system = "x86_64-linux";
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -48,10 +49,13 @@
       };
       nixosModules = import ./modules { lib = nixpkgs.lib; };
       nixosConfigurations = {
+        # TODO: Implement btrfs with this: https://mt-caret.github.io/blog/posts/2020-06-29-optin-state.html
         pi4-nas = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
           modules = [
-            ({ config, pkgs, ... }: { nixpkgs.overlays = [ overlay-unstable nixGL.overlay ]; })
+            ({ config, pkgs, ... }: {
+              nixpkgs.overlays = [ overlay-unstable nixGL.overlay ];
+            })
             nixos-hardware.nixosModules.raspberry-pi-4
             ./hosts/izels-pi4/configuration.nix
             home-manager.nixosModules.home-manager
@@ -60,7 +64,8 @@
                 host = "pi4-nas.lan";
                 sshUser = "izelnakri";
                 buildOn = "remote";
-                substituteOnTarget = true; # if buildOn is "local" then it will substitute on the target, "-s"
+                substituteOnTarget =
+                  true; # if buildOn is "local" then it will substitute on the target, "-s"
                 hermetic = false;
               };
             }
@@ -72,7 +77,9 @@
         izelnakri = home-manager.lib.homeManagerConfiguration {
           pkgs = x86Pkgs;
           modules = [
-            { nixpkgs.overlays = [ overlay-unstable nixGL.overlay ]; }
+            {
+              nixpkgs.overlays = [ overlay-unstable nixGL.overlay ];
+            }
             # hyprland.homeManagerModules.default
             ./users/izelnakri
           ];
