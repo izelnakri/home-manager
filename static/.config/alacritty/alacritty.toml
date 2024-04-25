@@ -83,7 +83,7 @@ mods = "Control"
 # This is ESSENTIAL for not trigger ESC for tmux copy-mode, couldnt do it in tmux.conf
 [[keyboard.bindings]]
 chars = "\u0001["
-key = "LBracket"
+key = "V"
 mods = "Alt"
 
 [[keyboard.bindings]]

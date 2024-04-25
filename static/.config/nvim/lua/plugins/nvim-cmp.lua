@@ -22,6 +22,9 @@ return {
       table.insert(opts.sources, { name = "npm", keyword_length = 4 })
 
       local cmp = require("cmp")
+      local scroll_down_or_initiate_completion = function()
+        cmp.select_next_item({ behavior = cmp.SelectBehavior.Insert })
+      end
 
       -- TODO: Should this be only on insert mode?
       opts.mapping = cmp.mapping.preset.insert({
@@ -33,22 +36,23 @@ return {
           end
         end,
         ["<CR>"] = cmp.mapping(function(fallback)
-          if cmp.visible() then
-            return (cmp.mapping.confirm({ select = true }))()
-          end
-
           fallback()
         end),
-        ["<C-j>"] = function()
-          if cmp.visible() then
-            return (cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }))()
-          else
-            return (cmp.mapping.complete())()
-          end
-        end,
-        ["<C-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
-        ["<Tab>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
-        ["<S-Tab>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+        ["<C-j>"] = cmp.mapping({
+          i = scroll_down_or_initiate_completion,
+          c = scroll_down_or_initiate_completion,
+          n = scroll_down_or_initiate_completion,
+        }),
+        ["<C-k>"] = cmp.mapping({
+          i = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+          c = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+        }),
+        ["<Tab>"] = cmp.mapping(function(fallback)
+          fallback()
+        end),
+        ["<S-Tab>"] = cmp.mapping(function(fallback)
+          fallback()
+        end),
         ["<C-d>"] = cmp.mapping.scroll_docs(4),
         ["<C-u>"] = cmp.mapping.scroll_docs(-4),
       })
