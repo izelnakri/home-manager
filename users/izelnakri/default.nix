@@ -939,6 +939,10 @@ in rec {
       "lf/icons".source = ../../static/.config/lf/icons;
       "lazygit".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/lazygit";
+      "mako/config".text = (replaceColorReferences
+        (builtins.readFile ../../static/.config/mako/config)
+        config.colorScheme.palette);
+
       "nvim".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/nvim";
       "gitui".source = config.lib.file.mkOutOfStoreSymlink

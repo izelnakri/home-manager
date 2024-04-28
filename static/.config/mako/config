@@ -1,0 +1,28 @@
+# Dunst might be better?
+# invoke-action <action>, exec <command>
+# on-button-middle=exec makoctl menu -n "$id" dmenu -p 'Select action: '
+# on-notify=exec mpv /usr/share/sounds/freedesktop/stereo/message.oga
+# shell always have $id variable that more info could be obtained via makoctl info $id
+
+# on-button-left, on-button-middle, on-button-right, on-touch, on-notify
+#
+# [app-name="some-app-id" actionable]
+# on-button-left=invoke-action mail-reply-sender # Does this get mail-reply-sender from the apps exposed API? xdg_activation_v1 protocol
+#
+# Check how I can get a dock, having all settings unified is nice via gsettings/dconf
+# better is nix(and type) based declaration and Editor is even better
+# Check if mako supports groups while taking into account max_visible, no animations(?)
+
+default-timeout=45
+font="NotoSansM Nerd Font Mono" 10.2
+background-color=#{{base00}}
+text-color=#{{base05}}
+padding=10
+border-radius=1
+border-color=#{{base02}}
+progress-color=over #{{base0B}}
+# set icon-path from xdg, /usr/share/icons/hicolor and /usr/share/pixmaps are always searched.
+# maybe set layer=overlay
+
+# send-nofification parts= app-name, app-icon, summary, body, urgency("low", "normal", "critical"), desktop-entry, actionable(boolean), expiring(boolean), grouped, anchor, action
+# do-not-disturp mode, check dunst
