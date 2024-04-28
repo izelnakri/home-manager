@@ -144,14 +144,67 @@ nix run --impure nixgl#nixGLDefault -- alacritty
 
 ```bash
 readlink -f `which waybar`
+
+# Get the store path of a binary:
+nix build nixpkgs#wl-clipboard --print-out-paths --no-link
+# => /nix/store/ww2421123213123213-wl-clipboard-2.1.0
+# cd /nix/store/ww2421123213123213-wl-clipboard-2.1.0 && exe --tree .
+# => Shows whats inside
+
+# Dependency Tree Ops:
 nix-store -q --tree `which hello`
 nix-store -q --references `which hello` # runtime dependencies
 nix-store -q --referrers `which hello` # all referrers that touches the binary
 nix-store -q --tree `which hello` # tree of dependencies
 nix-instantiate hello.nix
 nix-store -q --references /nix/store/z77vn965a59irqnrrjvbspiyl2rph0jp-hello.drv
+
+nix-locate wl-copy # comes from nix-index-database
 ```
 
+### Nix REPL Debugging:
 
+To debug specific home-configuration:
 
+```nix
+:lf .
+system = "x86_64-linux"
+pkgs = inputs.nixpkgs.legacyPackages.${system} 
+hm = inputs.home-manager.lib.homeManagerConfiguration { inherit pkgs; modules = [ ./users/izelnakri ]; extraSpecialArgs = { inherit inputs; }; };
+hm.config.programs.<TAB>
+hm.config.services.<TAB>
+```
+
+To debug specific nixos configuration:
+```nix
+:lf .
+system = "x86_64-linux"
+pkgs = inputs.nixpkgs.legacyPackages.${system} 
+os = inputs.nixpkgs.lib.nixosSystem { 
+  system = "x86_64-linux";
+  modules = [ 
+    ./hosts/izels-pi4/configuration.nix
+    inputs.home-manager.nixosModules.home-manager
+  ]; 
+  specialArgs = { inherit inputs; };
+}
+```
+To debug general nixos configuration:
+```nix
+:l <nixpkgs/nixos>
+```
+
+### Nix Modules Template example:
+
+```shell
+nix-template-module -p openrgb ./nixos/modules/services/openrgb
+```
+
+Inspect module type options:
+
+```nix
+:l <nixpkgs>
+lib.types.<TAB>
+# :doc doesn't work for these, but you can inspect the source code
+```
 %% console.colors = []
