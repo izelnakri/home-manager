@@ -1,9 +1,48 @@
-Implement AI chat
+https://www.youtube.com/watch?v=30WTWkFe910&t=762s
+
+
+folks-inspect requires: 
+(folks-inspect:347289): GLib-GIO-ERROR **: 17:56:35.335: Settings schema 'org.freedesktop.folks' is not installed
+Probably gtk3-gtk4 not installed issue
+
+
+
+get scope structs with llvm debug/DAP & bugstalker
+Implement DAP/linter(deno and eslint linter at the same time(start with use deno always, if no deno ref, use eslint)) for qunitx
+
+Samsung contacts -> check folks -> rust integration with Vala
+
+Obsidian features in vim: Backlinking/navigation, Daily journaling(navigation), tags/tagsearch, Dataview for tags etc, Obsidian view, backup
+NOTE: Winner so far: (for offline setup qwen:0.5(4b ok speed) | wizardllm2, find fast multimodal)
+Then openai or wizardllm2 or codeqwen chat, dolphin-llama3, codegemma(?)
+
+- try 	Starling-LM-7B-beta, OpenChat-3.5-0106, Gemma 7B, OpenHermes, Gemma, QWen(4b)
+- try openai for paid service
+
+when I hit enter on second line autotab doesnt work in neovim!
+create a browsh proxy script to see (doesnt run local files) -> use carbonyl instead(needs keymaps)
+I can create also views with nui | or use them as Edgy window. vsplit window is better
+
+Install GNOME for UI/config standards: Alarm, Notification center, Reminder, Todo/Calendar implementation, battery notification
+
+# LLM Leaderboard: https://arena.lmsys.org/
+
+Make browsh render inside node.js process -> make the node.js process handle browser events | Code this basic RPC communication over websockets
+
+Implement AI chat - Build the TUI with w3m or a ratatui alternative in TypeScript, or build directly in Rust
+- or suggest a plugin interface for oatmeal
+
 Setup DAP & testing for node & deno for memoria, qunitx
 devdocs
 Linting, show errors better on Trouble v3
+Markdown autoformat and toggle preview
 
 devdocs, ai, setup linting/lsp/debug better
+dropbox sync, pocket NAS
+
+
+Inline LSP documentation is great, we need also a better :h interface:
+That shows up lua plugin(readme), luadocs, rustdoc, crates, hexdocs, mdn JS docs, JS plugin readme. Needs devdocs like search/devdocs-like plugin(that includes all plugin/docsets)
 
 Try GitUI one more time, create github issues, create Github Issues for LazyGit maybe use Magit more as a last resort
 Telescope up/down
