@@ -1,7 +1,4 @@
-# lazyvim commands/keybindings/config, git cliff integration(for paper_trail, also check lsp this way)
-# TODO: implement/configure BAT correctly, make it the PAGER
 # Gitui customization(needs Ctrl-D, drop staged/unstaged file, proper edit window)
-# LSP & documentation viewer, go to definition, missing plugins, surround, linter, chatgpt suggestions
 # make it compatible with snowflake standard
 
 # For application launcher use tofi or rofi-wayland or anyrun, do Hyprland desktop portal
@@ -9,29 +6,7 @@
 # TODO: Fix nvim copy/paste yanked thing cannot be pasted currently, and copied thing doesnt go to yanked stuff, only copy/paste works in insert mode, also yank pase across panels dont work
 # http://wiki.hyprland.org/Useful-Utilities/Other/#automatically-mounting-using-udiskie
 # make lightdm & gnome work with home-manager
-# implement latte-dock(?)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# dunst or mako & libnotify
-# wl-clipboard
-# rofi-wayland
-# research swaygrab, swaymsg
+# implement latte-dock(?) for hyprland
 
 # implement git checkout
 
@@ -76,38 +51,35 @@ in rec {
   home.packages = with pkgs; [
     # gnome.gnome-session
     (wrapNixGL gnome.gnome-shell) # NOTE: exclude packages(?)
+    unstable.ripdrag
+    # calcurse (maybe use rust version) (daemon sends notifications)
     lightdm
     asdf-vm
     atuin
     # avahi (network discovery & connection)
     bat
-    unstable.brave # previous reference: inputs.nixpkgs.legacyPackages.x86_64-linux.brave
+    unstable.brave # previous reference: inputs.nixpkgs.legacyPackages.x86_64-linux.brave-browser
     unstable.browsh
-    # bspwm
     direnv
     # devdocs-desktop
-    # dmenu
-    # elinks - text based web browser, is it the best(?)
     # eww - Widget library for unix
-    # flameshot
+    # flameshot # screenshot util, doesnt run yet on hyprland
     chromium
     comma
     # deno
-    # dunst
-    # dwm
-    # emacs29
-    # emacs-doom
     unstable.elixir_1_16
     # helix
     (wrapNixGL unstable.hyprlock)
     unstable.hypridle
     fd
     flatpak
+    folks
     fontconfig
     freetype
     fx
     fzf
     gcc
+    geoclue2
     gh
     gimp
     unstable.git-cliff
@@ -131,7 +103,6 @@ in rec {
     kubernetes-helm
     # ktop
     # lens
-    lf
     libevdev
     libnotify
     localsend
@@ -142,7 +113,7 @@ in rec {
     lxd
     lua
     unstable.luajitPackages.luarocks
-    # lutris
+    # lutris # play all games on linux
     monado
     magic-wormhole
     mpv # Default media player
@@ -201,6 +172,7 @@ in rec {
     qemu
     # playonlinux
     # variety
+    unstable.ueberzugpp
     unzip
     unixtools.nettools
     xh # http tool
@@ -214,6 +186,7 @@ in rec {
     vnstat
     volta
     # xfce.thunar
+    unstable.yazi
     zathura
     zeal
 
@@ -288,14 +261,14 @@ in rec {
 
   #  ~/.nix-profile/etc/profile.d/hm-session-vars.sh or /etc/profiles/per-user/izelnakri/etc/profile.d/hm-session-vars.sh
   home.sessionVariables = rec {
-    BROWSER = "brave";
+    BROWSER = "brave-browser";
     EDITOR = "nvim";
+    OPENER = "xdg-open";
     ELIXIR_ERL_OPTIONS = "+fnu";
     ERL_AFLAGS =
       "-kernel shell_history enabled -kernel shell_history_file_bytes 1024000";
     FZF_DEFAULT_COMMAND = "fd --type f";
     GDK_SCALE = 2;
-    # LF_ICONS
     # LANG = "en_US.UTF-8";
     # LC_ALL = "en_US.UTF-8";
     MANPAGER = "bat -l man -p";
@@ -462,52 +435,6 @@ in rec {
     };
 
     less.enable = true;
-
-    # TODO: test all the functionality and move to a rust based one
-    lf = {
-      enable = true;
-      commands = {
-        dragon-out = ''%${pkgs.xdragon}/bin/xdragon -a -x "$fx"'';
-        editor-open = "$$EDITOR $f";
-        mkdir = ''
-          ''${{
-            printf "Directory Name: "
-            read DIR
-            mkdir $DIR
-          }}
-        '';
-      };
-
-      # TODO: study these and add Selection path to buffer command + opener with
-      keybindings = {
-        "\\\"" = "";
-        o = ""; # xdg-open
-        c = "mkdir";
-        "." = "set hidden!";
-        "`" = "mark-load";
-        "\\'" = "mark-load";
-        "<enter>" = "open";
-
-        do = "dragon-out";
-
-        "g~" = "cd";
-        gh = "cd";
-        "g/" = "/";
-
-        ee = "editor-open";
-        V = ''$''${pkgs.bat}/bin/bat --paging=always --theme=gruvbox "$f"'';
-      };
-
-      settings = {
-        preview = true;
-        hidden = true;
-        previewer = "${pkgs.ctpv}/bin/ctpv";
-        cleaner = "${pkgs.ctpv}/bin/ctpvclear";
-        drawbox = true;
-        icons = true;
-        ignorecase = true;
-      };
-    };
 
     lsd.enable = true;
     man.enable = true;
@@ -716,17 +643,15 @@ in rec {
         PROMPT='%{$fg[blue]%}$(date +%H:%M:%S) $(display_jobs_count_if_needed)%B%{$fg[green]%}%n %{$fg[blue]%}%~%{$fg[yellow]%}$(parse_git_branch) %{$reset_color%}';
         ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#${config.colorScheme.palette.base03},bold";
 
-        # Use lf to switch directories and bind it to ctrl-o
-        lfcd () {
-            tmp="$(mktemp)"
-            lf -last-dir-path="$tmp" "$@"
-            if [ -f "$tmp" ]; then
-                dir="$(cat "$tmp")"
-                rm -f "$tmp"
-                [ -d "$dir" ] && [ "$dir" != "$(pwd)" ] && cd "$dir"
-            fi
+        # NOTE: This adds quit-to-directory functionality to yazi
+        function yy() {
+          local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+          yazi "$@" --cwd-file="$tmp"
+          if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+            cd -- "$cwd"
+          fi
+          rm -f -- "$tmp"
         }
-        bindkey -s '^o' 'lfcd\n'
 
         # TODO: Find another way to get ahead of /$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin in the future:
         export PATH="$BIN_PATHS:$PATH"
@@ -762,12 +687,11 @@ in rec {
         diff = "diff --color=auto";
         dockerremoveall = "sudo docker system prune -a";
         e = "helix";
-        g = "git";
+        g = "yy";
         grep = "grep --color=auto";
         k = "kubectl";
         kube = "kubectl";
         ls = "ls --color=auto -F";
-        lf = "lfub";
         lusd =
           "node /home/izelnakri/cron-jobs/curve-lusd.js"; # NOTE: maybe move to cmd
         onport = "ps aux | grep";
@@ -936,7 +860,7 @@ in rec {
         source = ../../static/.config/hypr;
         onChange = "~/.nix-profile/bin/hyprctl reload";
       };
-      "lf/icons".source = ../../static/.config/lf/icons;
+      "ironbar".source = ../../static/.config/ironbar;
       "lazygit".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/lazygit";
       "mako/config".text = (replaceColorReferences
@@ -954,20 +878,51 @@ in rec {
         (builtins.readFile ../../static/.config/tmux/theme.conf)
         config.colorScheme.palette);
       "waybar".source = ../../static/.config/waybar;
-      "ironbar".source = ../../static/.config/ironbar;
       "wlogout".source = ../../static/.config/wlogout;
+      "yazi".source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/.config/home-manager/static/.config/yazi";
     };
 
     mimeApps = {
       enable = true;
       defaultApplications = {
-        # html -> brave, jpeg -> sxiv, office documents to open office
-        "text/plain" = [ "neovim.desktop" ];
-        "application/pdf" = [ "zathura.desktop" "zathura" ];
-        "image/*" = [ "sxiv.desktop" ]; # NOTE: probably change sxiv to new one
-        "video/png" = [ "mpv.desktop" ];
-        "video/jpg" = [ "mpv.desktop" ];
-        "video/*" = [ "mpv.desktop" ];
+        # TODO: js, css should open in brave
+        # markdown should open in standalone markdown viewer app
+
+        "text/plain" = "brave-browser.desktop";
+        "text/html" = "brave-browser.desktop";
+        "text/javascript" = "brave-browser.desktop";
+        "text/css" = "brave-browser.desktop";
+        "text/markdown" = "brave-browser.desktop";
+        "application/json" = "brave-browser.desktop";
+        "application/yaml" = "brave-browser.desktop";
+        "application/toml" = "brave-browser.desktop";
+        "text/*" = [ "brave-browser.desktop" ];
+        "text/vnd.trolltech.linguist" = "brave-browser.desktop";
+        # NOTE: Location: ~/.nix-profile/share/applications
+
+        "application/pdf" =
+          "brave-browser.desktop"; # NOTE: make it zathura or other document viewer?
+        # "image/*" = [ "sxiv.desktop" ]; # NOTE: probably change sxiv to new one
+        # "video/png" = [ "mpv.desktop" ];
+        # "video/jpg" = [ "mpv.desktop" ];
+        # "video/*" = [ "mpv.desktop" ];
+        # "audio/*" = "org.gnome.Lollypop.desktop";
+        # TOOO: office documents
+
+        "x-scheme-handler/tg" = "telegramdesktop.desktop";
+        "x-scheme-handler/http" = "brave-browser.desktop";
+        "x-scheme-handler/https" = "brave-browser.desktop";
+        "x-scheme-handler/ftp" = "brave-browser.desktop";
+        "x-scheme-handler/chrome" = "brave-browser.desktop";
+        "x-scheme-handler/about" = "brave-browser.desktop";
+        "x-scheme-handler/unknown" = "brave-browser.desktop";
+        "application/x-extension-htm" = "brave-browser.desktop";
+        "application/x-extension-html" = "brave-browser.desktop";
+        "application/x-extension-shtml" = "brave-browser.desktop";
+        "application/xhtml+xml" = "brave-browser.desktop";
+        "application/x-extension-xhtml" = "brave-browser.desktop";
+        "application/x-extension-xht" = "brave-browser.desktop";
       };
     };
 
@@ -1000,8 +955,6 @@ in rec {
   # Xft.autohint: true
   # Xft.hintstyle: hintslight
   # Xft.lcdfilter: lcddefault
-
-  # xfconf & xresources, xsession(.xprofile) [windowManager.awesome|bspwm|fluxbox|i3|spectrwm|xmonad
 
   #  builtins.readFile (
   #   pkgs.fetchFromGitHub {

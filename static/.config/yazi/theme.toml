@@ -1,0 +1,2 @@
+[icon]
+prepend_rules = [{ name = "*/", text = "", fg = "#85B1DD", bold = true }]

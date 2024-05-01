@@ -1,0 +1,43 @@
+[manager]
+sort_dir_first = true
+linemode = "size"
+show_hidden = true
+show_symlink = true
+
+[opener]
+edit = [{ run = 'nvim "$@"', block = true, desc = "Edit with NeoVim" }]
+play = [
+  { run = 'mpv "$@"', orphan = true, for = "unix", desc = "Play file with mpv" },
+]
+open = [{ run = 'xdg-open "$@"', desc = "Open file" }]
+
+[open]
+rules = [
+  { name = "*.json", use = "edit" },
+  { name = "*.toml", use = "edit" },
+  { name = "*.nix", use = "edit" },
+  { name = "*.corn", use = "edit" },
+  { name = "*.css", use = "edit" },
+  { name = "*.js", use = "edit" },
+  { name = "*.ts", use = "edit" },
+  { name = "*.iex", use = "edit" },
+  { name = "*.ex", use = "edit" },
+  { name = "*.exs", use = "edit" },
+  { name = "*.rb", use = "edit" },
+  { name = "*.rs", use = "edit" },
+  { name = "*.yaml", use = "edit" },
+  { name = "*.md", use = [
+    "edit",
+    "open",
+  ] },
+  { name = "*.pdf", use = [
+    "open",
+    "edit",
+  ] },
+  { name = "*.html", use = [
+    "open",
+    "edit",
+  ] },
+  { mime = "text/*", use = "edit" },
+  { mime = "video/*", use = "play" },
+]
