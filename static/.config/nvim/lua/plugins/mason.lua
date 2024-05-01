@@ -20,7 +20,6 @@ return {
         "js-debug-adapter",
         "json-lsp",
         "lua-language-server",
-        "markdownlint",
         "marksman",
         "ruby-lsp",
         "rust-analyzer",

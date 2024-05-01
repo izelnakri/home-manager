@@ -207,4 +207,22 @@ Inspect module type options:
 lib.types.<TAB>
 # :doc doesn't work for these, but you can inspect the source code
 ```
+
+```
+
+#### Miscellanous
+
+```bash
+# Send a notification from the command line:
+notify-send "My title" "Description"
+
+# Send a notification with progress bar:
+notify-send -h int:value:99 "My title" "Description"
+
+# Send a d-bus message:
+dbus-send --system / net.nuetzlich.SystemNotifications.Notify "string:hello world"
+
+# TODO: Find DBus history / debugging techniques, read mako source code(or find rust version)
+```
+
 %% console.colors = []

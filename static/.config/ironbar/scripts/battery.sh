@@ -54,12 +54,8 @@ get_battery_status() {
 	else
 		if [ $battery_percent -lt 15 ]; then
 			last_battery_notification_id=$(makoctl list | jq '.data[][] | select(.summary.data == "Battery Low")' | jq '.id.data')
-			if [[ -n ${last_battery_notification_id} ]]; then
-				:
-			else
-				last_battery_notification_id=1
-			fi
-			notify-send -r $last_battery_notification_id "Battery Low" "Battery level is ${battery_percent}%\!"
+			[[ -n ${last_battery_notification_id} ]] || last_battery_notification_id=1
+			notify-send -r $last_battery_notification_id "Battery Low" "Battery level is ${battery_percent}%\!" -t 45000
 		fi
 
 		time_to_empty=$(acpi -b | grep -o -P '(\d+:\d+:\d+|\d+:\d+|\d+\s(?:minute|min|hour|h))' | head -1)

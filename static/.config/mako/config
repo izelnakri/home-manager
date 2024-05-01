@@ -13,15 +13,17 @@
 # better is nix(and type) based declaration and Editor is even better
 # Check if mako supports groups while taking into account max_visible, no animations(?)
 
-default-timeout=45
+default-timeout=6000
 font="NotoSansM Nerd Font Mono" 10.2
 background-color=#{{base00}}
 text-color=#{{base05}}
+format=<span color="#{{base0B}}" line_height="1.2"><b>%s</b></span>\n%b
 padding=10
 border-radius=1
 border-color=#{{base02}}
-progress-color=over #{{base0B}}
+progress-color=over #{{base02}}
 # set icon-path from xdg, /usr/share/icons/hicolor and /usr/share/pixmaps are always searched.
+# or maybe: "/usr/share/icons/gnome/16x16/status/:/usr/share/icons/gnome/16x16/devices/") also icon_theme?
 # maybe set layer=overlay
 
 # send-nofification parts= app-name, app-icon, summary, body, urgency("low", "normal", "critical"), desktop-entry, actionable(boolean), expiring(boolean), grouped, anchor, action
