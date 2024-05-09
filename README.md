@@ -8,15 +8,15 @@
 
   - `pi4/` - My router, NAS, and other things.
 
-  - `viture/` -  My viture neckband.
+  - `viture/` - My viture neckband.
 
-- `modules/` - [Modules](https://nixos.wiki/wiki/Module) `nixosModules` that appear in the flake automatically. Individual files can be
-  imported on imports = [ ... ];
+- `modules/` - [Modules](https://nixos.wiki/wiki/Module) `nixosModules` that appear in the flake automatically.
+  Individual files can be imported on imports = [ ... ];
 
   - `functions/` - Helper nix functions to accomplish certain tasks. Like (nixGL $program) etc.
 
-- `secrets/` - [`age`](https://github.com/FiloSottile/age) encrypted secrets,
-  made possible by [`agenix`](https://github.com/ryantm/agenix)
+- `secrets/` - [`age`](https://github.com/FiloSottile/age) encrypted secrets, made possible by
+  [`agenix`](https://github.com/ryantm/agenix)
 
 - `static/` - static configuration files & folders that are copied to systems.
   - `ssot/` - Single Source of Truth, stuff like my SSH Keys, etc.
@@ -139,7 +139,6 @@ nix registry add nixgl github:guibou/nixGL
 nix run --impure nixgl#nixGLDefault -- alacritty
 ```
 
-
 ### Nix Debugging:
 
 ```bash
@@ -176,6 +175,7 @@ hm.config.services.<TAB>
 ```
 
 To debug specific nixos configuration:
+
 ```nix
 :lf .
 system = "x86_64-linux"
@@ -189,7 +189,9 @@ os = inputs.nixpkgs.lib.nixosSystem {
   specialArgs = { inherit inputs; };
 }
 ```
+
 To debug general nixos configuration:
+
 ```nix
 :l <nixpkgs/nixos>
 ```
@@ -208,8 +210,7 @@ lib.types.<TAB>
 # :doc doesn't work for these, but you can inspect the source code
 ```
 
-```
-
+````
 #### Miscellanous
 
 ```bash
@@ -223,6 +224,9 @@ notify-send -h int:value:99 "My title" "Description"
 dbus-send --system / net.nuetzlich.SystemNotifications.Notify "string:hello world"
 
 # TODO: Find DBus history / debugging techniques, read mako source code(or find rust version)
-```
+````
 
 %% console.colors = []
+
+```
+```

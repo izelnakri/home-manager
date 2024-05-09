@@ -1,5 +1,9 @@
+# tmux set-env FOO bar -> sets it for subsequent session but putting it in showenv
+# every session has to run export $(tmux show-env) -> make a command to automate these 3 steps
+
 HOSTNAME = $(shell hostname)
 USERNAME = $(shell whoami)
+# FOO ?= "bar" # this represents ||= in ruby
 
 NIX_FILES = $(shell find . -name '*.nix' -type f)
 
@@ -25,6 +29,15 @@ upgrade:
 # nixGL.auto requires --impure due to builtins.currentTime
 home-switch:
 	home-manager --impure switch --flake .
+
+# TODO: Read more in depth
+# disko:
+# 	nix run github:nix-community/disko -- --mode disko /tmp/disk-config.nix # NOTE: mode is mount/format/disko(both)
+
+# TODO: read more nixos-anywhere then, build a simple nginx server with it as an example on scaleway
+
+# foo:
+# 	echo ${BAR}
 
 # deploy
 #   make update && nix run .nix run .#apps.nixinate.$1

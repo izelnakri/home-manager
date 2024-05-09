@@ -1,6 +1,6 @@
 [manager]
 sort_dir_first = true
-linemode = "size"
+linemode = "mtime"
 show_hidden = true
 show_symlink = true
 
@@ -26,18 +26,12 @@ rules = [
   { name = "*.rb", use = "edit" },
   { name = "*.rs", use = "edit" },
   { name = "*.yaml", use = "edit" },
-  { name = "*.md", use = [
-    "edit",
-    "open",
-  ] },
-  { name = "*.pdf", use = [
-    "open",
-    "edit",
-  ] },
-  { name = "*.html", use = [
-    "open",
-    "edit",
-  ] },
+  { name = "*.jpeg", use = "open" },           # NOTE: change in future
+  { name = "*.jpg", use = "open" },            # NOTE: change in future
+  { name = "*.png", use = "open" },            # NOTE: change in future
+  { name = "*.md", use = ["edit", "open"] },
+  { name = "*.pdf", use = ["open", "edit"] },
+  { name = "*.html", use = ["open", "edit"] },
   { mime = "text/*", use = "edit" },
   { mime = "video/*", use = "play" },
 ]

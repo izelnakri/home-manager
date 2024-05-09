@@ -46,5 +46,11 @@ return {
       end
     end,
   },
-  { "tpope/vim-fugitive", keys = { { "<leader>ghB", ":Git blame<CR>", "Toggle document git blame" } } },
+  {
+    "tpope/vim-fugitive",
+    keys = {
+      { "<leader>ghB", ":Git blame<CR>", "Toggle document git blame" },
+      { "<leader>gB", ":Git blame<CR>", "Toggle Git Blame for file" },
+    },
+  },
 }

@@ -21,8 +21,9 @@ base0F: "A87C50" # | brown: Deprecated Highlighting for Methods and Functions, O
 # base00: "#020f0c" # | ---: Selection Background -- dark green/black [needs to change]
 # base01: "#0c241e" # | Default background, dark -- dark green/black
 # base02: "#0d372d" # | Lighter Background (Used for status bars) -- slightly lighter shade of dark green/black
-# base03: "#5E6E5E" # | Comments, Invisibles, Line Highlighting -- a muted greenish-gray for better readability
+# base03: "#5E6E5E" # | Comments, Invisibles, Line Highlighting -- a muted greenish-gray for better readability, maybe this needs to be lighter for markdown strong tag styling
 # base04: "#485848" # | +: Dark Foreground (Used for status bars) -- darker shade for contrast with light text
+# TODO: This has to be brighter!!:
 # base05: "#D6E3C6" # | ++: Default Foreground, Caret, Delimiters, Operators -- light gray for primary text
 # base06: "#E3EFE1" # | +++: Light Foreground (Not often used) -- even lighter gray for secondary text
 # base07: "#F5F9F5" # | ++++: The Lightest Foreground (Not often used) -- very light gray for background
@@ -34,8 +35,8 @@ base0F: "A87C50" # | brown: Deprecated Highlighting for Methods and Functions, O
 # base0D: "#85B1DD" # | blue: Functions, Methods, Attribute IDs, Headings -- calm blue for readability
 # base0E: "#B389D6" # | purple: Keywords, Storage, Selector, Markup Italic, Diff Changed -- rich purple for distinction
 # base0F: "#A87C50" # | brown: Deprecated Highlighting for Methods and Functions, Opening/Closing Embedded Language Tags -- earthy brown for deprecated elements
-# base10: "#020a08" # | darker_black: Darker Background -- slightly darker shade of dark green/black
-# base11: "#000000" # | darkest_black: The Darkest Background -- black
+# base10: "#666666" # | darker_black: Darker Background -- slightly darker shade of dark green/black
+# base11: "#333333" # | darkest_black: The Darkest Background -- black
 # base12: "#FF3333" # | bright_red: Error, Tag Matching, Non-Captured Groups -- bright red for critical elements
 # base13: "#FFFF00" # | bright_yellow: Debugging, Regex Quantifiers, Escape Characters -- bright yellow for attention
 # base14: "#4CFF00" # | bright_green: Diff Changed, Operators, Punctuation -- vibrant green for visibility

@@ -14,6 +14,7 @@
 -- <leader>td debug nearest test | yellow arrow -> <leader>dO step over | <leader>dt terminate
 -- :InspectTree, <C-space> | <bs>, ]f, va=
 
+-- 4 layers of UI: dressing, nui, telescope, nvim-cmp, edgy, noice
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
@@ -26,7 +27,7 @@ vim.opt.rtp:prepend(vim.env.LAZY or lazypath)
 require("lazy").setup({
   spec = {
     -- add LazyVim and import its plugins
-    { "LazyVim/LazyVim", import = "lazyvim.plugins", opts = { colorscheme = "gruvbox" } },
+    { "LazyVim/LazyVim", import = "lazyvim.plugins" },
 
     { import = "lazyvim.plugins.extras.coding.codeium" },
     { import = "lazyvim.plugins.extras.coding.copilot" },
@@ -37,10 +38,11 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.dap.core" },
     { import = "lazyvim.plugins.extras.dap.nlua" },
 
-    { import = "lazyvim.plugins.extras.test.core" },
+    { import = "lazyvim.plugins.extras.lsp.none-ls" },
+    { import = "lazyvim.plugins.extras.test.core" }, -- NOTE: check if this is needed?
 
+    { import = "lazyvim.plugins.extras.ui.edgy" },
     { import = "lazyvim.plugins.extras.editor.aerial" },
-    { import = "lazyvim.plugins.extras.editor.navic" },
     { import = "lazyvim.plugins.extras.editor.trouble-v3" },
 
     { import = "lazyvim.plugins.extras.lang.ansible" },
@@ -53,10 +55,13 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.lang.rust" },
     { import = "lazyvim.plugins.extras.lang.typescript" },
     { import = "lazyvim.plugins.extras.lang.yaml" },
-    { import = "lazyvim.plugins.extras.ui.edgy" },
+
+    -- Plug 'Yggdroot/indentLine' or a new one might be needed
 
     -- TODO: check ~/Github/poem-tutorial/src/main data structure debugging functionality, implement it here
     -- { import = "lazyvim.plugins.extras.util.gitui" },
+    -- TODO: add vim-sendtowindow plugin to send highlight to another tmux session
+    -- TODO: add alex-laycalvert/flashcards.nvim
     { import = "plugins" },
   },
   defaults = {

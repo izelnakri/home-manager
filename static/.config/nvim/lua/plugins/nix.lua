@@ -8,23 +8,26 @@ return {
     end,
   },
   {
-    "williamboman/mason.nvim",
-    opts = function(_, opts)
-      vim.list_extend(opts.ensure_installed, {
-        "nil",
-      })
-    end,
+    "neovim/nvim-lspconfig",
+    opts = {
+      servers = {
+        nil_ls = {},
+      },
+    },
   },
   {
     "stevearc/conform.nvim",
     optional = true,
-    opts = {
-      formatters_by_ft = {
-        nix = { "nixfmt" },
-      },
-    },
+    opts = function(_, opts)
+      opts.formatters_by_ft.nix = { "nixfmt", "statix" } -- NOTE: remove nixfmt
+    end,
   },
-
+  {
+    "mfussenegger/nvim-lint",
+    opts = function(_, opts)
+      opts.linters_by_ft.nix = { "statix" }
+    end,
+  },
   -- Ensure nix debugger by extending mason
   -- Add something like rustaceanvim for nix or maybe on nvim-dap like ruby does it
   -- Extend neotest, rust does with list_extend on opts with require("rustaceanvim.neotest")

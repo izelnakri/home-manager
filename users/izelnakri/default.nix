@@ -1,3 +1,4 @@
+# git cliff integration(for paper_trail, also check lsp this way)
 # Gitui customization(needs Ctrl-D, drop staged/unstaged file, proper edit window)
 # make it compatible with snowflake standard
 
@@ -7,12 +8,12 @@
 # http://wiki.hyprland.org/Useful-Utilities/Other/#automatically-mounting-using-udiskie
 # make lightdm & gnome work with home-manager
 # implement latte-dock(?) for hyprland
+# task-warrior, thesaurust
 
 # implement git checkout
 
 # implement touchscreen (do it on hosts/raspberry-pi)
-# TODO: How to manage tokens secrets
-# lazyvim
+# How to manage tokens secrets?(nixos-anywhere)
 
 # do the base color consistency
 # lib = to define helper variables
@@ -37,7 +38,7 @@ in rec {
   nixpkgs.config.allowBroken = true;
 
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.allowUnfreePredicate = (_: true);
+  nixpkgs.config.allowUnfreePredicate = _: true;
 
   home.username = "izelnakri";
   home.homeDirectory = "/home/izelnakri";
@@ -49,9 +50,6 @@ in rec {
     '';
   };
   home.packages = with pkgs; [
-    # gnome.gnome-session
-    (wrapNixGL gnome.gnome-shell) # NOTE: exclude packages(?)
-    unstable.ripdrag
     # calcurse (maybe use rust version) (daemon sends notifications)
     lightdm
     asdf-vm
@@ -60,8 +58,10 @@ in rec {
     bat
     unstable.brave # previous reference: inputs.nixpkgs.legacyPackages.x86_64-linux.brave-browser
     unstable.browsh
+    cbfmt
     direnv
     # devdocs-desktop
+    unstable.dprint
     # eww - Widget library for unix
     # flameshot # screenshot util, doesnt run yet on hyprland
     chromium
@@ -84,8 +84,10 @@ in rec {
     gimp
     unstable.git-cliff
     unstable.gitui
+    # unstable.gleam
     gpsd
     grim
+    # Should I have grimshot instead?
     # groff
     # joplin
     htop
@@ -105,6 +107,8 @@ in rec {
     # lens
     libevdev
     libnotify
+    (wrapNixGL unstable.libreoffice-fresh)
+    # unstable.lmstudio
     localsend
     lsd
     lsof
@@ -123,6 +127,8 @@ in rec {
     # nfs-utils
     ninja
     nixos-rebuild
+    nix-init
+    nix-prefetch-git
     ngrok
     unstable.nh # amazing nh nix helper, search, diff, switch etc, nom shell/nom develop
     nodejs
@@ -145,6 +151,7 @@ in rec {
     python3Full
     # python.pkgs.pip
     # rofi - dmenu replacement, window switcher
+    unstable.ripdrag
     ripgrep
     rsync
     # w3m
@@ -157,10 +164,12 @@ in rec {
     # synergy
     # swaycons
     slurp
+    statix
     swappy
     swaylock
     swww # wallpaper: maybe use programs.wpaperd instead(?)
     syncthing
+    taskwarrior
     terminus-nerdfont
     tree
     # timeshift
@@ -175,6 +184,7 @@ in rec {
     unstable.ueberzugpp
     unzip
     unixtools.nettools
+    # upower
     xh # http tool
     watchman
     wget
@@ -239,6 +249,13 @@ in rec {
   # ];
 
   home.file = {
+    # NOTE: cbfmt shouldnt require this file and hopefully in future it moves to ~/.config/cbfmt
+    ".cbfmt.toml".source =
+      config.lib.file.mkOutOfStoreSymlink ../../static/.cbfmt.toml;
+    # NOTE: Remove this when LSP formatting is correctly implemented with default new NeoVim versions:
+    ".dprint.jsonc".source =
+      config.lib.file.mkOutOfStoreSymlink ../../static/.dprint.jsonc;
+    # TODO: Move this xdg desktopEntries:
     "/.local/share/applications/Alacritty.desktop".text = ''
       [Desktop Entry]
       Terminal=false
@@ -250,12 +267,18 @@ in rec {
     ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
     "scripts".source = ../../static/scripts;
 
-    # TODO: add colors file for other programs & reference.
-
-    # # You can also set the file content immediately.
-    # ".gradle/gradle.properties".text = ''
-    #   org.gradle.console=verbose
-    #   org.gradle.daemon.idletimeout=3600000
+    # NOTE: make all dbus messages to be logged:
+    # "../../etc/dbus-1/system-local.conf".text = ''
+    #   <!DOCTYPE busconfig PUBLIC
+    #   "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+    #   "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+    #   <busconfig>
+    #       <policy user="root">
+    #           <allow eavesdrop="true"/>
+    #           <allow eavesdrop="true" send_destination="*"/>
+    #       </policy>
+    #   </busconfig>
+    #   # sudo dbus-monitor "type=error,sender='org.freedesktop.DBus'" --system
     # '';
   };
 
@@ -278,7 +301,6 @@ in rec {
     TERMINAL = "alacritty";
     BIN_PATHS =
       "$HOME/.volta/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin";
-    IZEL = "test";
     PATH = "${config.home.sessionVariables.BIN_PATHS}:$PATH";
     POSTGRES_USER = "postgres";
     POSTGRES_PASSWORD = "postgres";
@@ -728,7 +750,12 @@ in rec {
     #   enableSSHSupport = true;
     #   enableZshIntegration = true;
     # }
-    # syncthing
+
+    syncthing = {
+      enable = true;
+      extraOptions = [ ]; # ["--gui-apikey=apiKey"]
+      tray.enable = true;
+    };
 
     # autorandr|kanshi, avizo|dunst|fnott|mako(?) - notification daemon, batsignal, betterlockscreen, borgmatic, comodoro
     # dropbox, dunst, dwm, etesync-dav(cal, contacts, tasks, notes), flameshot,fusuma(touchpad), gammastep(flux)|sctd|wlsunset,
@@ -751,28 +778,6 @@ in rec {
       enable = true;
       # settings
     };
-
-    # hypridle = {
-    #   enable = true;
-
-    #   listeners = [
-    #     {
-    #       timeout = 10;
-    #       onTimeout = "${pkgs.unstable.hyprlock}";
-    #     }
-    #     {
-    #       timeout = 20;
-    #       onTimeout = "systemctl suspend";
-    #     }
-    #   ];
-    # };
-
-    # swayidle = {
-    #   enable = true;
-    #   # timeouts = [
-    #   #   { timeout = 30000; command = "${pkgs.swaylock}/bin/swaylock -fF"; }
-    #   # ];
-    # };
 
     xremap = {
       watch = true;
@@ -881,8 +886,18 @@ in rec {
       "wlogout".source = ../../static/.config/wlogout;
       "yazi".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/yazi";
+
+      # NOTE: Theming GTK:
+      "gtk-4.0/gtk.css".text = (replaceColorReferences
+        (builtins.readFile ../../static/.config/gtk-4.0/gtk.css)
+        config.colorScheme.palette);
+      #  Make it symlink instead of text:
+      "gtk-3.0/gtk.css".text = (replaceColorReferences
+        (builtins.readFile ../../static/.config/gtk-4.0/gtk.css)
+        config.colorScheme.palette);
     };
 
+    mime.enable = true;
     mimeApps = {
       enable = true;
       defaultApplications = {
@@ -899,6 +914,10 @@ in rec {
         "application/toml" = "brave-browser.desktop";
         "text/*" = [ "brave-browser.desktop" ];
         "text/vnd.trolltech.linguist" = "brave-browser.desktop";
+        "image/jpeg" = "brave-browser.desktop";
+        "image/jpg" = "brave-browser.desktop";
+        "image/png" = "brave-browser.desktop";
+        "image/*" = "brave-browser.desktop";
         # NOTE: Location: ~/.nix-profile/share/applications
 
         "application/pdf" =
@@ -1009,3 +1028,6 @@ in rec {
 # Sound configuration done outside of home-manager due to complex pipewire, alsa, pulse, jack setup with avizo
 # bluez try this in nix first
 # polkit might be necessary for swaylock(?)
+# Implement https://github.com/banister/method_source for TS, elixir
+
+# https://heywoodlh.io/nixos-gnome-settings-and-keyboard-shortcuts

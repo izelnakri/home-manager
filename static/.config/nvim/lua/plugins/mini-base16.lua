@@ -1,4 +1,4 @@
-function read_system_colors(system_color_path)
+local function read_system_colors(system_color_path)
   local json_file = io.open(system_color_path, "r")
   if json_file == nil then
     print("Failed to open JSON file")
@@ -73,9 +73,9 @@ return {
       hi("Type", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
       hi("Tag", { fg = palette.base0D, bg = nil, attr = nil, sp = nil })
 
-      hi("@markup.heading", { fg = palette.base0D, bg = nil, attr = "bold", sp = nil })
-      hi("@markup.link.label", { fg = palette.base0C, bg = nil, attr = "underline", sp = nil })
-      hi("@markup.link.url", { fg = palette.base0E, bg = nil, attr = nil, sp = nil })
+      hi("@markup.heading", { fg = palette.base0E, bg = nil, attr = "bold", sp = nil })
+      hi("@markup.link.label", { fg = palette.base0D, bg = nil, attr = "underline", sp = nil })
+      hi("@markup.link.url", { fg = palette.base0C, bg = nil, attr = nil, sp = nil })
       hi("@markup.list", { fg = palette.base09, bg = nil, attr = nil, sp = nil })
       hi("@markup.raw", { fg = palette.base06, bg = nil, attr = "bold", sp = nil })
       hi("@markup.strong", { fg = palette.base03, bg = nil, attr = "bold", sp = nil })
@@ -120,38 +120,3 @@ return {
 --   base0E = "#7B68EE", -- NOTE: always assumes this is the orange color
 --   base0F = "#A87C50",
 -- }
-
--- if H.has_integration('hrsh7th/nvim-cmp') then
---   hi('CmpItemAbbr',           {fg=palette.base05, bg=nil,      attr=nil,    sp=nil})
---   hi('CmpItemAbbrDeprecated', {fg=palette.base03, bg=nil,      attr=nil,    sp=nil})
---   hi('CmpItemAbbrMatch',      {fg=palette.base0A, bg=nil,      attr='bold', sp=nil})
---   hi('CmpItemAbbrMatchFuzzy', {fg=palette.base0A, bg=nil,      attr='bold', sp=nil})
---   hi('CmpItemKind',           {fg=palette.base0F, bg=palette.base01, attr=nil,    sp=nil})
---   hi('CmpItemMenu',           {fg=palette.base05, bg=palette.base01, attr=nil,    sp=nil})
---
---   hi('CmpItemKindClass',         {link='Type'})
---   hi('CmpItemKindColor',         {link='Special'})
---   hi('CmpItemKindConstant',      {link='Constant'})
---   hi('CmpItemKindConstructor',   {link='Type'})
---   hi('CmpItemKindEnum',          {link='Structure'})
---   hi('CmpItemKindEnumMember',    {link='Structure'})
---   hi('CmpItemKindEvent',         {link='Exception'})
---   hi('CmpItemKindField',         {link='Structure'})
---   hi('CmpItemKindFile',          {link='Tag'})
---   hi('CmpItemKindFolder',        {link='Directory'})
---   hi('CmpItemKindFunction',      {link='Function'})
---   hi('CmpItemKindInterface',     {link='Structure'})
---   hi('CmpItemKindKeyword',       {link='Keyword'})
---   hi('CmpItemKindMethod',        {link='Function'})
---   hi('CmpItemKindModule',        {link='Structure'})
---   hi('CmpItemKindOperator',      {link='Operator'})
---   hi('CmpItemKindProperty',      {link='Structure'})
---   hi('CmpItemKindReference',     {link='Tag'})
---   hi('CmpItemKindSnippet',       {link='Special'})
---   hi('CmpItemKindStruct',        {link='Structure'})
---   hi('CmpItemKindText',          {link='Statement'})
---   hi('CmpItemKindTypeParameter', {link='Type'})
---   hi('CmpItemKindUnit',          {link='Special'})
---   hi('CmpItemKindValue',         {link='Identifier'})
---   hi('CmpItemKindVariable',      {link='Delimiter'})
--- end

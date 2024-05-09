@@ -2,6 +2,10 @@
 return {
   {
     "folke/edgy.nvim",
+    init = function()
+      vim.opt.laststatus = 3
+      vim.opt.splitkeep = "topline"
+    end,
     opts = function(_, opts)
       local bottom_window_size = { height = 0.55 }
 
@@ -50,14 +54,14 @@ return {
         {
           ft = "toggleterm",
           size = bottom_window_size,
-          filter = function(_buf, win)
+          filter = function(_, win)
             return vim.api.nvim_win_get_config(win).relative == ""
           end,
         },
         {
           ft = "noice",
           size = bottom_window_size,
-          filter = function(_buf, win)
+          filter = function(_, win)
             return vim.api.nvim_win_get_config(win).relative == ""
           end,
         },
@@ -70,7 +74,7 @@ return {
         },
         {
           ft = "trouble",
-          size = bottom_window_size,
+          size = { height = 0.30 },
         },
         {
           title = "QuickFix",
