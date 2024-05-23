@@ -1,13 +1,23 @@
--- NOTE: vim.bu.filetype gives the ft, for filter also check for different Trouble types to differentiate
 return {
   {
     "folke/edgy.nvim",
     init = function()
       vim.opt.laststatus = 3
-      vim.opt.splitkeep = "topline"
+      vim.opt.splitkeep = "screen"
     end,
     opts = function(_, opts)
-      local bottom_window_size = { height = 0.55 }
+      local bottom_window_size = { height = 0.6 }
+
+      opts.keys["<c-w>k"] = function(win)
+        vim.print("called")
+        vim.print(win.height)
+        if win.height > vim.o.lines then
+          win:resize("height", -vim.o.lines)
+        else
+          win.old_height = win.height
+          win:resize("height", vim.o.lines)
+        end
+      end
 
       opts.left = {
         {
@@ -25,6 +35,7 @@ return {
         {
           title = "Neotest Summary",
           ft = "neotest-summary",
+          filter = function(_) end,
         },
         {
           title = "Neo-Tree Git",
@@ -50,7 +61,23 @@ return {
           open = "AerialOpen",
         },
       }
+      opts.right = {
+        {
+          ft = "trouble",
+          filter = function(_, win)
+            return vim.w[win].trouble.mode == "symbols"
+          end,
+        },
+      }
       opts.bottom = {
+        {
+          ft = "man",
+          open = "norm! K",
+          filter = function()
+            return #require("bufferline").get_elements().elements > 0
+          end,
+          size = { height = 0.65 },
+        },
         {
           ft = "toggleterm",
           size = bottom_window_size,
@@ -75,6 +102,9 @@ return {
         {
           ft = "trouble",
           size = { height = 0.30 },
+          filter = function(_, win)
+            return vim.w[win].trouble.mode == "diagnostics"
+          end,
         },
         {
           title = "QuickFix",
