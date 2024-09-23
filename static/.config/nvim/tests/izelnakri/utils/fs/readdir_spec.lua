@@ -55,232 +55,232 @@ describe("FS.readdir", function()
     cleanup_dir(temp_dir)
   end)
 
-  -- describe("FS.readdir (sync)", function()
-  --   it("should read a directory with only files", function()
-  --     local file1 = Path.join(temp_dir, "file1.txt")
-  --     local file2 = Path.join(temp_dir, "file2.txt")
-  --     create_file(file1)
-  --     create_file(file2)
-  --
-  --     local entries, error = FS.readdir(temp_dir)
-  --
-  --     assert.is_nil(error)
-  --     table.sort(entries, function(a, b)
-  --       return a.name < b.name
-  --     end)
-  --     assert.are.same({
-  --       { name = temp_dir .. "/file1.txt", type = "file" },
-  --       { name = temp_dir .. "/file2.txt", type = "file" },
-  --     }, entries)
-  --   end)
-  --
-  --   it("should read a directory with only subdirectories", function()
-  --     local sub_dir1 = Path.join(temp_dir, "sub_dir1")
-  --     local sub_dir2 = Path.join(temp_dir, "sub_dir2")
-  --     FS.mkdir(sub_dir1)
-  --     FS.mkdir(sub_dir2)
-  --
-  --     local entries = FS.readdir(temp_dir)
-  --     table.sort(entries, function(a, b)
-  --       return a.name < b.name
-  --     end)
-  --     assert.are.same({
-  --       { name = temp_dir .. "/sub_dir1", type = "directory" },
-  --       { name = temp_dir .. "/sub_dir2", type = "directory" },
-  --     }, entries)
-  --   end)
-  --
-  --   it("should read a directory with mixed files and subdirectories", function()
-  --     local sub_dir = Path.join(temp_dir, "sub_dir")
-  --     FS.mkdir(sub_dir)
-  --     local file1 = Path.join(temp_dir, "file1.txt")
-  --     local file2 = Path.join(sub_dir, "file2.txt")
-  --     create_file(file1)
-  --     create_file(file2)
-  --
-  --     local entries = FS.readdir(temp_dir)
-  --     table.sort(entries, function(a, b)
-  --       return a.name < b.name
-  --     end)
-  --     assert.are.same({
-  --       { name = temp_dir .. "/file1.txt", type = "file" },
-  --       { name = temp_dir .. "/sub_dir", type = "directory" },
-  --     }, entries)
-  --   end)
-  --
-  --   it("should handle directories with similar prefixes", function()
-  --     local dir1 = Path.join(temp_dir, "dir")
-  --     local dir2 = Path.join(temp_dir, "directory")
-  --     FS.mkdir(dir1)
-  --     FS.mkdir(dir2)
-  --
-  --     local entries = FS.readdir(temp_dir)
-  --     table.sort(entries, function(a, b)
-  --       return a.name < b.name
-  --     end)
-  --     assert.are.same({
-  --       { name = temp_dir .. "/dir", type = "directory" },
-  --       { name = temp_dir .. "/directory", type = "directory" },
-  --     }, entries)
-  --   end)
-  --
-  --   it("should read a directory recursively", function()
-  --     local sub_dir1 = Path.join(temp_dir, "sub_dir1")
-  --     local sub_dir2 = Path.join(temp_dir, "sub_dir2")
-  --     local sub_dir2_sub_dir = Path.join(sub_dir2, "sub_dir")
-  --     FS.mkdir(sub_dir1)
-  --     FS.mkdir(sub_dir2)
-  --     FS.mkdir(sub_dir2_sub_dir)
-  --     local file1 = Path.join(temp_dir, "file1.txt")
-  --     local file2 = Path.join(sub_dir1, "file2.txt")
-  --     local file3 = Path.join(sub_dir2, "file3.txt")
-  --     local file4 = Path.join(sub_dir2, "file4.txt")
-  --     local file5 = Path.join(sub_dir2_sub_dir, "file5.txt")
-  --
-  --     create_file(file1)
-  --     create_file(file2)
-  --     create_file(file3)
-  --     create_file(file4)
-  --     create_file(file5)
-  --
-  --     local entries = FS.readdir(temp_dir, { recursive = true })
-  --     table.sort(entries, function(a, b)
-  --       return a.name < b.name
-  --     end)
-  --
-  --     local temp_dir_path = String.slice(temp_dir, 2)
-  --     assert.are.same({
-  --       { name = temp_dir .. "/file1.txt", type = "file" },
-  --       { name = temp_dir .. "/sub_dir1", type = "directory" },
-  --       { name = temp_dir .. "/sub_dir1/file2.txt", type = "file" },
-  --       { name = temp_dir .. "/sub_dir2", type = "directory" },
-  --       { name = temp_dir .. "/sub_dir2/file3.txt", type = "file" },
-  --       { name = temp_dir .. "/sub_dir2/file4.txt", type = "file" },
-  --       { name = temp_dir .. "/sub_dir2/sub_dir", type = "directory" },
-  --       { name = temp_dir .. "/sub_dir2/sub_dir/file5.txt", type = "file" },
-  --     }, entries)
-  --   end)
-  --
-  --   it("should apply a filter function correctly", function()
-  --     local sub_dir = Path.join(temp_dir, "sub_dir_filter")
-  --     FS.mkdir(sub_dir)
-  --     local file1 = Path.join(temp_dir, "file1_filter.txt")
-  --     local file2 = Path.join(sub_dir, "file2_filter.log")
-  --     create_file(file1)
-  --     create_file(file2)
-  --
-  --     local entries = FS.readdir(temp_dir, {
-  --       filter = function(type_, path)
-  --         return type_ == "file" and Path.extname(path) == "txt"
-  --       end,
-  --     })
-  --
-  --     assert.are.same({
-  --       { name = temp_dir .. "/file1_filter.txt", type = "file" },
-  --     }, entries)
-  --   end)
-  --
-  --   it("should apply a filter function correctly with recursion", function()
-  --     local sub_dir1 = Path.join(temp_dir, "sub_dir1")
-  --     local sub_dir2 = Path.join(temp_dir, "sub_dir2")
-  --     local sub_dir2_sub_dir = Path.join(sub_dir2, "sub_dir")
-  --     FS.mkdir(sub_dir1)
-  --     FS.mkdir(sub_dir2)
-  --     FS.mkdir(sub_dir2_sub_dir)
-  --     local file1 = Path.join(temp_dir, "file1.txt")
-  --     local file2 = Path.join(sub_dir1, "file2.txt")
-  --     local file3 = Path.join(sub_dir2, "file3.txt")
-  --     local file4 = Path.join(sub_dir2, "file4.txt")
-  --     local file5 = Path.join(sub_dir2_sub_dir, "file5.txt")
-  --
-  --     create_file(file1)
-  --     create_file(file2)
-  --     create_file(file3)
-  --     create_file(file4)
-  --     create_file(file5)
-  --
-  --     local entries = FS.readdir(temp_dir, {
-  --       recursive = true,
-  --       filter = function(type_, path)
-  --         return type_ == "file" and String.includes(path, "sub_dir2")
-  --       end,
-  --     })
-  --     table.sort(entries, function(a, b)
-  --       return a.name < b.name
-  --     end)
-  --
-  --     assert.are.same({
-  --       { name = temp_dir .. "/sub_dir2/file3.txt", type = "file" },
-  --       { name = temp_dir .. "/sub_dir2/file4.txt", type = "file" },
-  --       { name = temp_dir .. "/sub_dir2/sub_dir/file5.txt", type = "file" },
-  --     }, entries)
-  --   end)
-  --
-  --   it("should limit recursion depth correctly", function()
-  --     local dir_a = Path.join(temp_dir, "a")
-  --     local dir_b = Path.join(dir_a, "b")
-  --     local dir_c = Path.join(dir_b, "c")
-  --     FS.mkdir(dir_a)
-  --     create_file(Path.join(dir_a, "file_a.txt"))
-  --     FS.mkdir(dir_b)
-  --     FS.mkdir(dir_c)
-  --     create_file(Path.join(dir_c, "file_c.txt"))
-  --
-  --     local entries = FS.readdir(temp_dir, { recursive = true, depth = 1 })
-  --     table.sort(entries, function(a, b)
-  --       return a.name < b.name
-  --     end)
-  --
-  --     assert.are.same({
-  --       { name = temp_dir .. "/a", type = "directory" },
-  --       { name = temp_dir .. "/a/b", type = "directory" },
-  --       { name = temp_dir .. "/a/file_a.txt", type = "file" },
-  --     }, entries)
-  --   end)
-  --
-  --   it("should handle empty directories", function()
-  --     local empty_dir = Path.join(temp_dir, "empty_dir")
-  --     FS.mkdir(empty_dir)
-  --
-  --     local entries, error = FS.readdir(empty_dir, options)
-  --     assert.are.same({}, entries)
-  --   end)
-  --
-  --   it("should return an error for non-existent paths", function()
-  --     local fake_path = Path.join(temp_dir, "non_existent")
-  --     assert.has_errors(function()
-  --       FS.readdir(fake_path)
-  --     end, "Path does not exist: " .. fake_path)
-  --   end)
-  --
-  --   it("should handle symlinks correctly", function()
-  --     local real_dir = Path.join(temp_dir, "real_dir")
-  --     FS.mkdir(real_dir)
-  --     create_symlink(real_dir, Path.join(temp_dir, "symlink_dir"))
-  --     create_file(Path.join(real_dir, "file_in_real_dir.txt"))
-  --
-  --     local entries = FS.readdir(temp_dir, {
-  --       recursive = true,
-  --       depth = 10,
-  --     })
-  --     table.sort(entries, function(a, b)
-  --       return a.name < b.name
-  --     end)
-  --     assert.are.same({
-  --       { name = temp_dir .. "/real_dir", type = "directory" },
-  --       { name = temp_dir .. "/real_dir/file_in_real_dir.txt", type = "file" },
-  --       { name = temp_dir .. "/symlink_dir", type = "link" },
-  --     }, entries)
-  --     local entries = FS.readdir(temp_dir)
-  --     table.sort(entries, function(a, b)
-  --       return a.name < b.name
-  --     end)
-  --     assert.are.same({
-  --       { name = temp_dir .. "/real_dir", type = "directory" },
-  --       { name = temp_dir .. "/symlink_dir", type = "link" },
-  --     }, entries)
-  --   end)
-  -- end)
+  describe("FS.readdir (sync)", function()
+    it("should read a directory with only files", function()
+      local file1 = Path.join(temp_dir, "file1.txt")
+      local file2 = Path.join(temp_dir, "file2.txt")
+      create_file(file1)
+      create_file(file2)
+
+      local entries, error = FS.readdir(temp_dir)
+
+      assert.is_nil(error)
+      table.sort(entries, function(a, b)
+        return a.name < b.name
+      end)
+      assert.are.same({
+        { name = temp_dir .. "/file1.txt", type = "file" },
+        { name = temp_dir .. "/file2.txt", type = "file" },
+      }, entries)
+    end)
+
+    it("should read a directory with only subdirectories", function()
+      local sub_dir1 = Path.join(temp_dir, "sub_dir1")
+      local sub_dir2 = Path.join(temp_dir, "sub_dir2")
+      FS.mkdir(sub_dir1)
+      FS.mkdir(sub_dir2)
+
+      local entries = FS.readdir(temp_dir)
+      table.sort(entries, function(a, b)
+        return a.name < b.name
+      end)
+      assert.are.same({
+        { name = temp_dir .. "/sub_dir1", type = "directory" },
+        { name = temp_dir .. "/sub_dir2", type = "directory" },
+      }, entries)
+    end)
+
+    it("should read a directory with mixed files and subdirectories", function()
+      local sub_dir = Path.join(temp_dir, "sub_dir")
+      FS.mkdir(sub_dir)
+      local file1 = Path.join(temp_dir, "file1.txt")
+      local file2 = Path.join(sub_dir, "file2.txt")
+      create_file(file1)
+      create_file(file2)
+
+      local entries = FS.readdir(temp_dir)
+      table.sort(entries, function(a, b)
+        return a.name < b.name
+      end)
+      assert.are.same({
+        { name = temp_dir .. "/file1.txt", type = "file" },
+        { name = temp_dir .. "/sub_dir", type = "directory" },
+      }, entries)
+    end)
+
+    it("should handle directories with similar prefixes", function()
+      local dir1 = Path.join(temp_dir, "dir")
+      local dir2 = Path.join(temp_dir, "directory")
+      FS.mkdir(dir1)
+      FS.mkdir(dir2)
+
+      local entries = FS.readdir(temp_dir)
+      table.sort(entries, function(a, b)
+        return a.name < b.name
+      end)
+      assert.are.same({
+        { name = temp_dir .. "/dir", type = "directory" },
+        { name = temp_dir .. "/directory", type = "directory" },
+      }, entries)
+    end)
+
+    it("should read a directory recursively", function()
+      local sub_dir1 = Path.join(temp_dir, "sub_dir1")
+      local sub_dir2 = Path.join(temp_dir, "sub_dir2")
+      local sub_dir2_sub_dir = Path.join(sub_dir2, "sub_dir")
+      FS.mkdir(sub_dir1)
+      FS.mkdir(sub_dir2)
+      FS.mkdir(sub_dir2_sub_dir)
+      local file1 = Path.join(temp_dir, "file1.txt")
+      local file2 = Path.join(sub_dir1, "file2.txt")
+      local file3 = Path.join(sub_dir2, "file3.txt")
+      local file4 = Path.join(sub_dir2, "file4.txt")
+      local file5 = Path.join(sub_dir2_sub_dir, "file5.txt")
+
+      create_file(file1)
+      create_file(file2)
+      create_file(file3)
+      create_file(file4)
+      create_file(file5)
+
+      local entries = FS.readdir(temp_dir, { recursive = true })
+      table.sort(entries, function(a, b)
+        return a.name < b.name
+      end)
+
+      local temp_dir_path = String.slice(temp_dir, 2)
+      assert.are.same({
+        { name = temp_dir .. "/file1.txt", type = "file" },
+        { name = temp_dir .. "/sub_dir1", type = "directory" },
+        { name = temp_dir .. "/sub_dir1/file2.txt", type = "file" },
+        { name = temp_dir .. "/sub_dir2", type = "directory" },
+        { name = temp_dir .. "/sub_dir2/file3.txt", type = "file" },
+        { name = temp_dir .. "/sub_dir2/file4.txt", type = "file" },
+        { name = temp_dir .. "/sub_dir2/sub_dir", type = "directory" },
+        { name = temp_dir .. "/sub_dir2/sub_dir/file5.txt", type = "file" },
+      }, entries)
+    end)
+
+    it("should apply a filter function correctly", function()
+      local sub_dir = Path.join(temp_dir, "sub_dir_filter")
+      FS.mkdir(sub_dir)
+      local file1 = Path.join(temp_dir, "file1_filter.txt")
+      local file2 = Path.join(sub_dir, "file2_filter.log")
+      create_file(file1)
+      create_file(file2)
+
+      local entries = FS.readdir(temp_dir, {
+        filter = function(type_, path)
+          return type_ == "file" and Path.extname(path) == "txt"
+        end,
+      })
+
+      assert.are.same({
+        { name = temp_dir .. "/file1_filter.txt", type = "file" },
+      }, entries)
+    end)
+
+    it("should apply a filter function correctly with recursion", function()
+      local sub_dir1 = Path.join(temp_dir, "sub_dir1")
+      local sub_dir2 = Path.join(temp_dir, "sub_dir2")
+      local sub_dir2_sub_dir = Path.join(sub_dir2, "sub_dir")
+      FS.mkdir(sub_dir1)
+      FS.mkdir(sub_dir2)
+      FS.mkdir(sub_dir2_sub_dir)
+      local file1 = Path.join(temp_dir, "file1.txt")
+      local file2 = Path.join(sub_dir1, "file2.txt")
+      local file3 = Path.join(sub_dir2, "file3.txt")
+      local file4 = Path.join(sub_dir2, "file4.txt")
+      local file5 = Path.join(sub_dir2_sub_dir, "file5.txt")
+
+      create_file(file1)
+      create_file(file2)
+      create_file(file3)
+      create_file(file4)
+      create_file(file5)
+
+      local entries = FS.readdir(temp_dir, {
+        recursive = true,
+        filter = function(type_, path)
+          return type_ == "file" and String.includes(path, "sub_dir2")
+        end,
+      })
+      table.sort(entries, function(a, b)
+        return a.name < b.name
+      end)
+
+      assert.are.same({
+        { name = temp_dir .. "/sub_dir2/file3.txt", type = "file" },
+        { name = temp_dir .. "/sub_dir2/file4.txt", type = "file" },
+        { name = temp_dir .. "/sub_dir2/sub_dir/file5.txt", type = "file" },
+      }, entries)
+    end)
+
+    it("should limit recursion depth correctly", function()
+      local dir_a = Path.join(temp_dir, "a")
+      local dir_b = Path.join(dir_a, "b")
+      local dir_c = Path.join(dir_b, "c")
+      FS.mkdir(dir_a)
+      create_file(Path.join(dir_a, "file_a.txt"))
+      FS.mkdir(dir_b)
+      FS.mkdir(dir_c)
+      create_file(Path.join(dir_c, "file_c.txt"))
+
+      local entries = FS.readdir(temp_dir, { recursive = true, depth = 1 })
+      table.sort(entries, function(a, b)
+        return a.name < b.name
+      end)
+
+      assert.are.same({
+        { name = temp_dir .. "/a", type = "directory" },
+        { name = temp_dir .. "/a/b", type = "directory" },
+        { name = temp_dir .. "/a/file_a.txt", type = "file" },
+      }, entries)
+    end)
+
+    it("should handle empty directories", function()
+      local empty_dir = Path.join(temp_dir, "empty_dir")
+      FS.mkdir(empty_dir)
+
+      local entries, error = FS.readdir(empty_dir, options)
+      assert.are.same({}, entries)
+    end)
+
+    it("should return an error for non-existent paths", function()
+      local fake_path = Path.join(temp_dir, "non_existent")
+      assert.has_errors(function()
+        FS.readdir(fake_path)
+      end, "Path does not exist: " .. fake_path)
+    end)
+
+    it("should handle symlinks correctly", function()
+      local real_dir = Path.join(temp_dir, "real_dir")
+      FS.mkdir(real_dir)
+      create_symlink(real_dir, Path.join(temp_dir, "symlink_dir"))
+      create_file(Path.join(real_dir, "file_in_real_dir.txt"))
+
+      local entries = FS.readdir(temp_dir, {
+        recursive = true,
+        depth = 10,
+      })
+      table.sort(entries, function(a, b)
+        return a.name < b.name
+      end)
+      assert.are.same({
+        { name = temp_dir .. "/real_dir", type = "directory" },
+        { name = temp_dir .. "/real_dir/file_in_real_dir.txt", type = "file" },
+        { name = temp_dir .. "/symlink_dir", type = "link" },
+      }, entries)
+      local entries = FS.readdir(temp_dir)
+      table.sort(entries, function(a, b)
+        return a.name < b.name
+      end)
+      assert.are.same({
+        { name = temp_dir .. "/real_dir", type = "directory" },
+        { name = temp_dir .. "/symlink_dir", type = "link" },
+      }, entries)
+    end)
+  end)
 
   describe("FS.readdir (async)", function()
     async_it("should read a directory with only files", function()
