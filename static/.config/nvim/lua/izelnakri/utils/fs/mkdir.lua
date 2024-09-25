@@ -1,4 +1,3 @@
--- local Callback = require("callback")
 local List = require("izelnakri.utils.list")
 local Path = require("izelnakri.utils.path")
 local uv = vim.uv
@@ -77,7 +76,7 @@ return function(path, options, callback)
         return directories_to_create
       end, {})
 
-      return List.reduce(directories_to_create, function(result, directory_path)
+      return List.reduce(directories_to_create, function(_, directory_path)
         return mkdir(directory_path)
       end, false)
     end

@@ -5,6 +5,11 @@ local uv = vim.uv
 ---@param options? { mode?: integer, flag?: string, flush?: boolean }
 ---@param callback? function
 return function(path, data, options, callback)
+  if type(options) == "function" then
+    callback = options
+    options = {}
+  end
+
   assert(type(path) == "string", "path must be a string")
   assert(type(data) == "string", "data must be a string")
   options = options or {}

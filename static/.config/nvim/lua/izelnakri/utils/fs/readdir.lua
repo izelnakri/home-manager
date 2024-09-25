@@ -17,16 +17,14 @@ local function recursive_readdir_sync(current_path, options, current_depth)
 
     local entry_path = Path.join(current_path, name)
 
-    table.insert(options.result, {
-      name = entry_path,
-      type = type_,
-    })
+    table.insert(options.result, { name = entry_path, type = type_ })
 
     if type_ == "directory" and options.recursive and (not options.depth or current_depth < options.depth) then
       recursive_readdir_sync(entry_path, options, current_depth + 1)
     end
   end
 
+  -- Filter results
   local filtered_results = {}
   for _, entry in ipairs(options.result) do
     if options.filter(entry.type, entry.name) then
@@ -54,6 +52,7 @@ local function recursive_readdir_async(current_dir, options, current_depth, call
 
         if not entries then
           vim.uv.fs_closedir(dir_handle)
+          -- Filter results
           local filtered_results = {}
           for _, entry in ipairs(options.result) do
             if options.filter(entry.type, entry.name) then
@@ -63,12 +62,10 @@ local function recursive_readdir_async(current_dir, options, current_depth, call
           return callback(nil, filtered_results)
         end
 
+        -- Process entries
         for _, entry in ipairs(entries) do
           local entry_path = Path.join(current_dir, entry.name)
-          table.insert(options.result, {
-            name = entry_path,
-            type = entry.type,
-          })
+          table.insert(options.result, { name = entry_path, type = entry.type })
 
           if
             entry.type == "directory"
@@ -90,8 +87,8 @@ local function recursive_readdir_async(current_dir, options, current_depth, call
 end
 
 ---@param path_or_dir string | userdata Path or Dir entry from vim.uv.fs_opendir
----@param options { recursive: boolean, max_entry_size?: number, depth: number, filter: fun(type, path) }
----@param callback? function(err?: string, entries?: { name: string, type: string })
+---@param options { recursive: boolean, max_entry_size?: number, depth: number, filter: fun(type: string, path: string): boolean }
+---@param callback? fun(err?: string, entries?: { name: string, type: string }[])
 return function(path_or_dir, options, callback)
   if type(options) == "function" then
     callback = options
