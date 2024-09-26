@@ -17,22 +17,16 @@ local function recursive_readdir_sync(current_path, options, current_depth)
 
     local entry_path = Path.join(current_path, name)
 
-    table.insert(options.result, { name = entry_path, type = type_ })
+    if options.filter(type_, entry_path) then
+      table.insert(options.result, { name = entry_path, type = type_ })
+    end
 
     if type_ == "directory" and options.recursive and (not options.depth or current_depth < options.depth) then
       recursive_readdir_sync(entry_path, options, current_depth + 1)
     end
   end
 
-  -- Filter results
-  local filtered_results = {}
-  for _, entry in ipairs(options.result) do
-    if options.filter(entry.type, entry.name) then
-      table.insert(filtered_results, entry)
-    end
-  end
-
-  return filtered_results
+  return options.result
 end
 
 local function recursive_readdir_async(current_dir, options, current_depth, callback)
@@ -52,31 +46,34 @@ local function recursive_readdir_async(current_dir, options, current_depth, call
 
         if not entries then
           vim.uv.fs_closedir(dir_handle)
-          -- Filter results
-          local filtered_results = {}
-          for _, entry in ipairs(options.result) do
-            if options.filter(entry.type, entry.name) then
-              table.insert(filtered_results, entry)
-            end
+
+          return callback(nil, options.result)
+        end
+
+        local pending = #entries
+        local function on_entry_processed()
+          pending = pending - 1
+          if pending == 0 then
+            read_dir() -- Continue reading more entries
           end
-          return callback(nil, filtered_results)
         end
 
         -- Process entries
         for _, entry in ipairs(entries) do
           local entry_path = Path.join(current_dir, entry.name)
-          table.insert(options.result, { name = entry_path, type = entry.type })
+
+          if options.filter(entry.type, entry_path) then
+            table.insert(options.result, { name = entry_path, type = entry.type })
+          end
 
           if
             entry.type == "directory"
             and options.recursive
             and (not options.depth or current_depth < options.depth)
           then
-            recursive_readdir_async(entry_path, options, current_depth + 1, function()
-              read_dir()
-            end)
+            recursive_readdir_async(entry_path, options, current_depth + 1, on_entry_processed)
           else
-            read_dir()
+            on_entry_processed()
           end
         end
       end)
