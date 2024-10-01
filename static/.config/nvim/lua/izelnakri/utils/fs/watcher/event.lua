@@ -1,19 +1,42 @@
+-- NOTE: Only fix the watcher.status = "watching"
+-- TODO: BUG #1 - Parent watcher gets watcher.status = "watching" prematurely on options.recursive = true
+-- remove, change, rename(? maybe for directory)
 local uv = vim.uv
 local Path = require("izelnakri.utils.path")
 local watched_paths = {} -- Tracks directories being watched
 local EVENTS = {
   ADD = "add",
   ADD_DIR = "add_dir",
-  CHANGE = "change",
-  RENAME = "rename",
+  CHANGE = "change", -- Not tested yet
+  RENAME = "rename", -- Doesnt exist, maybe for directory?
   UNLINK = "unlink",
   UNLINK_DIR = "unlink_dir",
 }
 
 local create_watcher
 local start_watcher
+
+-- Helper to check if all child watchers have finished initialization
+local function all_children_initialized(watcher)
+  for _, child_watcher in pairs(watcher.child_watchers) do
+    if child_watcher.status ~= "watching" then
+      return false
+    end
+  end
+  return true
+end
+
+-- Helper to mark watcher status after children have initialized
+local function update_watcher_status(watcher)
+  if all_children_initialized(watcher) then
+    watcher.status = "watching"
+    watcher.initialized_at = uv.now()
+  end
+end
+
+-- Updated function to handle initialization of the stat tree and watchers
 local function build_stat_tree_async(watcher, options, callback)
-  local function populate_stat_tree(current_path, parent_watcher, done_callback)
+  local function populate_stat_tree(current_path, done_callback)
     uv.fs_opendir(current_path, function(err, dir_handle)
       if err then
         return done_callback("Failed to open directory: " .. current_path)
@@ -51,11 +74,13 @@ local function build_stat_tree_async(watcher, options, callback)
               -- For subdirectories, ensure we start a watcher only if not already watched
               if entry.type == "directory" and options.recursive then
                 -- Recursively populate the stat tree and create a new watcher for subdirectory
-                populate_stat_tree(entry_path, watcher, function()
+                populate_stat_tree(entry_path, function()
                   if not watched_paths[entry_path] then
+                    vim.print("entry_path:", entry_path)
                     local child_watcher = create_watcher(entry_path, options, watcher)
                     watcher.child_watchers[entry_path] = child_watcher
-                    watched_paths[entry_path] = child_watcher -- LLM SUGGESTION, MAYBE REMOVE: Ensure to track the new watcher
+                    watched_paths[entry_path] = child_watcher -- Track the new watcher
+                    -- NOTE: Change status here?
                   end
                   on_entry_processed()
                 end)
@@ -71,7 +96,28 @@ local function build_stat_tree_async(watcher, options, callback)
     end)
   end
 
-  populate_stat_tree(watcher.path, nil, callback)
+  local function finish_initialization(err)
+    if err then
+      callback(err)
+      return
+    end
+
+    -- If this watcher has no child watchers, mark it as "watching"
+    if not next(watcher.child_watchers) then
+      watcher.status = "watching"
+      watcher.initialized_at = uv.now()
+    end
+
+    callback(nil, watcher.statTree)
+
+    -- Check if we can set the parent's watcher status to "watching"
+    if watcher.parent_watcher then
+      update_watcher_status(watcher.parent_watcher)
+    end
+  end
+
+  -- Start populating the stat tree from the watcher’s path
+  populate_stat_tree(watcher.path, finish_initialization)
 end
 
 local initialize_event_handling = function(watcher)
@@ -80,6 +126,7 @@ end
 
 start_watcher = function(watcher, options)
   vim.print("start_watcher runs for:", watcher.path)
+
   -- Avoid starting a watcher if already watching this path
   if watcher.status == "watching" then
     return
@@ -90,8 +137,12 @@ start_watcher = function(watcher, options)
   local flags = {
     watch_entry = true, -- Watch directory entries
     stat = true, -- Enable stat info
-    recursive = options.recursive or false, -- Set recursive flag based on options
+    recursive = true,
   }
+
+  -- Track last event time for debouncing
+  local debounce_timers = {}
+  local processed_unlink = {} -- Track if unlink/unlink_dir has been processed for a directory
 
   build_stat_tree_async(watcher, options, function(err)
     if err then
@@ -99,28 +150,30 @@ start_watcher = function(watcher, options)
       return
     end
 
-    -- Track last event time for debouncing
-    local debounce_timers = {}
-
     uv.fs_event_start(watcher.handle, watcher.path, flags, function(err, filename, events)
+      -- vim.print(filename)
+      -- vim.print("EVENT:")
+      -- vim.print(vim.inspect(events))
       if err then
         watcher:stop()
         error("Error watching path: " .. err)
       end
 
-      -- NOTE: Maybe remove: Ensure we have a valid filename
-      if filename == "." or filename == ".." then
-        return -- Ignore these entries as they don't represent valid events
+      -- Ignore invalid filenames
+      if not filename or filename == "." or filename == ".." or filename == "" then
+        vim.print("edge case")
+        return
       end
 
-      local full_path = Path.join(watcher.path, filename)
-
-      -- NOTE: Maybe remove: Optionally log or check for valid paths
-      if full_path == watcher.path then
-        return -- Avoid processing if the full_path is the same as the watcher path
+      local filename_targets_watcher_path = watcher.statTree[watcher.path]
+        and (watcher.statTree[watcher.path].type == "directory")
+        and (Path.basename(watcher.path) == filename)
+      if filename_targets_watcher_path then
+        vim.print("filename_targets_watcher_path diversion")
+        return
       end
 
-      local event_entry = { filename = full_path, fs_events = events }
+      local full_path = (filename_targets_watcher_path and watcher.path) or Path.join(watcher.path, filename)
 
       -- Debounce timer for the event
       if debounce_timers[full_path] then
@@ -134,14 +187,21 @@ start_watcher = function(watcher, options)
         debounce_timers[full_path]:close()
         debounce_timers[full_path] = nil
 
-        vim.print("call for ", full_path)
         -- Stat the file or directory asynchronously
-        uv.fs_stat(full_path, function(err, current_stat) -- NOTE: on unlink should I call fs_stat?
+        uv.fs_stat(full_path, function(err, current_stat)
           local old_entry = watcher.statTree[full_path]
+          local event_entry = { filename = full_path, fs_events = events }
 
+          -- Handle unlink/unlink_dir events
           if not old_entry and current_stat then
             event_entry.event = current_stat.type == "directory" and EVENTS.ADD_DIR or EVENTS.ADD
             watcher.statTree[full_path] = { type = current_stat.type, stat = current_stat }
+
+            if event_entry.event == EVENTS.ADD_DIR then
+              local child_watcher = create_watcher(full_path, options, watcher) -- NOTE: should this be the outer most parent_watcher?
+              watcher.child_watchers[full_path] = child_watcher -- TODO: maybe move these inside the create_watcher?
+              watched_paths[full_path] = child_watcher
+            end
           elseif not current_stat then
             event_entry.event = old_entry.type == "directory" and EVENTS.UNLINK_DIR or EVENTS.UNLINK
             watcher.statTree[full_path] = nil
@@ -149,7 +209,6 @@ start_watcher = function(watcher, options)
             event_entry.event = EVENTS.CHANGE
             watcher.statTree[full_path] = { type = current_stat.type, stat = current_stat }
           else
-            vim.print("pass")
             return
           end
 
@@ -163,8 +222,14 @@ start_watcher = function(watcher, options)
 
     -- Mark this path as watched only after starting the watcher
     watched_paths[watcher.path] = true
-    watcher.status = "watching"
-    watcher.initialized_at = uv.now()
+
+    -- Update parent watcher status if all child watchers are ready
+    if watcher.parent_watcher then
+      update_watcher_status(watcher.parent_watcher)
+    end
+
+    -- Update own status if it has no children
+    update_watcher_status(watcher)
   end)
 end
 
@@ -211,42 +276,31 @@ create_watcher = function(path, options, parent_watcher)
         child:restart()
       end
     end,
-
-    initialize = function(self)
-      start_watcher(self, options)
-    end,
   }
 
-  watcher:initialize()
+  start_watcher(watcher, options)
   return watcher
 end
 
+-- FS.watch
 local function FS_watch(path, options, callback)
-  if type(options) == "function" or (getmetatable(options) and getmetatable(options).__call) then
+  if watched_paths[path] then
+    error("Already watching path: " .. path)
+  elseif type(options) == "function" or (getmetatable(options) and getmetatable(options).__call) then
     callback = options
     options = {}
   end
 
-  local watcher = create_watcher(path, options, nil)
+  local watcher = create_watcher(path, options)
   watcher:add_callback(callback)
 
   return watcher
 end
 
-local function FS_unwatch(path, watcher_to_remove)
-  if watched_paths[path] then
-    for i, watcher in ipairs(watched_paths[path]) do
-      if watcher == watcher_to_remove then
-        watcher:stop()
-        table.remove(watched_paths[path], i)
-        if #watched_paths[path] == 0 then
-          watched_paths[path] = nil
-        end
-        return true
-      end
-    end
-  end
-  return false
+-- FS.unwatch
+local function FS_unwatch(watcher)
+  watcher:stop()
+  watched_paths[watcher.path] = nil
 end
 
 return {

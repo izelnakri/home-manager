@@ -1,3 +1,4 @@
+-- NOTE: rename folder test case maybe needed
 require("async.test")
 
 local Path = require("izelnakri.utils.path")
@@ -16,8 +17,10 @@ local function create_temp_dir()
   return tmp_dir
 end
 
-local function wait_event(watcher, expected_event, timeout)
+local function wait_event(watcher, expected_event, target_count, timeout)
+  target_count = target_count or 1
   local should_pass = false
+  local total_count = 0
   local last_event
   watcher:add_callback(function(event, path, stat)
     last_event = event
@@ -27,6 +30,7 @@ local function wait_event(watcher, expected_event, timeout)
       vim.print(vim.inspect(stat))
     end
     if event == expected_event then
+      total_count = total_count + 1
       should_pass = true
     end
   end)
@@ -35,6 +39,15 @@ local function wait_event(watcher, expected_event, timeout)
   end)
   if not should_pass then
     error("wait_event(watcher, " .. expected_event .. ") instead last event was: " .. tostring(last_event))
+  elseif total_count < target_count then
+    error(
+      "wait_event(watcher, "
+        .. expected_event
+        .. ", "
+        .. target_count
+        .. " ) total_count was: "
+        .. tostring(total_count)
+    )
   end
   return should_pass
 end
@@ -58,7 +71,8 @@ end
 local function wait_watcher_to_be_ready(watcher, timeout)
   local should_pass = false
 
-  vim.wait(timeout or 500, function()
+  vim.wait(100) -- NOTE: Remove this readiness bug is fixed
+  vim.wait(timeout or 10000, function()
     should_pass = watcher.status == "watching"
     return should_pass
   end)
@@ -162,7 +176,6 @@ describe("FS.watch", function()
   end)
 
   it("should emit thirtythree `add` events when thirtythree files were added in nine directories", function()
-    -- NOTE: Do I need watcher close(?)
     local test1Path = get_fixture_path(temp_dir, "add1.txt")
     local testb1Path = get_fixture_path(temp_dir, "b/add1.txt")
     local testc1Path = get_fixture_path(temp_dir, "c/add1.txt")
@@ -205,6 +218,8 @@ describe("FS.watch", function()
     FS.mkdir(get_fixture_path(temp_dir, "g"))
     FS.mkdir(get_fixture_path(temp_dir, "h"))
     FS.mkdir(get_fixture_path(temp_dir, "i"))
+
+    vim.wait(500)
 
     local handler = spy.new()
     watcher = FS.watch(temp_dir, { recursive = true }, handler)
@@ -303,296 +318,219 @@ describe("FS.watch", function()
     assert.spy(handler).called_with("add_dir", test_dir, match._)
   end)
 
-  -- it('should emit `change` event when file was changed', async () => {
-  --   const testPath = getFixturePath('change.txt');
-  --   const spy = sinon.spy(function changeSpy(){});
-  --   watcher.on(EV.CHANGE, spy);
-  --   spy.should.not.have.been.called;
-  --   await write(testPath, dateNow());
-  --   await waitFor([spy]);
-  --   spy.should.have.been.calledWith(testPath);
-  --   expect(spy.args[0][1]).to.be.ok; // stats
-  --   rawSpy.should.have.been.called;
-  --   spy.should.have.been.calledOnce;
-  -- });
+  it("should emit `change` event when file was changed", function()
+    local test_path = get_fixture_path(temp_dir, "change.txt")
 
-  -- it("should emit `change` event when a file is modified", function()
-  --   local test_path = Path.join(temp_dir, "change.txt")
-  --   create_file(test_path)
-  --
-  --   watcher = FS.watch(temp_dir, { recursive = false })
-  --   create_file(test_path, "modified content")
-  --
-  --   local triggered = wait_event(watcher, "modify")
-  --   assert.is_true(triggered, "Expected 'change' event for modified file")
-  -- end)
+    FS.writefile(test_path, "test")
 
-  -- it("should emit `remove` event when a file is deleted", function()
-  --   local test_path = Path.join(temp_dir, "remove.txt")
-  --   create_file(test_path)
-  --
-  --   watcher = FS.watch(temp_dir, { recursive = false })
-  --   uv.fs_unlink(test_path)
-  --
-  --   local triggered = wait_event(watcher, "remove")
-  --   assert.is_true(triggered, "Expected 'remove' event for deleted file")
-  -- end)
-  --
-  -- it("should emit `unlinkDir` event when a directory is removed", function()
-  --   local sub_dir = Path.join(temp_dir, "subdir")
-  --   FS.mkdir(sub_dir)
-  --
-  --   watcher = FS.watch(temp_dir, { recursive = true })
-  --   uv.fs_rmdir(sub_dir)
-  --
-  --   local triggered = wait_event(watcher, "remove")
-  --   assert.is_true(triggered, "Expected 'unlinkDir' event for removed directory")
-  -- end)
-  --
-  -- it("should emit `add` and `remove` events when a file is renamed", function()
-  --   local file_path = Path.join(temp_dir, "rename.txt")
-  --   local new_path = Path.join(temp_dir, "renamed.txt")
-  --   create_file(file_path)
-  --
-  --   watcher = FS.watch(temp_dir, { recursive = false })
-  --   uv.fs_rename(file_path, new_path)
-  --
-  --   local unlink_triggered = wait_event(watcher, "remove")
-  --   local add_triggered = wait_event(watcher, "create")
-  --
-  --   assert.is_true(unlink_triggered, "Expected 'remove' event for renamed file")
-  --   assert.is_true(add_triggered, "Expected 'add' event for renamed file")
-  -- end)
-  --
-  -- it("should emit `addDir` event when a new directory is created", function()
-  --   local sub_dir = Path.join(temp_dir, "new_subdir")
-  --
-  --   watcher = FS.watch(temp_dir, { recursive = false })
-  --   FS.mkdir(sub_dir)
-  --
-  --   local triggered = wait_event(watcher, "create")
-  --   assert.is_true(triggered, "Expected 'addDir' event for created directory")
-  -- end)
-  --
-  -- it("should recursively watch directories and emit events for nested files", function()
-  --   local sub_dir = Path.join(temp_dir, "subdir")
-  --   FS.mkdir(sub_dir)
-  --
-  --   watcher = FS.watch(temp_dir, { recursive = true })
-  --   local file_in_subdir = Path.join(sub_dir, "nested_file.txt")
-  --   create_file(file_in_subdir)
-  --
-  --   local triggered = wait_event(watcher, "create")
-  --   assert.is_true(triggered, "Expected 'add' event for file in subdirectory")
-  -- end)
-  --
-  -- it("should detect and handle symlinked files", function()
-  --   local original_file = Path.join(temp_dir, "original.txt")
-  --   local symlink_file = Path.join(temp_dir, "symlink.txt")
-  --   create_file(original_file)
-  --   uv.fs_symlink(original_file, symlink_file)
-  --
-  --   watcher = FS.watch(temp_dir, { recursive = false })
-  --   create_file(original_file, "updated content")
-  --
-  --   local triggered = wait_event(watcher, "modify")
-  --   assert.is_true(triggered, "Expected 'change' event for symlinked file")
-  -- end)
-  --
-  -- it("should handle multiple `unlinkDir` events when nested directories are removed", function()
-  --   local dir1 = Path.join(temp_dir, "dir1")
-  --   local dir2 = Path.join(dir1, "dir2")
-  --   FS.mkdir(dir1)
-  --   FS.mkdir(dir2)
-  --
-  --   watcher = FS.watch(temp_dir, { recursive = true })
-  --   uv.fs_rmdir(dir2)
-  --   uv.fs_rmdir(dir1)
-  --
-  --   local triggered = wait_event(watcher, "remove")
-  --   assert.is_true(triggered, "Expected 'unlinkDir' events for removed directories")
-  -- end)
-  -- end)
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
 
-  -- describe("FS.watch", function()
-  --   describe('watch a directory', function()
-  --     -- beforeEach(async () => {
-  --     --   options.ignoreInitial = true;
-  --     --   options.alwaysStat = true;
-  --     --   readySpy = sinon.spy(function readySpy(){});
-  --     --   rawSpy = sinon.spy(function rawSpy(){});
-  --     --   watcher = chokidar_watch(currentDir, options).on(EV.READY, readySpy).on(EV.RAW, rawSpy);
-  --     --   await waitForWatcher(watcher);
-  --     -- });
-  --     -- afterEach(async () => {
-  --     --   await waitFor([readySpy]);
-  --     --   await watcher.close();
-  --     --   readySpy.should.have.been.calledOnce;
-  --     --   readySpy = undefined;
-  --     --   rawSpy = undefined;
-  --     -- });
-  --
-  --     it('should emit `add` event when file was added', function
-  --       local testPath = get_fixture_path(temp_dir, 'add.txt');
-  --
-  --       local spy = sinon.spy(function addSpy(){});
-  --
-  --       watcher.on(EV.ADD, spy);
-  --
-  --       await delay();
-  --       await write(testPath, dateNow());
-  --       await waitFor([spy]);
-  --
-  --       spy.should.have.been.calledOnce;
-  --       assert.spy(handler).called_with(testPath);
-  --       expect(spy.args[0][1]).to.be.ok; // stats
-  --
-  --       rawSpy.should.have.been.called;
-  --
-  --     });
-  --
-  --   end)
-  -- end)
+    wait_watcher_to_be_ready(watcher)
 
-  -- describe("FS.watch", function()
-  --   local tmpdir = "test_dir"
-  --   local testfile = tmpdir .. "/test_file.txt"
-  --   local testdir = tmpdir .. "/test_subdir"
-  --   local callback_called, event_triggered, filenames
-  --
-  --   before_each(function()
-  --     callback_called = false
-  --     event_triggered = {}
-  --     filenames = {}
-  --
-  --     -- Create test directory and file
-  --     uv.fs_mkdir(tmpdir, 448)
-  --     local fd = uv.fs_open(testfile, "w", 438)
-  --     uv.fs_close(fd)
-  --   end)
-  --
-  --   after_each(function()
-  --     -- Clean up
-  --     FS.unwatch(tmpdir)
-  --     FS.unwatch(testfile)
-  --     FS.rm(tmpdir, { recursive = true })
-  --   end)
-  --
-  --   it("should trigger callback for file add, change, and remove events", function()
-  --     local watcher = FS.watch(tmpdir, function(event, filename)
-  --       callback_called = true
-  --       table.insert(event_triggered, event)
-  --       table.insert(filenames, filename)
-  --     end)
-  --
-  --     -- Simulate file addition
-  --     local newfile = tmpdir .. "/newfile.txt"
-  --     local fd = uv.fs_open(newfile, "w", 438)
-  --     uv.fs_close(fd)
-  --     uv.fs_unlink(newfile)
-  --     vim.wait(200) -- Give some time for events to trigger
-  --     assert.are.same(event_triggered[1], "create")
-  --     assert.are.same(filenames[1], "newfile.txt")
-  --
-  --     -- Simulate file change
-  --     fd = uv.fs_open(testfile, "a", 438)
-  --     uv.fs_write(fd, "test content", -1)
-  --     uv.fs_close(fd)
-  --     vim.wait(200)
-  --     assert.are.same(event_triggered[2], "change")
-  --     assert.are.same(filenames[2], "test_file.txt")
-  --
-  --     -- Simulate file removal
-  --     uv.fs_unlink(testfile)
-  --     vim.wait(200)
-  --     assert.are.same(event_triggered[3], "delete")
-  --     assert.are.same(filenames[3], "test_file.txt")
-  --
-  --     -- Ensure callback was called each time
-  --     assert.is_true(callback_called)
-  --   end)
+    assert.spy(handler).called(0)
 
-  -- it("should trigger callback for directory add and remove events", function()
-  --   local watcher = FS.watch(tmpdir, function(event, filename)
-  --     callback_called = true
-  --     table.insert(event_triggered, event)
-  --     table.insert(filenames, filename)
-  --   end)
-  --
-  --   -- Simulate directory addition
-  --   uv.fs_mkdir(testdir, 448)
-  --   vim.wait(200)
-  --   assert.are.same(event_triggered[1], "create")
-  --   assert.are.same(filenames[1], "test_subdir")
-  --
-  --   -- Simulate directory removal
-  --   uv.fs_rmdir(testdir)
-  --   vim.wait(200)
-  --   assert.are.same(event_triggered[2], "delete")
-  --   assert.are.same(filenames[2], "test_subdir")
-  --
-  --   -- Ensure callback was called for both events
-  --   assert.is_true(callback_called)
-  -- end)
-  --
-  -- it("should stop triggering events after unwatch is called", function()
-  --   local watcher = FS.watch(tmpdir, function(event, filename)
-  --     callback_called = true
-  --   end)
-  --
-  --   -- Unwatch the directory
-  --   FS.unwatch(tmpdir)
-  --
-  --   -- Simulate an event
-  --   uv.fs_mkdir(testdir, 448)
-  --   vim.wait(200)
-  --
-  --   -- Ensure callback was NOT called after unwatch
-  --   assert.is_false(callback_called)
-  --
-  --   -- Clean up
-  --   uv.fs_rmdir(testdir)
-  -- end)
-  --
-  -- it("should allow two watches on the same path, unwatching only stops one", function()
-  --   local callback_called_1, callback_called_2 = false, false
-  --
-  --   local watcher1 = FS.watch(tmpdir, function(event, filename)
-  --     callback_called_1 = true
-  --   end)
-  --
-  --   local watcher2 = FS.watch(tmpdir, function(event, filename)
-  --     callback_called_2 = true
-  --   end)
-  --
-  --   -- Unwatch only the first watcher
-  --   FS.unwatch(watcher1)
-  --
-  --   -- Trigger an event
-  --   uv.fs_mkdir(testdir, 448)
-  --   vim.wait(200)
-  --
-  --   -- Only the second watcher should be called
-  --   assert.is_false(callback_called_1)
-  --   assert.is_true(callback_called_2)
-  --
-  --   -- Clean up
-  --   FS.unwatch(watcher2)
-  --   uv.fs_rmdir(testdir)
-  -- end)
-  --
-  -- it("should ensure no event is triggered if no event happens and path is unwatched", function()
-  --   local watcher = FS.watch(tmpdir, function(event, filename)
-  --     callback_called = true
-  --   end)
-  --
-  --   -- Unwatch the directory before any events are triggered
-  --   FS.unwatch(tmpdir)
-  --
-  --   -- Wait for a bit to ensure no event happens
-  --   vim.wait(200)
-  --
-  --   -- Ensure no callback was called since no events occurred
-  --   assert.is_false(callback_called)
-  -- end)
+    write_file(test_path, tostring(vim.uv.now()))
+
+    assert.is_true(wait_event(watcher, "change"), "Expected 'change' event for created file")
+    assert.spy(handler).called(1)
+    assert.spy(handler).called_with("change", test_path, match._)
+  end)
+
+  it("should emit `unlink` event when file was removed", function()
+    local test_path = get_fixture_path(temp_dir, "unlink.txt")
+
+    FS.writefile(test_path, "test")
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
+
+    wait_watcher_to_be_ready(watcher)
+
+    assert.spy(handler).called(0)
+
+    FS.rm(test_path)
+
+    assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+    assert.spy(handler).called(1)
+    assert.spy(handler).called_with("unlink", test_path, match._)
+  end)
+
+  it("should emit `unlinkDir` event when a directory was removed", function()
+    local test_dir = Path.join(temp_dir, "subdir")
+
+    FS.mkdir(test_dir)
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
+
+    wait_watcher_to_be_ready(watcher)
+
+    assert.spy(handler).called(0)
+
+    FS.rm(test_dir)
+
+    assert.is_true(wait_event(watcher, "unlink_dir"), "Expected 'unlink_dir' event for created folder")
+    assert.spy(handler).called(1)
+    assert.spy(handler).called_with("unlink_dir", test_dir, match._)
+  end)
+
+  it("should emit two `unlinkDir` event when two nested directories were removed", function()
+    local test_dir = get_fixture_path(temp_dir, "subdir")
+    local test_dir2 = get_fixture_path(temp_dir, "subdir/subdir2")
+    local test_dir3 = get_fixture_path(temp_dir, "subdir/subdir2/subdir3")
+
+    FS.mkdir(test_dir)
+    FS.mkdir(test_dir2)
+    FS.mkdir(test_dir3)
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, { recursive = true }, handler)
+
+    wait_watcher_to_be_ready(watcher)
+
+    FS.rm(test_dir2, { recursive = true })
+
+    assert.is_true(wait_event(watcher, "unlink_dir", 2), "Expected 'unlink_dir' event for created folder")
+    assert.spy(handler).called(2)
+    assert.spy(handler).called_with("unlink_dir", test_dir2, match._)
+    assert.spy(handler).called_with("unlink_dir", test_dir3, match._)
+  end)
+
+  it("should emit `unlink` and `add` events when a file is renamed", function()
+    local test_path = get_fixture_path(temp_dir, "change.txt")
+    local new_path = get_fixture_path(temp_dir, "moved.txt")
+
+    FS.writefile(test_path, "test")
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
+
+    wait_watcher_to_be_ready(watcher)
+
+    FS.rename(test_path, new_path)
+
+    wait_event(watcher, "add")
+
+    assert.spy(handler).called(2)
+    assert.spy(handler).called_with("unlink", test_path, match._)
+    assert.spy(handler).called_with("add", new_path, match._)
+  end)
+
+  it("should emit `add`, not `change`, when previously deleted file is re-added", function()
+    local test_path = get_fixture_path(temp_dir, "add.txt")
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
+    wait_watcher_to_be_ready(watcher)
+
+    FS.writefile(test_path, "test")
+
+    assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+    assert.spy(handler).called(1)
+    assert.spy(handler).called_with("add", test_path, match._)
+
+    FS.rm(test_path)
+
+    assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+    assert.spy(handler).called(2)
+    assert.spy(handler).called_with("unlink", test_path, match._)
+
+    FS.writefile(test_path, tostring(vim.uv.now()))
+
+    assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+    assert.spy(handler).called(3)
+    assert.spy(handler).called_with("add", test_path, match._)
+    assert.spy(handler).was_not_called_with("change", test_path, match._)
+  end)
+
+  it("should not emit `unlink` for previously moved files", function()
+    local test_path = get_fixture_path(temp_dir, "change.txt")
+    local new_path1 = get_fixture_path(temp_dir, "moved.txt")
+    local new_path2 = get_fixture_path(temp_dir, "moved-again.txt")
+
+    FS.writefile(test_path, "test")
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
+    wait_watcher_to_be_ready(watcher)
+
+    FS.rename(test_path, new_path1)
+
+    vim.wait(300)
+
+    FS.rename(new_path1, new_path2)
+
+    assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+
+    assert.spy(handler).called(4)
+    assert.spy(handler).called_with("unlink", test_path, match._)
+    assert.spy(handler).called_with("add", new_path1, match._)
+    assert.spy(handler).called_with("unlink", new_path1, match._)
+    assert.spy(handler).called_with("add", new_path2, match._)
+    assert.spy(handler).was_not_called_with("unlink", new_path2._, match._)
+    assert.spy(handler).was_not_called_with("add", test_path, match._)
+    assert.spy(handler).was_not_called_with("change", match._, match._)
+  end)
+
+  it("should notice when a file appears in a new directory", function()
+    local test_dir = get_fixture_path(temp_dir, "subdir")
+    local test_path = get_fixture_path(test_dir, "add.txt") -- NOTE: change
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
+    wait_watcher_to_be_ready(watcher)
+
+    FS.mkdir(test_dir)
+
+    assert.is_true(wait_event(watcher, "add_dir"), "Expected 'add_dir' event for created file")
+    vim.wait(200)
+
+    FS.writefile(test_path, "test")
+
+    assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+    assert.spy(handler).called(2)
+    assert.spy(handler).called_with("add_dir", test_dir, match._)
+    assert.spy(handler).called_with("add", test_path, match._)
+  end)
+
+  it("should watch removed and re-added directories", function()
+    local parent_path = get_fixture_path(temp_dir, "subdir2")
+    local sub_path = get_fixture_path(temp_dir, "subdir2/subsub") -- NOTE: change
+    local sub_file = get_fixture_path(sub_path, "somefile") -- NOTE: change
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
+    wait_watcher_to_be_ready(watcher)
+
+    FS.mkdir(parent_path)
+    vim.wait(300)
+
+    FS.rm(parent_path)
+
+    assert.is_true(wait_event(watcher, "unlink_dir"), "Expected 'unlink_dir' event for created file")
+    assert.spy(handler).called(2)
+    assert.spy(handler).called_with("add_dir", parent_path, match._)
+    assert.spy(handler).called_with("unlink_dir", parent_path, match._)
+
+    FS.mkdir(parent_path)
+    vim.wait(1200)
+
+    FS.mkdir(sub_path)
+
+    assert.is_true(wait_event(watcher, "add_dir"), "Expected 'add_dir' event for created file")
+    assert.spy(handler).called(4)
+    assert.spy(handler).called_with("add_dir", sub_path, match._)
+
+    vim.wait(300)
+    FS.writefile(sub_file, "test")
+
+    assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+    assert.spy(handler).called(5)
+    assert.spy(handler).called_with("add", sub_file, match._)
+    assert.spy(handler).was_not_called_with("add", parent_path, match._)
+    assert.spy(handler).was_not_called_with("add", sub_path, match._)
+  end)
+
+  -- TODO: continue
 end)
