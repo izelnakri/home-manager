@@ -532,5 +532,49 @@ describe("FS.watch", function()
     assert.spy(handler).was_not_called_with("add", sub_path, match._)
   end)
 
-  -- TODO: continue
+  it("should emit `unlinkDir` and `add` when dir is replaced by file", function()
+    local test_path = get_fixture_path(temp_dir, "dir_file")
+
+    FS.mkdir(test_path)
+    vim.wait(300)
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
+    wait_watcher_to_be_ready(watcher)
+
+    FS.rm(test_path)
+
+    assert.is_true(wait_event(watcher, "unlink_dir"), "Expected 'unlink_dir' event for created directory")
+    assert.spy(handler).called(1)
+    assert.spy(handler).called_with("unlink_dir", test_path, match._)
+
+    FS.writefile(test_path, "file content")
+
+    assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+    assert.spy(handler).called(2)
+    assert.spy(handler).called_with("unlink_dir", test_path, match._)
+    assert.spy(handler).called_with("add", test_path, match._)
+    assert.spy(handler).was_not_called_with("add_dir", sub_path, match._)
+  end)
+
+  it("should emit `unlink` and `addDir` when file is replaced by dir", function()
+    local test_path = get_fixture_path(temp_dir, "dir_file")
+
+    FS.writefile(test_path, "file content")
+
+    local handler = spy.new()
+    watcher = FS.watch(temp_dir, handler)
+    wait_watcher_to_be_ready(watcher)
+
+    FS.rm(test_path)
+
+    vim.wait(300)
+
+    FS.mkdir(test_path)
+
+    assert.is_true(wait_event(watcher, "add_dir"), "Expected 'add' event for created file")
+    assert.spy(handler).called(2)
+    assert.spy(handler).called_with("unlink", test_path, match._)
+    assert.spy(handler).called_with("add_dir", test_path, match._)
+  end)
 end)
