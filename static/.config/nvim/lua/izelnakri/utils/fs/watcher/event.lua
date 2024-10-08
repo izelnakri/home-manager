@@ -2,7 +2,6 @@
 -- TODO: BUG #1 - Parent watcher gets watcher.status = "watching" prematurely on options.recursive = true
 -- remove, change, rename(? maybe for directory -> it is unlink then add)
 -- Implement array of paths watching
--- watching paths need to be immutable: it can detect re-adds, renames(unlink + add)
 
 local uv = vim.uv
 local Path = require("izelnakri.utils.path")
@@ -15,8 +14,6 @@ local EVENTS = {
   UNLINK = "unlink",
   UNLINK_DIR = "unlink_dir",
 }
-
--- NOTE: when path not exists, one can build a retry loop, or a parent directory watcher(which can execute the same handler without having to do populate)
 
 local create_watcher
 local start_watcher
@@ -103,10 +100,9 @@ local function build_stat_tree_async(watcher, options, callback)
 
           read_dir() -- Start reading the directory
         end)
-      else -- Handle file path case
+      else
         vim.print("path is a file:", current_path)
         watcher.statTree[current_path] = { type = "file", stat = stat }
-        -- NOTE: Should I add WATCHERS[current_path] = watcher ?
         done_callback(nil, watcher.statTree)
       end
     end)
@@ -139,10 +135,6 @@ local function build_stat_tree_async(watcher, options, callback)
   -- Start populating the stat tree from the watcher’s path
   populate_stat_tree(watcher.path, watcher, finish_initialization)
 end
-
--- NOTE: maybe in future use this
--- local function register_fs_event(watcher, options)
--- end
 
 local start_fs_event
 start_fs_event = function(watcher, options)
@@ -202,7 +194,6 @@ start_fs_event = function(watcher, options)
     end)
   end)
 
-  -- Mark this path as watched only after starting the watcher
   if WATCHERS[watcher.path] then
     table.insert(WATCHERS[watcher.path], watcher)
   else
@@ -221,10 +212,8 @@ end
 start_watcher = function(watcher, options)
   vim.print("start_watcher runs for:", watcher.path)
 
-  -- Avoid starting a watcher if already watching this path
   if watcher.status == "watching" then
-    -- NOTE: Would this ever hit? Maybe throw an exception to check
-    return
+    return error("can't run start_watcher for a watcher that is already watching")
   end
 
   uv.fs_stat(watcher.path, function(err, stat)
@@ -266,6 +255,18 @@ local function register_child_watcher_until_main_watcher(watcher, parent_watcher
 
   if parent_watcher.parent_watcher then
     register_child_watcher_until_main_watcher(watcher, parent_watcher.parent_watcher)
+  end
+end
+
+local function clear_redundant_child_watchers_from(parent_watcher, child_watchers)
+  for index, watcher in ipairs(parent_watcher.child_watchers) do
+    if List.index_of(child_watchers, watcher) then
+      table.remove(parent_watcher.child_watchers, index)
+    end
+  end
+
+  if parent_watcher.parent_watcher then
+    clear_redundant_child_watchers_from(parent_watcher.parent_watcher, child_watchers)
   end
 end
 
@@ -311,7 +312,7 @@ create_watcher = function(path, options, parent_watcher) -- NOTE: sometimes pare
     -- It cant be Watchers tree because multiple watchers can be registered under a tree
     stop = function(self)
       if self.handle and self.status ~= "stopped" then
-        vim.print("CLOSING..", self.path, self.handle:getpath())
+        -- vim.print("CLOSING..", self.path, self.handle:getpath())
         self.handle:close()
         self.status = "stopped"
 
@@ -334,11 +335,19 @@ create_watcher = function(path, options, parent_watcher) -- NOTE: sometimes pare
     unwatch = function(self)
       self:stop()
 
+      local target_watchers = { self }
       for index, child_watcher in ipairs(self.child_watchers) do
+        table.insert(target_watchers, child_watcher)
         child_watcher:stop()
 
         List.delete(WATCHERS[child_watcher.path], child_watcher)
+        Object.remove(self.statTree, child_watcher.path) -- NOTE: Essential for regeneration on replace or restart
+
         table.remove(self.child_watchers, index)
+      end
+
+      if self.parent_watcher then
+        clear_redundant_child_watchers_from(self.parent_watcher, target_watchers)
       end
 
       return self
@@ -371,7 +380,7 @@ register_recovery_watcher_for = function(outermost_parent_watcher, lost_watcher_
 
   local parent_dir = Path.dirname(lost_watcher_path)
   vim.print(
-    "REGISTERING TOP-LEVEL WATCHER: full_path is: ",
+    "REGISTERING TOP-LEVEL recovery WATCHER: full_path is: ",
     lost_watcher_path,
     " watcher.path is: ",
     outermost_parent_watcher.path,
@@ -404,10 +413,10 @@ end
 -- Updated function to handle unlink and add events
 handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
   vim.print("full_path: ", full_path)
-  -- p(old_entry)
-  -- p(current_stat)
   local old_entry = watcher.statTree[full_path] -- TODO: This exists(?)
   local event_entry = { filename = full_path, fs_event = fs_event }
+  -- p(old_entry)
+  -- p(current_stat)
 
   -- Handle unlink/unlink_dir events
   if not old_entry and current_stat then
@@ -424,23 +433,15 @@ handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
       end
 
       if full_path ~= watcher.path then
-        local child_watcher = create_watcher(full_path, options, watcher) -- TODO: !!! This is sometimes watcher, sometimes parent_watcher?
+        create_watcher(full_path, options, watcher) -- TODO: !!! This is sometimes watcher, sometimes parent_watcher?
       end
     end
   elseif not current_stat then
-    if old_entry == nil then
-      vim.print("OLD_ENTRY EMPTY FOR:")
-      vim.print(full_path)
-      vim.print(watcher.path)
-    end
     event_entry.event = (old_entry.type == "directory" and EVENTS.UNLINK_DIR) or EVENTS.UNLINK
-
-    watcher.statTree[full_path] = nil -- TODO: Remove also all subdirectories and files, Also subdirectory watchers
-
-    unlinked_paths[full_path] = true -- TODO: Maybe unlinked_paths not needed(?)
+    watcher.statTree[full_path] = nil
 
     if (old_entry.type == "directory") and options.recursive then
-      vim.print("CLEAAARING: full_path is: ", full_path, " watcher.path is: ", watcher.path)
+      -- vim.print("CLEAAARING: full_path is: ", full_path, " watcher.path is: ", watcher.path)
       local target_watcher = List.find(watcher.child_watchers, function(child_watcher)
         return child_watcher.path == full_path
       end)
@@ -452,6 +453,15 @@ handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
       register_recovery_watcher_for(watcher, full_path, options) -- NOTE: This doesnt remove the removed folder watcher, which shouldnt fire multiple events?
     end
   elseif current_stat.mtime ~= old_entry.stat.mtime then
+    if current_stat.ino ~= old_entry.stat.ino then
+      event_entry.rename = true
+    end
+
+    -- vim.print("CURRENT_STAT:")
+    -- p(current_stat)
+    -- p("OLD_ENTRY:")
+    -- p(old_entry)
+
     event_entry.event = EVENTS.CHANGE
     watcher.statTree[full_path] = { type = current_stat.type, stat = current_stat }
   else
@@ -462,10 +472,23 @@ handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
   for _, cb in ipairs(watcher.callbacks) do
     cb(event_entry.event, event_entry.filename, current_stat)
   end
+
+  if event_entry.rename then
+    watcher:unwatch()
+
+    local new_watcher = create_watcher(watcher.path, options, watcher.parent_watcher) -- NOTE: Check if this is working correctly
+    if #new_watcher.callbacks == 0 then
+      for _, callback in pairs(watcher.callbacks) do
+        new_watcher:add_callback(callback)
+      end
+    end
+    vim.print("RENAME WATCHER CALLED:")
+    vim.print(watcher.handle:getpath())
+    p(new_watcher)
+  end
 end
 
--- FS.watch
-local function FS_watch(path, options, callback)
+local function watch(path, options, callback)
   if WATCHERS[path] and List.any(WATCHERS[path], function(watcher)
     return watcher.main_watcher == nil
   end) then
@@ -479,6 +502,27 @@ local function FS_watch(path, options, callback)
   watcher:add_callback(callback)
 
   return watcher
+end
+
+-- FS.watch
+local function FS_watch(input_paths, options, callback)
+  local paths = type(input_paths) == "table" and input_paths or { input_paths }
+  local watchers = {}
+  for _, path in ipairs(paths) do
+    table.insert(watchers, watch(path, options, callback))
+  end
+
+  if #watchers == 1 then
+    return watchers[1]
+  end
+
+  watchers.stop = function()
+    for _, watcher in ipairs(watchers) do
+      watcher.stop()
+    end
+  end
+
+  return watchers
 end
 
 -- FS.unwatch
