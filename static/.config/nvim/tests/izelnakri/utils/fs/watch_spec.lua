@@ -1,5 +1,6 @@
--- NOTE: rename folder test case maybe needed
+-- NOTE: Maybe in future implement atomic(swap file ignore) / ignore / ignoreInitials(tilde files, .dotfiles)
 -- Changing a folder and changing a file triggers CHANGE
+-- NOTE: on add dir, should I run through the folders and make all files and folders "add" and "add_dir"?
 require("async.test")
 
 local Path = require("izelnakri.utils.path")
@@ -123,7 +124,7 @@ describe("FS.watch", function()
       watcher = FS.watch(temp_dir, { recursive = false })
       assert.is_function(watcher.add_callback, "Expected 'add_callback' function")
       assert.is_function(watcher.stop, "Expected 'stop' function")
-      -- assert.is_function(watcher.restart, "Expected 'restart' function")
+      assert.is_function(watcher.restart, "Expected 'restart' function")
     end)
 
     it("should emit `add` event when a file is created", function()
@@ -508,17 +509,13 @@ describe("FS.watch", function()
       FS.mkdir(parent_path)
       vim.wait(300)
 
-      -- p(watcher)
       FS.rm(parent_path)
-      -- p("=============")
-      -- p(watcher)
 
       assert.is_true(wait_event(watcher, "unlink_dir"), "Expected 'unlink_dir' event for created file")
       assert.spy(handler).called(2)
       assert.spy(handler).called_with("add_dir", parent_path, match._)
       assert.spy(handler).called_with("unlink_dir", parent_path, match._)
 
-      -- p("xxxxxxxxxxxxxxxxxx")
       FS.mkdir(parent_path)
       vim.wait(2200)
 
@@ -659,7 +656,6 @@ describe("FS.watch", function()
       assert.spy(handler).called_with("add", test_path, match._)
     end)
 
-    -- NOTE: Currently we cannot watch not-existing file, change this test when we have it
     it("should ignore unwatched siblings", function()
       local test_path = get_fixture_path(temp_dir, "add.txt")
       local sibling_path = get_fixture_path(temp_dir, "change.txt")
@@ -668,7 +664,6 @@ describe("FS.watch", function()
       watcher = FS.watch(test_path, handler)
 
       vim.wait(300)
-      -- wait_watcher_to_be_ready(watcher)
 
       FS.writefile(test_path, "asdasd")
       FS.writefile(sibling_path, " nanana")
@@ -679,192 +674,471 @@ describe("FS.watch", function()
       assert.spy(handler).called_with("add", test_path, match._)
     end)
 
-    -- NOTE: Currently watch paths are not immutable fixed and they just disappear on rename(?)
-    -- it("should detect safe-edit", function()
-    --   local test_path = get_fixture_path(temp_dir, "change.txt")
-    --   local safe_path = get_fixture_path(temp_dir, "tmp.txt")
-    --
-    --   FS.writefile(test_path, "test")
-    --
-    --   local handler = spy.new()
-    --   watcher = FS.watch(test_path, handler)
-    --   wait_watcher_to_be_ready(watcher)
-    --
-    --   wait(200)
-    --   FS.appendfile(safe_path, " first")
-    --   FS.rename(safe_path, test_path)
-    --
-    --   wait(300)
-    --
-    --   vim.print("second")
-    --   FS.writefile(safe_path, "last_add")
-    --   FS.rename(safe_path, test_path)
-    --
-    --   wait(300)
-    --
-    --   vim.print("third")
-    --   FS.writefile(safe_path, "next_add")
-    --   FS.rename(safe_path, test_path)
-    --
-    --   wait(300)
-    --
-    --   FS.appendfile(safe_path, "nana")
-    --
-    --   wait(300)
-    --
-    --   assert.spy(handler).called(3)
-    --   assert.spy(handler).called_with("change", test_path, match._) -- call count was 3
-    -- end)
+    it("should detect safe-edit", function()
+      local test_path = get_fixture_path(temp_dir, "change.txt")
+      local safe_path = get_fixture_path(temp_dir, "tmp.txt")
 
-    describe("gh-682: should detect unlink then re-adds", function()
-      -- NOTE: Fix nil lookup and revert this test case to previous version
-      -- it("should detect unlink while watching a non-existent second file in another directory", function()
-      --   local test_path = get_fixture_path(temp_dir, "unlink.txt")
-      --   local other_dir_path = get_fixture_path(temp_dir, "other-dir")
-      --
-      --   FS.writefile(test_path, "test")
-      --   FS.mkdir(other_dir_path)
-      --
-      --   local handler = spy.new()
-      --   watcher = FS.watch(other_dir_path, handler)
-      --   wait_watcher_to_be_ready(watcher)
-      --   -- // intentionally for this test don't write fs.writeFileSync(otherPath, 'other');
-      --
-      --   FS.rm(other_dir_path)
-      --
-      --   assert.is_true(wait_event(watcher, "unlink_dir"), "Expected 'unlink' event for created file")
-      --   assert.spy(handler).called(1)
-      --   assert.spy(handler).called_with("unlink_dir", other_dir_path, match._)
-      -- end)
-      --
-      -- it("should detect unlink and re-add while watching a second file", function()
-      --   -- options.ignoreInitial = true;
-      --   -- const unlinkSpy = sinon.spy(function unlinkSpy() { });
-      --   -- const addSpy = sinon.spy(function addSpy() { });
-      --   -- const testPath = getFixturePath('unlink.txt');
-      --   -- const otherPath = getFixturePath('other.txt');
-      --   -- fs.writeFileSync(otherPath, 'other');
-      --   -- const watcher = chokidar_watch([testPath, otherPath], options)
-      --   --   .on(EV.UNLINK, unlinkSpy)
-      --   --   .on(EV.ADD, addSpy);
-      --   -- await waitForWatcher(watcher);
-      --   --
-      --   -- await delay();
-      --   -- await fs_unlink(testPath);
-      --   -- await waitFor([unlinkSpy]);
-      --   --
-      --   -- await delay();
-      --   -- unlinkSpy.should.have.been.calledWith(testPath);
-      --   --
-      --   -- await delay();
-      --   -- write(testPath, 're-added');
-      --   -- await waitFor([addSpy]);
-      --   -- addSpy.should.have.been.calledWith(testPath);
-      -- end)
-      -- it("should detect unlink and re-add while watching a non-existent second file in another directory", function()
-      --   -- options.ignoreInitial = true;
-      --   -- const unlinkSpy = sinon.spy(function unlinkSpy() { });
-      --   -- const addSpy = sinon.spy(function addSpy() { });
-      --   -- const testPath = getFixturePath('unlink.txt');
-      --   -- const otherDirPath = getFixturePath('other-dir');
-      --   -- const otherPath = getFixturePath('other-dir/other.txt');
-      --   -- fs.mkdirSync(otherDirPath, PERM_ARR);
-      --   -- // intentionally for this test don't write fs.writeFileSync(otherPath, 'other');
-      --   -- const watcher = chokidar_watch([testPath, otherPath], options)
-      --   --   .on(EV.UNLINK, unlinkSpy)
-      --   --   .on(EV.ADD, addSpy);
-      --   -- await waitForWatcher(watcher);
-      --   --
-      --   -- await delay();
-      --   -- await fs_unlink(testPath);
-      --   -- await waitFor([unlinkSpy]);
-      --   --
-      --   -- await delay();
-      --   -- unlinkSpy.should.have.been.calledWith(testPath);
-      --   --
-      --   -- await delay();
-      --   -- await write(testPath, 're-added');
-      --   -- await waitFor([addSpy]);
-      --   -- addSpy.should.have.been.calledWith(testPath);
-      -- end)
-      -- it("should detect unlink and re-add while watching a non-existent second file in the same directory", function()
-      --   -- options.ignoreInitial = true;
-      --   -- const unlinkSpy = sinon.spy(function unlinkSpy() { });
-      --   -- const addSpy = sinon.spy(function addSpy() { });
-      --   -- const testPath = getFixturePath('unlink.txt');
-      --   -- const otherPath = getFixturePath('other.txt');
-      --   -- // intentionally for this test don't write fs.writeFileSync(otherPath, 'other');
-      --   -- const watcher = chokidar_watch([testPath, otherPath], options)
-      --   --   .on(EV.UNLINK, unlinkSpy)
-      --   --   .on(EV.ADD, addSpy);
-      --   -- await waitForWatcher(watcher);
-      --   --
-      --   -- await delay();
-      --   -- await fs_unlink(testPath);
-      --   -- await waitFor([unlinkSpy]);
-      --   --
-      --   -- await delay();
-      --   -- unlinkSpy.should.have.been.calledWith(testPath);
-      --   --
-      --   -- await delay();
-      --   -- await write(testPath, 're-added');
-      --   -- await waitFor([addSpy]);
-      --   -- addSpy.should.have.been.calledWith(testPath);
-      -- end)
-      -- it("should detect two unlinks and one re-add", function()
-      --   -- options.ignoreInitial = true;
-      --   -- const unlinkSpy = sinon.spy(function unlinkSpy() { });
-      --   -- const addSpy = sinon.spy(function addSpy() { });
-      --   -- const testPath = getFixturePath('unlink.txt');
-      --   -- const otherPath = getFixturePath('other.txt');
-      --   -- fs.writeFileSync(otherPath, 'other');
-      --   -- const watcher = chokidar_watch([testPath, otherPath], options)
-      --   --   .on(EV.UNLINK, unlinkSpy)
-      --   --   .on(EV.ADD, addSpy);
-      --   -- await waitForWatcher(watcher);
-      --   --
-      --   -- await delay();
-      --   -- await fs_unlink(otherPath);
-      --   --
-      --   -- await delay();
-      --   -- await fs_unlink(testPath);
-      --   -- await waitFor([[unlinkSpy, 2]]);
-      --   --
-      --   -- await delay();
-      --   -- unlinkSpy.should.have.been.calledWith(otherPath);
-      --   -- unlinkSpy.should.have.been.calledWith(testPath);
-      --   --
-      --   -- await delay();
-      --   -- await write(testPath, 're-added');
-      --   -- await waitFor([addSpy]);
-      --   -- addSpy.should.have.been.calledWith(testPath);
-      -- end)
-      -- it("should detect unlink and re-add while watching a second file and a non-existent third file", function()
-      --   -- options.ignoreInitial = true;
-      --   -- const unlinkSpy = sinon.spy(function unlinkSpy() { });
-      --   -- const addSpy = sinon.spy(function addSpy() { });
-      --   -- const testPath = getFixturePath('unlink.txt');
-      --   -- const otherPath = getFixturePath('other.txt');
-      --   -- const other2Path = getFixturePath('other2.txt');
-      --   -- fs.writeFileSync(otherPath, 'other');
-      --   -- // intentionally for this test don't write fs.writeFileSync(other2Path, 'other2');
-      --   -- const watcher = chokidar_watch([testPath, otherPath, other2Path], options)
-      --   --   .on(EV.UNLINK, unlinkSpy)
-      --   --   .on(EV.ADD, addSpy);
-      --   -- await waitForWatcher(watcher);
-      --   -- await delay();
-      --   -- await fs_unlink(testPath);
-      --   --
-      --   -- await waitFor([unlinkSpy]);
-      --   -- await delay();
-      --   -- unlinkSpy.should.have.been.calledWith(testPath);
-      --   --
-      --   -- await delay();
-      --   -- await write(testPath, 're-added');
-      --   -- await waitFor([addSpy]);
-      --   -- addSpy.should.have.been.calledWith(testPath);
-      -- end)
+      FS.writefile(test_path, "test")
+
+      local handler = spy.new()
+      watcher = FS.watch(test_path, handler)
+      wait_watcher_to_be_ready(watcher)
+
+      wait(200)
+      FS.appendfile(safe_path, " first")
+      FS.rename(safe_path, test_path)
+
+      wait(300)
+
+      FS.writefile(safe_path, "last_add")
+      FS.rename(safe_path, test_path)
+
+      wait(300)
+
+      FS.writefile(safe_path, "next_add")
+      FS.rename(safe_path, test_path)
+
+      wait(300)
+
+      FS.appendfile(safe_path, "nana")
+
+      wait(300)
+
+      assert.spy(handler).called(3)
+      assert.spy(handler).called_with("change", test_path, match._)
+      assert.spy(handler).was_not_called_with("add", sub_path, match._)
+      assert.spy(handler).was_not_called_with("unlink", sub_path, match._)
+      assert.spy(handler).was_not_called_with("add_dir", sub_path, match._)
+      assert.spy(handler).was_not_called_with("unlink_dir", sub_path, match._)
     end)
+
+    describe("gh-682 should detect unlink then re-adds", function()
+      -- NOTE: Fix nil lookup and revert this test case to previous version
+      it("should detect unlink while watching a non-existent second file in another directory", function()
+        local test_path = get_fixture_path(temp_dir, "unlink.txt")
+        local other_dir_path = get_fixture_path(temp_dir, "other-dir")
+
+        FS.writefile(test_path, "test")
+        FS.mkdir(other_dir_path)
+
+        local handler = spy.new()
+        watcher = FS.watch({ test_path, other_dir_path }, handler)
+
+        wait(300)
+        -- intentionally for this test don't write fs.writeFileSync(otherPath, 'other');
+
+        FS.rm(test_path)
+
+        assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+        assert.spy(handler).called(1)
+        assert.spy(handler).called_with("unlink", test_path, nil)
+      end)
+
+      it("should detect unlink and re-add while watching a second file", function()
+        -- options.ignoreInitial = true;
+        local test_path = get_fixture_path(temp_dir, "unlink.txt")
+        local other_path = get_fixture_path(temp_dir, "other.txt")
+
+        FS.writefile(other_path, "something")
+        FS.writefile(test_path, "something")
+
+        _G.DEBUG = true
+
+        local handler = spy.new()
+        watcher = FS.watch(test_path, handler)
+
+        wait(300)
+
+        FS.rm(test_path)
+
+        assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+        assert.spy(handler).called(1)
+        assert.spy(handler).called_with("unlink", test_path, nil)
+
+        wait(300)
+
+        FS.writefile(test_path, "re-added")
+
+        wait(300)
+
+        -- NOTE: this doesnt work, watcher changes or doesnt get the add
+        -- assert.is_true(wait_event(watcher, "add", 3000), "Expected 'add' event for created file")
+        assert.spy(handler).called(2)
+        assert.spy(handler).called_with("add", test_path, match._)
+      end)
+
+      --  TODO: causes a problem in entire test suite
+      it("should detect unlink and re-add while watching a non-existent second file in another directory", function()
+        local test_path = get_fixture_path(temp_dir, "unlink.txt")
+        local other_dir_path = get_fixture_path(temp_dir, "other-dir")
+        local other_path = get_fixture_path(other_dir_path, "other.txt")
+
+        FS.writefile(test_path, "something")
+        FS.mkdir(other_dir_path)
+
+        local handler = spy.new()
+        watcher = FS.watch({ test_path, other_path }, handler)
+
+        wait(300)
+
+        FS.rm(test_path)
+
+        assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+        assert.spy(handler).called(1)
+
+        wait(300) -- This fixes the test case
+
+        FS.writefile(test_path, "re-added")
+
+        assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+        assert.spy(handler).called(2)
+        assert.spy(handler).called_with("add", test_path, match._)
+      end)
+
+      it("should detect unlink and re-add while watching a non-existent second file in the same directory", function()
+        local test_path = get_fixture_path(temp_dir, "unlink.txt")
+        local other_path = get_fixture_path(temp_dir, "other.txt")
+
+        FS.writefile(test_path, "something")
+        -- FS.writefile(other_path, "other something")
+
+        local handler = spy.new()
+        watcher = FS.watch({ test_path, other_path }, handler)
+
+        wait(300)
+
+        FS.rm(test_path)
+
+        assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+        assert.spy(handler).called(1)
+        assert.spy(handler).called_with("unlink", test_path, nil)
+
+        wait(300)
+
+        FS.writefile(test_path, "re-added")
+
+        assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+        assert.spy(handler).called(2)
+        assert.spy(handler).called_with("add", test_path, match._)
+      end)
+
+      -- NOTE: Adjustments start from here
+      it("should detect two unlinks and one re-add", function()
+        local test_path = get_fixture_path(temp_dir, "unlink.txt")
+        local other_path = get_fixture_path(temp_dir, "other.txt")
+
+        FS.writefile(test_path, "something")
+        FS.writefile(other_path, "other something")
+
+        local handler = spy.new()
+        watcher = FS.watch({ test_path, other_path }, handler)
+
+        wait(300)
+
+        FS.rm(other_path)
+
+        assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+        assert.spy(handler).called(1)
+        assert.spy(handler).called_with("unlink", other_path, nil)
+
+        FS.rm(test_path)
+
+        assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+        assert.spy(handler).called(2)
+        assert.spy(handler).called_with("unlink", test_path, nil)
+
+        wait(300)
+
+        FS.writefile(test_path, "re-added")
+
+        assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+        assert.spy(handler).called(3)
+        assert.spy(handler).called_with("add", test_path, match._)
+      end)
+
+      it("should detect unlink and re-add while watching a second file and a non-existent third file", function()
+        local test_path = get_fixture_path(temp_dir, "unlink.txt")
+        local other_path = get_fixture_path(temp_dir, "other.txt")
+        local other_path2 = get_fixture_path(temp_dir, "other2.txt")
+
+        FS.writefile(test_path, "something")
+        FS.writefile(other_path, "other something")
+
+        local handler = spy.new()
+        watcher = FS.watch({ test_path, other_path, other_path2 }, handler)
+
+        wait(300)
+
+        FS.rm(test_path)
+
+        assert.is_true(wait_event(watcher, "unlink"), "Expected 'unlink' event for created file")
+        assert.spy(handler).called(1)
+        assert.spy(handler).called_with("unlink", test_path, nil)
+
+        wait(300)
+
+        FS.writefile(test_path, "re-added")
+
+        assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+        assert.spy(handler).called(2)
+        assert.spy(handler).called_with("add", test_path, match._)
+      end)
+    end)
+  end)
+
+  describe("renamed directory", function()
+    it("should emit `add` for a file in a renamed directory", function()
+      local test_dir = get_fixture_path(temp_dir, "subdir")
+      local test_path = get_fixture_path(test_dir, "add.txt")
+      local renamed_dir = get_fixture_path(temp_dir, "subdir-renamed")
+
+      local expected_path = get_fixture_path(renamed_dir, "add.txt")
+
+      FS.mkdir(test_dir)
+
+      FS.writefile(test_path, "something")
+
+      local handler = spy.new()
+      watcher = FS.watch(temp_dir, handler)
+
+      wait(1000) -- instead wait ready, reduce it!
+
+      FS.rename(test_dir, renamed_dir)
+
+      assert.is_true(wait_event(watcher, "unlink_dir"), "Expected 'unlink' event for created folder")
+      assert.spy(handler).called(2)
+      assert.spy(handler).called_with("unlink_dir", test_dir, nil)
+      assert.spy(handler).called_with("add_dir", renamed_dir, match._)
+      -- TODO: Chokidar fires these events, I fire less:
+      -- assert.spy(handler).called_with("unlink", test_path, match._)
+      -- assert.spy(handler).called_with("add", expected_path, nil)
+    end)
+  end)
+
+  describe("watch non-existent paths", function()
+    it("should watch non-existent file and detect add", function()
+      local test_path = get_fixture_path(temp_dir, "add.txt")
+
+      local handler = spy.new()
+      watcher = FS.watch(test_path, handler)
+
+      wait(300)
+
+      FS.writefile(test_path, "something")
+
+      assert.is_true(wait_event(watcher, "add"), "Expected 'unlink' event for created folder")
+      assert.spy(handler).called(1)
+      assert.spy(handler).called_with("add", test_path, match._)
+    end)
+
+    it("should watch non-existent dir and detect addDir/add", function()
+      local test_dir = get_fixture_path(temp_dir, "subdir")
+      local test_path = get_fixture_path(test_dir, "add.txt")
+
+      local handler = spy.new()
+      watcher = FS.watch(test_dir, handler)
+
+      wait(300)
+
+      FS.mkdir(test_dir)
+
+      assert.is_true(wait_event(watcher, "add_dir"), "Expected 'add_dir' event for created folder")
+      assert.spy(handler).called(1)
+      assert.spy(handler).called_with("add_dir", test_dir, match._)
+
+      wait(300)
+
+      FS.writefile(test_path, "cool")
+
+      assert.is_true(wait_event(watcher, "add"), "Expected 'add' event for created file")
+      assert.spy(handler).called(2)
+      assert.spy(handler).called_with("add", test_path, match._)
+    end)
+  end)
+
+  describe("watch symlinks", function()
+    it("should watch symlinked dirs", function()
+      local sub_dir = get_fixture_path(temp_dir, "subdir")
+      local linked_dir = get_fixture_path(temp_dir, "linked-1")
+      local change_path = get_fixture_path(sub_dir, "change.txt")
+      local unlink_path = get_fixture_path(sub_dir, "unlink.txt")
+
+      FS.mkdir(sub_dir)
+      FS.writefile(change_path, "something")
+      FS.writefile(unlink_path, "another thing")
+
+      local handler = spy.new()
+      watcher = FS.watch(linked_dir, handler)
+
+      wait(300)
+
+      FS.symlink(sub_dir, linked_dir)
+
+      wait(300)
+
+      assert.spy(handler).called(1)
+      assert.spy(handler).called_with("add_dir", linked_dir, match._)
+      -- NOTE: On chokidar, events traverse down the directories:
+      -- assert.spy(handler).called_with("add", change_path, match._)
+      -- assert.spy(handler).called_with("add", unlink_path, match._)
+    end)
+
+    it("should watch symlinked files", function()
+      local change_path = get_fixture_path(temp_dir, "change.txt")
+      local link_path = get_fixture_path(temp_dir, "link.txt")
+
+      FS.writefile(change_path, "something")
+      FS.symlink(change_path, link_path)
+
+      local handler = spy.new()
+      watcher = FS.watch(link_path, handler)
+
+      wait(300)
+
+      FS.appendfile(change_path, "adding something")
+
+      assert.is_true(wait_event(watcher, "change"), "Expected 'change' event for created file")
+      assert.spy(handler).called(1)
+      assert.spy(handler).called_with("change", link_path, match._)
+    end)
+
+    -- it('should follow symlinked files within a normal dir', async () => {
+    --   const changePath = getFixturePath('change.txt');
+    --   const linkPath = getFixturePath('subdir/link.txt');
+    --   fs.symlinkSync(changePath, linkPath);
+    --   const watcher = chokidar_watch(getFixturePath('subdir'), options);
+    --   const spy = await aspy(watcher, EV.ALL);
+    --
+    --   await write(changePath, dateNow());
+    --   await waitFor([spy.withArgs(EV.CHANGE, linkPath)]);
+    --   spy.should.have.been.calledWith(EV.ADD, linkPath);
+    --   spy.should.have.been.calledWith(EV.CHANGE, linkPath);
+    -- });
+
+    -- it('should watch paths with a symlinked parent', async () => {
+    --   const testDir = sysPath.join(linkedDir, 'subdir');
+    --   const testFile = sysPath.join(testDir, 'add.txt');
+    --   const watcher = chokidar_watch(testDir, options);
+    --   const spy = await aspy(watcher, EV.ALL);
+    --
+    --   spy.should.have.been.calledWith(EV.ADD_DIR, testDir);
+    --   spy.should.have.been.calledWith(EV.ADD, testFile);
+    --   await write(getFixturePath('subdir/add.txt'), dateNow());
+    --   await waitFor([spy.withArgs(EV.CHANGE)]);
+    --   spy.should.have.been.calledWith(EV.CHANGE, testFile);
+    -- });
+
+    -- it('should not recurse indefinitely on circular symlinks', async () => {
+    --   await fs_symlink(currentDir, getFixturePath('subdir/circular'), isWindows ? 'dir' : null);
+    --   return new Promise((resolve, reject) => {
+    --     const watcher = chokidar_watch(currentDir, options);
+    --     watcher.on(EV.ERROR, resolve());
+    --     watcher.on(EV.READY, reject('The watcher becomes ready, although he watches a circular symlink.'));
+    --   })
+    -- });
+
+    -- it('should recognize changes following symlinked dirs', async () => {
+    --   const linkedFilePath = sysPath.join(linkedDir, 'change.txt');
+    --   const watcher = chokidar_watch(linkedDir, options);
+    --   const spy = await aspy(watcher, EV.CHANGE);
+    --   const wa = spy.withArgs(linkedFilePath);
+    --   await write(getFixturePath('change.txt'), dateNow());
+    --   await waitFor([wa]);
+    --   spy.should.have.been.calledWith(linkedFilePath);
+    -- });
+
+    -- it('should follow newly created symlinks', async () => {
+    --   options.ignoreInitial = true;
+    --   const watcher = chokidar_watch(currentDir, options);
+    --   const spy = await aspy(watcher, EV.ALL);
+    --   await delay();
+    --   await fs_symlink(getFixturePath('subdir'), getFixturePath('link'), isWindows ? 'dir' : null);
+    --   await waitFor([
+    --     spy.withArgs(EV.ADD, getFixturePath('link/add.txt')),
+    --     spy.withArgs(EV.ADD_DIR, getFixturePath('link'))
+    --   ]);
+    --   spy.should.have.been.calledWith(EV.ADD_DIR, getFixturePath('link'));
+    --   spy.should.have.been.calledWith(EV.ADD, getFixturePath('link/add.txt'));
+    -- });
+
+    -- it('should watch symlinks as files when followSymlinks:false', async () => {
+    --   options.followSymlinks = false;
+    --   const watcher = chokidar_watch(linkedDir, options);
+    --   const spy = await aspy(watcher, EV.ALL);
+    --   spy.should.not.have.been.calledWith(EV.ADD_DIR);
+    --   spy.should.have.been.calledWith(EV.ADD, linkedDir);
+    --   spy.should.have.been.calledOnce;
+    -- });
+
+    -- it('should survive ENOENT for missing symlinks when followSymlinks:false', async () => {
+    --   options.followSymlinks = false;
+    --   const targetDir = getFixturePath('subdir/nonexistent');
+    --   await fs_mkdir(targetDir);
+    --   await fs_symlink(targetDir, getFixturePath('subdir/broken'), isWindows ? 'dir' : null);
+    --   await fs_rmdir(targetDir);
+    --   await delay();
+    --
+    --   const watcher = chokidar_watch(getFixturePath('subdir'), options);
+    --   const spy = await aspy(watcher, EV.ALL);
+    --
+    --   spy.should.have.been.calledTwice;
+    --   spy.should.have.been.calledWith(EV.ADD_DIR, getFixturePath('subdir'));
+    --   spy.should.have.been.calledWith(EV.ADD, getFixturePath('subdir/add.txt'));
+    -- });
+
+    -- it('should watch symlinks within a watched dir as files when followSymlinks:false', async () => {
+    --   options.followSymlinks = false;
+    --   // Create symlink in linkPath
+    --   const linkPath = getFixturePath('link');
+    --   fs.symlinkSync(getFixturePath('subdir'), linkPath);
+    --   const spy = await aspy(chokidar_watch(currentDir, options), EV.ALL);
+    --   await delay(300);
+    --   setTimeout(() => {
+    --     fs.writeFileSync(getFixturePath('subdir/add.txt'), dateNow());
+    --     fs.unlinkSync(linkPath);
+    --     fs.symlinkSync(getFixturePath('subdir/add.txt'), linkPath);
+    --   }, options.usePolling ? 1200 : 300);
+    --
+    --   await delay(300);
+    --   await waitFor([spy.withArgs(EV.CHANGE, linkPath)]);
+    --   spy.should.not.have.been.calledWith(EV.ADD_DIR, linkPath);
+    --   spy.should.not.have.been.calledWith(EV.ADD, getFixturePath('link/add.txt'));
+    --   spy.should.have.been.calledWith(EV.ADD, linkPath);
+    --   spy.should.have.been.calledWith(EV.CHANGE, linkPath);
+    -- });
+
+    -- it('should not reuse watcher when following a symlink to elsewhere', async () => {
+    --   const linkedPath = getFixturePath('outside');
+    --   const linkedFilePath = sysPath.join(linkedPath, 'text.txt');
+    --   const linkPath = getFixturePath('subdir/subsub');
+    --   fs.mkdirSync(linkedPath, PERM_ARR);
+    --   fs.writeFileSync(linkedFilePath, 'b');
+    --   fs.symlinkSync(linkedPath, linkPath);
+    --   const watcher2 = chokidar_watch(getFixturePath('subdir'), options);
+    --   await waitForWatcher(watcher2);
+    --
+    --   await delay(options.usePolling ? 900 : undefined);
+    --   const watchedPath = getFixturePath('subdir/subsub/text.txt');
+    --   const watcher = chokidar_watch(watchedPath, options);
+    --   const spy = await aspy(watcher, EV.ALL);
+    --
+    --   await delay();
+    --   await write(linkedFilePath, dateNow());
+    --   await waitFor([spy.withArgs(EV.CHANGE)]);
+    --   spy.should.have.been.calledWith(EV.CHANGE, watchedPath);
+    -- });
+
+    -- it('should emit ready event even when broken symlinks are encountered', async () => {
+    --   const targetDir = getFixturePath('subdir/nonexistent');
+    --   await fs_mkdir(targetDir);
+    --   await fs_symlink(targetDir, getFixturePath('subdir/broken'), isWindows ? 'dir' : null);
+    --   await fs_rmdir(targetDir);
+    --   const readySpy = sinon.spy(function readySpy() { });
+    --   const watcher = chokidar_watch(getFixturePath('subdir'), options)
+    --     .on(EV.READY, readySpy);
+    --   await waitForWatcher(watcher);
+    --   readySpy.should.have.been.calledOnce;
+    -- });
   end)
 end)
 

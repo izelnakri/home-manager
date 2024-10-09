@@ -1,7 +1,4 @@
--- NOTE: Only fix the watcher.status = "watching"
 -- TODO: BUG #1 - Parent watcher gets watcher.status = "watching" prematurely on options.recursive = true
--- remove, change, rename(? maybe for directory -> it is unlink then add)
--- Implement array of paths watching
 
 local uv = vim.uv
 local Path = require("izelnakri.utils.path")
@@ -234,10 +231,11 @@ start_watcher = function(watcher, options)
       --   end)
       -- end)
     else
-      if watcher.handle == nil then
+      if watcher.handle == nil then -- NOTE: This is removed, this might cause bugs(?), double watch(?)
         watcher.handle = uv.new_fs_event()
       end
 
+      -- NOTE: Here probably start_fs_event doesnt fire correctly
       build_stat_tree_async(watcher, options, function(err)
         if err then
           error(err)
@@ -313,7 +311,7 @@ create_watcher = function(path, options, parent_watcher) -- NOTE: sometimes pare
     stop = function(self)
       if self.handle and self.status ~= "stopped" then
         -- vim.print("CLOSING..", self.path, self.handle:getpath())
-        self.handle:close()
+        uv.fs_event_stop(self.handle)
         self.status = "stopped"
 
         for _, child_path in pairs(self:get_watched_paths()) do
@@ -325,10 +323,10 @@ create_watcher = function(path, options, parent_watcher) -- NOTE: sometimes pare
         for _, child in pairs(self.child_watchers) do
           child:stop()
         end
+      end
 
-        if self.recovery_watcher then
-          self.recovery_watcher:stop()
-        end
+      if self.recovery_watcher then
+        self.recovery_watcher:stop()
       end
     end,
 
@@ -393,18 +391,22 @@ register_recovery_watcher_for = function(outermost_parent_watcher, lost_watcher_
   --   outermost_parent_watcher.recovery_watcher:unwatch()
   -- end
 
-  outermost_parent_watcher.recovery_watcher = create_watcher(parent_dir, {}) -- NOTE: what if the parent watcher already exists?, it takes some time to actually create the listener
+  outermost_parent_watcher:stop() -- NOTE: This is needed
+  outermost_parent_watcher.recovery_watcher = create_watcher(parent_dir, { recursive = false }) -- NOTE: what if the parent watcher already exists?, it takes some time to actually create the listener
   outermost_parent_watcher.recovery_watcher:add_callback(function(event, event_path, stat)
     vim.print("RECOVERY ADD CALL", event, event_path)
+    vim.print(lost_watcher_path)
+    p(outermost_parent_watcher)
     if (event == EVENTS.ADD or event == EVENTS.ADD_DIR) and event_path == lost_watcher_path then
       uv.fs_stat(lost_watcher_path, function(_, stat)
-        outermost_parent_watcher:restart()
+        outermost_parent_watcher:restart() -- NOTE: This doesnt immediately turn the watcher from "stopped" to "watching"
+        outermost_parent_watcher.recovery_watcher:unwatch() -- TODO: Should this be stop instead?
+        outermost_parent_watcher.recovery_watcher = nil
+
+        -- TODO: This should happen after watcher being ready
         for _, cb in ipairs(outermost_parent_watcher.callbacks) do
           cb(event, lost_watcher_path, stat)
         end
-
-        outermost_parent_watcher.recovery_watcher:unwatch() -- TODO: Should this be stop instead?
-        outermost_parent_watcher.recovery_watcher = nil
       end)
     end
   end)
@@ -450,8 +452,16 @@ handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
     end
 
     if watcher.parent_watcher == nil and full_path == watcher.path then -- NOTE: maybe this causes problems
+      watcher:unwatch()
+      -- TODO: add here unwatch maybe
       register_recovery_watcher_for(watcher, full_path, options) -- NOTE: This doesnt remove the removed folder watcher, which shouldnt fire multiple events?
+    else
     end
+    vim.print("unlink/unlink_dir | WHAT I WANTED HAPPENS:")
+    vim.print("full_path", full_path)
+    vim.print("watcher.path", watcher.path)
+    p(watcher)
+    -- end
   elseif current_stat.mtime ~= old_entry.stat.mtime then
     if current_stat.ino ~= old_entry.stat.ino then
       event_entry.rename = true
@@ -484,6 +494,7 @@ handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
     end
     vim.print("RENAME WATCHER CALLED:")
     vim.print(watcher.handle:getpath())
+
     p(new_watcher)
   end
 end
@@ -516,9 +527,17 @@ local function FS_watch(input_paths, options, callback)
     return watchers[1]
   end
 
-  watchers.stop = function()
+  watchers.callbacks = {}
+  watchers.stop = function(self)
+    for _, watcher in ipairs(self) do
+      watcher:stop()
+    end
+  end
+  watchers.add_callback = function(self, cb)
+    table.insert(self.callbacks, callback)
+
     for _, watcher in ipairs(watchers) do
-      watcher.stop()
+      watcher:add_callback(cb)
     end
   end
 
