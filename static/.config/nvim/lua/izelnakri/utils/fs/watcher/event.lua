@@ -1,4 +1,11 @@
+-- during traversal, if there is a symlink, create a separate watcher for that symlink! - what happens when this symlink gets deleted AND when it gets recreated during watch(this works currently?)
 -- TODO: BUG #1 - Parent watcher gets watcher.status = "watching" prematurely on options.recursive = true
+-- TODO: BUG #2 - Individual symlinked files are not being watched properly
+-- This creates a problem with the current recovery watcher mechanism
+-- symlinking new
+
+-- NOTE: Add watcher.status = recovery | initialized, watching, recovery(after recovery sets up), stopped
+-- NOTE: Make ADD_DIR and UNLINK_DIR recursive(?)
 
 local uv = vim.uv
 local Path = require("izelnakri.utils.path")
@@ -74,6 +81,8 @@ local function build_stat_tree_async(watcher, options, callback)
 
                 -- Stat each file/directory asynchronously
                 uv.fs_stat(entry_path, function(err, entry_stat)
+                  vim.print("found path:", entry_path)
+
                   if not err then
                     watcher.statTree[entry_path] = { type = entry.type, stat = entry_stat }
                   end
@@ -143,6 +152,7 @@ start_fs_event = function(watcher, options)
 
   -- Track last event time for debouncing
   local debounce_timers = {}
+  vim.print("handle registration:", watcher.path)
   uv.fs_event_start(watcher.handle, watcher.path, flags, function(err, filename, fs_event)
     -- vim.print(filename)
     -- vim.print("EVENT:")
@@ -455,12 +465,12 @@ handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
       watcher:unwatch()
       -- TODO: add here unwatch maybe
       register_recovery_watcher_for(watcher, full_path, options) -- NOTE: This doesnt remove the removed folder watcher, which shouldnt fire multiple events?
-    else
+      -- else
     end
-    vim.print("unlink/unlink_dir | WHAT I WANTED HAPPENS:")
-    vim.print("full_path", full_path)
-    vim.print("watcher.path", watcher.path)
-    p(watcher)
+    -- vim.print("unlink/unlink_dir | WHAT I WANTED HAPPENS:")
+    -- vim.print("full_path", full_path)
+    -- vim.print("watcher.path", watcher.path)
+    -- p(watcher)
     -- end
   elseif current_stat.mtime ~= old_entry.stat.mtime then
     if current_stat.ino ~= old_entry.stat.ino then

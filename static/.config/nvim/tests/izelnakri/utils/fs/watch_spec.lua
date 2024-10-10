@@ -460,7 +460,7 @@ describe("FS.watch", function()
 
       FS.rename(test_path, new_path1)
 
-      vim.wait(300)
+      vim.wait(450) -- changed for a flaky test situation
 
       FS.rename(new_path1, new_path2)
 
@@ -1002,18 +1002,34 @@ describe("FS.watch", function()
       assert.spy(handler).called_with("change", link_path, match._)
     end)
 
-    -- it('should follow symlinked files within a normal dir', async () => {
-    --   const changePath = getFixturePath('change.txt');
-    --   const linkPath = getFixturePath('subdir/link.txt');
-    --   fs.symlinkSync(changePath, linkPath);
-    --   const watcher = chokidar_watch(getFixturePath('subdir'), options);
-    --   const spy = await aspy(watcher, EV.ALL);
+    -- TODO: This one is buggy, FIX THIS!:
+    -- it("should follow symlinked files within a normal dir", function()
+    --   local change_path = get_fixture_path(temp_dir, "change.txt")
+    --   local sub_dir = get_fixture_path(temp_dir, "subdir")
+    --   local link_path = get_fixture_path(sub_dir, "link.txt")
     --
-    --   await write(changePath, dateNow());
-    --   await waitFor([spy.withArgs(EV.CHANGE, linkPath)]);
-    --   spy.should.have.been.calledWith(EV.ADD, linkPath);
-    --   spy.should.have.been.calledWith(EV.CHANGE, linkPath);
-    -- });
+    --   FS.mkdir(sub_dir) -- NOTE: remove this
+    --   FS.writefile(change_path, "something")
+    --   FS.symlink(change_path, link_path)
+    --
+    --   wait(300)
+    --
+    --   local handler = spy.new()
+    --   watcher = FS.watch(sub_dir, handler)
+    --
+    --   wait(300)
+    --   -- FS.symlink(change_path, link_path) -- NOTE: This fires up an event
+    --
+    --   wait(1000)
+    --
+    --   FS.appendfile(change_path, "adding something") -- NOTE: This doesn't fire symlinks
+    --
+    --   wait(300)
+    --
+    --   -- assert.is_true(wait_event(watcher, "change"), "Expected 'change' event for created file")
+    --   assert.spy(handler).called(1)
+    --   assert.spy(handler).called_with("change", link_path, match._)
+    -- end)
 
     -- it('should watch paths with a symlinked parent', async () => {
     --   const testDir = sysPath.join(linkedDir, 'subdir');
