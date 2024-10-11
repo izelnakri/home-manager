@@ -96,6 +96,10 @@ local function build_stat_tree_async(watcher, options, callback)
                     populate_stat_tree(entry_path, child_watcher, function()
                       on_entry_processed()
                     end)
+                  elseif entry.type == "link" and entry_stat ~= nil then
+                    local child_watcher = create_watcher(entry_path, options, parent_watcher) -- NOTE: This is not correct, watcher as to be parent_watcher
+
+                    on_entry_processed()
                   else
                     on_entry_processed()
                   end
@@ -168,20 +172,23 @@ start_fs_event = function(watcher, options)
     end
 
     local known_watcher_type = watcher.statTree[watcher.path] and watcher.statTree[watcher.path].type
-    local filename_targets_watcher_path = known_watcher_type == "directory"
+    local filename_targets_watcher_path = (known_watcher_type == "directory")
       and (Path.basename(watcher.path) == filename)
     if filename_targets_watcher_path then
-      vim.print("filename_targets_watcher_path diversion")
+      vim.print("filename_targets_watcher_path diversion ", watcher.path)
       return
     end
 
     local full_path
     if known_watcher_type == "file" then
       full_path = watcher.path
+    elseif known_watcher_type == "link" then
+      full_path = (Path.basename(watcher.path) == filename and watcher.path) or Path.join(watcher.path, filename) -- TODO: THIS IS NEW, does is create issues with unclearing
     else
       full_path = (filename_targets_watcher_path and watcher.path) or Path.join(watcher.path, filename)
       -- TODO: Maybe here I need to add known_watcher_type == "file" thing
     end
+    -- vim.print("full_path is:", full_path, " for watcher type", known_watcher_type)
 
     -- Debounce timer for the event
     if debounce_timers[full_path] then
@@ -349,6 +356,7 @@ create_watcher = function(path, options, parent_watcher) -- NOTE: sometimes pare
         child_watcher:stop()
 
         List.delete(WATCHERS[child_watcher.path], child_watcher)
+        vim.print("child_watcher.path is:", child_watcher.path)
         Object.remove(self.statTree, child_watcher.path) -- NOTE: Essential for regeneration on replace or restart
 
         table.remove(self.child_watchers, index)
@@ -405,8 +413,7 @@ register_recovery_watcher_for = function(outermost_parent_watcher, lost_watcher_
   outermost_parent_watcher.recovery_watcher = create_watcher(parent_dir, { recursive = false }) -- NOTE: what if the parent watcher already exists?, it takes some time to actually create the listener
   outermost_parent_watcher.recovery_watcher:add_callback(function(event, event_path, stat)
     vim.print("RECOVERY ADD CALL", event, event_path)
-    vim.print(lost_watcher_path)
-    p(outermost_parent_watcher)
+
     if (event == EVENTS.ADD or event == EVENTS.ADD_DIR) and event_path == lost_watcher_path then
       uv.fs_stat(lost_watcher_path, function(_, stat)
         outermost_parent_watcher:restart() -- NOTE: This doesnt immediately turn the watcher from "stopped" to "watching"

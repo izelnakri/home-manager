@@ -957,13 +957,30 @@ describe("FS.watch", function()
   end)
 
   describe("watch symlinks", function()
-    it("should watch symlinked dirs", function()
-      local sub_dir = get_fixture_path(temp_dir, "subdir")
-      local linked_dir = get_fixture_path(temp_dir, "linked-1")
-      local change_path = get_fixture_path(sub_dir, "change.txt")
-      local unlink_path = get_fixture_path(sub_dir, "unlink.txt")
+    local source_dir, sub_dir, linked_dir
+
+    before_each(function()
+      source_dir = get_fixture_path(temp_dir, "link-source")
+      linked_dir = Path.join(temp_dir, "link-folder")
+      sub_dir = get_fixture_path(source_dir, "subdir")
+
+      FS.mkdir(source_dir)
 
       FS.mkdir(sub_dir)
+      FS.writefile(get_fixture_path(sub_dir, "add.txt"), "something")
+    end)
+
+    after_each(function()
+      FS.unlink(linked_dir)
+      FS.unlink(source_dir)
+    end)
+    -- TODO: temp_dirs are symlink dirs from? current_dir, also sub_dir and add.txt always get created
+    --
+
+    it("should watch symlinked dirs", function()
+      local change_path = get_fixture_path(source_dir, "change.txt")
+      local unlink_path = get_fixture_path(source_dir, "unlink.txt")
+
       FS.writefile(change_path, "something")
       FS.writefile(unlink_path, "another thing")
 
@@ -972,7 +989,7 @@ describe("FS.watch", function()
 
       wait(300)
 
-      FS.symlink(sub_dir, linked_dir)
+      FS.symlink(source_dir, linked_dir)
 
       wait(300)
 
@@ -984,8 +1001,8 @@ describe("FS.watch", function()
     end)
 
     it("should watch symlinked files", function()
-      local change_path = get_fixture_path(temp_dir, "change.txt")
-      local link_path = get_fixture_path(temp_dir, "link.txt")
+      local change_path = get_fixture_path(source_dir, "change.txt")
+      local link_path = get_fixture_path(source_dir, "link.txt")
 
       FS.writefile(change_path, "something")
       FS.symlink(change_path, link_path)
@@ -1002,159 +1019,136 @@ describe("FS.watch", function()
       assert.spy(handler).called_with("change", link_path, match._)
     end)
 
-    -- TODO: This one is buggy, FIX THIS!:
-    -- it("should follow symlinked files within a normal dir", function()
-    --   local change_path = get_fixture_path(temp_dir, "change.txt")
-    --   local sub_dir = get_fixture_path(temp_dir, "subdir")
-    --   local link_path = get_fixture_path(sub_dir, "link.txt")
-    --
-    --   FS.mkdir(sub_dir) -- NOTE: remove this
-    --   FS.writefile(change_path, "something")
-    --   FS.symlink(change_path, link_path)
-    --
-    --   wait(300)
-    --
-    --   local handler = spy.new()
-    --   watcher = FS.watch(sub_dir, handler)
-    --
-    --   wait(300)
-    --   -- FS.symlink(change_path, link_path) -- NOTE: This fires up an event
-    --
-    --   wait(1000)
-    --
-    --   FS.appendfile(change_path, "adding something") -- NOTE: This doesn't fire symlinks
-    --
-    --   wait(300)
-    --
-    --   -- assert.is_true(wait_event(watcher, "change"), "Expected 'change' event for created file")
-    --   assert.spy(handler).called(1)
-    --   assert.spy(handler).called_with("change", link_path, match._)
-    -- end)
+    it("should follow symlinked files within a normal dir", function()
+      local change_path = get_fixture_path(source_dir, "change.txt")
+      local link_path = get_fixture_path(sub_dir, "link.txt")
 
-    -- it('should watch paths with a symlinked parent', async () => {
-    --   const testDir = sysPath.join(linkedDir, 'subdir');
-    --   const testFile = sysPath.join(testDir, 'add.txt');
-    --   const watcher = chokidar_watch(testDir, options);
-    --   const spy = await aspy(watcher, EV.ALL);
-    --
-    --   spy.should.have.been.calledWith(EV.ADD_DIR, testDir);
-    --   spy.should.have.been.calledWith(EV.ADD, testFile);
-    --   await write(getFixturePath('subdir/add.txt'), dateNow());
-    --   await waitFor([spy.withArgs(EV.CHANGE)]);
-    --   spy.should.have.been.calledWith(EV.CHANGE, testFile);
-    -- });
+      FS.writefile(change_path, "something")
+      FS.symlink(change_path, link_path)
 
-    -- it('should not recurse indefinitely on circular symlinks', async () => {
-    --   await fs_symlink(currentDir, getFixturePath('subdir/circular'), isWindows ? 'dir' : null);
-    --   return new Promise((resolve, reject) => {
-    --     const watcher = chokidar_watch(currentDir, options);
-    --     watcher.on(EV.ERROR, resolve());
-    --     watcher.on(EV.READY, reject('The watcher becomes ready, although he watches a circular symlink.'));
-    --   })
-    -- });
+      local handler = spy.new()
+      watcher = FS.watch(sub_dir, handler)
 
-    -- it('should recognize changes following symlinked dirs', async () => {
-    --   const linkedFilePath = sysPath.join(linkedDir, 'change.txt');
-    --   const watcher = chokidar_watch(linkedDir, options);
-    --   const spy = await aspy(watcher, EV.CHANGE);
-    --   const wa = spy.withArgs(linkedFilePath);
-    --   await write(getFixturePath('change.txt'), dateNow());
-    --   await waitFor([wa]);
-    --   spy.should.have.been.calledWith(linkedFilePath);
-    -- });
+      wait(300)
 
-    -- it('should follow newly created symlinks', async () => {
-    --   options.ignoreInitial = true;
-    --   const watcher = chokidar_watch(currentDir, options);
-    --   const spy = await aspy(watcher, EV.ALL);
-    --   await delay();
-    --   await fs_symlink(getFixturePath('subdir'), getFixturePath('link'), isWindows ? 'dir' : null);
-    --   await waitFor([
-    --     spy.withArgs(EV.ADD, getFixturePath('link/add.txt')),
-    --     spy.withArgs(EV.ADD_DIR, getFixturePath('link'))
-    --   ]);
-    --   spy.should.have.been.calledWith(EV.ADD_DIR, getFixturePath('link'));
-    --   spy.should.have.been.calledWith(EV.ADD, getFixturePath('link/add.txt'));
-    -- });
+      FS.appendfile(change_path, "adding something") -- NOTE: This doesn't fire symlinks
 
-    -- it('should watch symlinks as files when followSymlinks:false', async () => {
-    --   options.followSymlinks = false;
-    --   const watcher = chokidar_watch(linkedDir, options);
-    --   const spy = await aspy(watcher, EV.ALL);
-    --   spy.should.not.have.been.calledWith(EV.ADD_DIR);
-    --   spy.should.have.been.calledWith(EV.ADD, linkedDir);
-    --   spy.should.have.been.calledOnce;
-    -- });
+      assert.is_true(wait_event(watcher, "change"), "Expected 'change' event for created file")
+      assert.spy(handler).called(1)
+      assert.spy(handler).called_with("change", link_path, match._)
+    end)
 
-    -- it('should survive ENOENT for missing symlinks when followSymlinks:false', async () => {
-    --   options.followSymlinks = false;
-    --   const targetDir = getFixturePath('subdir/nonexistent');
-    --   await fs_mkdir(targetDir);
-    --   await fs_symlink(targetDir, getFixturePath('subdir/broken'), isWindows ? 'dir' : null);
-    --   await fs_rmdir(targetDir);
-    --   await delay();
-    --
-    --   const watcher = chokidar_watch(getFixturePath('subdir'), options);
-    --   const spy = await aspy(watcher, EV.ALL);
-    --
-    --   spy.should.have.been.calledTwice;
-    --   spy.should.have.been.calledWith(EV.ADD_DIR, getFixturePath('subdir'));
-    --   spy.should.have.been.calledWith(EV.ADD, getFixturePath('subdir/add.txt'));
-    -- });
+    it("should watch paths with a symlinked parent", function()
+      local test_file = get_fixture_path(sub_dir, "add.txt")
 
-    -- it('should watch symlinks within a watched dir as files when followSymlinks:false', async () => {
-    --   options.followSymlinks = false;
-    --   // Create symlink in linkPath
-    --   const linkPath = getFixturePath('link');
-    --   fs.symlinkSync(getFixturePath('subdir'), linkPath);
-    --   const spy = await aspy(chokidar_watch(currentDir, options), EV.ALL);
-    --   await delay(300);
-    --   setTimeout(() => {
-    --     fs.writeFileSync(getFixturePath('subdir/add.txt'), dateNow());
-    --     fs.unlinkSync(linkPath);
-    --     fs.symlinkSync(getFixturePath('subdir/add.txt'), linkPath);
-    --   }, options.usePolling ? 1200 : 300);
-    --
-    --   await delay(300);
-    --   await waitFor([spy.withArgs(EV.CHANGE, linkPath)]);
-    --   spy.should.not.have.been.calledWith(EV.ADD_DIR, linkPath);
-    --   spy.should.not.have.been.calledWith(EV.ADD, getFixturePath('link/add.txt'));
-    --   spy.should.have.been.calledWith(EV.ADD, linkPath);
-    --   spy.should.have.been.calledWith(EV.CHANGE, linkPath);
-    -- });
+      FS.symlink(source_dir, linked_dir)
 
-    -- it('should not reuse watcher when following a symlink to elsewhere', async () => {
-    --   const linkedPath = getFixturePath('outside');
-    --   const linkedFilePath = sysPath.join(linkedPath, 'text.txt');
-    --   const linkPath = getFixturePath('subdir/subsub');
-    --   fs.mkdirSync(linkedPath, PERM_ARR);
-    --   fs.writeFileSync(linkedFilePath, 'b');
-    --   fs.symlinkSync(linkedPath, linkPath);
-    --   const watcher2 = chokidar_watch(getFixturePath('subdir'), options);
-    --   await waitForWatcher(watcher2);
-    --
-    --   await delay(options.usePolling ? 900 : undefined);
-    --   const watchedPath = getFixturePath('subdir/subsub/text.txt');
-    --   const watcher = chokidar_watch(watchedPath, options);
-    --   const spy = await aspy(watcher, EV.ALL);
-    --
-    --   await delay();
-    --   await write(linkedFilePath, dateNow());
-    --   await waitFor([spy.withArgs(EV.CHANGE)]);
-    --   spy.should.have.been.calledWith(EV.CHANGE, watchedPath);
-    -- });
+      local handler = spy.new()
+      watcher = FS.watch(sub_dir, handler)
 
-    -- it('should emit ready event even when broken symlinks are encountered', async () => {
-    --   const targetDir = getFixturePath('subdir/nonexistent');
-    --   await fs_mkdir(targetDir);
-    --   await fs_symlink(targetDir, getFixturePath('subdir/broken'), isWindows ? 'dir' : null);
-    --   await fs_rmdir(targetDir);
-    --   const readySpy = sinon.spy(function readySpy() { });
-    --   const watcher = chokidar_watch(getFixturePath('subdir'), options)
-    --     .on(EV.READY, readySpy);
-    --   await waitForWatcher(watcher);
-    --   readySpy.should.have.been.calledOnce;
-    -- });
+      wait(300)
+
+      FS.appendfile(test_file, "adding something") -- NOTE: This doesn't fire symlinks
+
+      assert.is_true(wait_event(watcher, "change"), "Expected 'change' event for created file")
+      assert.spy(handler).called(1)
+      assert.spy(handler).called_with("change", test_file, match._)
+    end)
+
+    it("should not recurse indefinitely on circular symlinks", function()
+      FS.symlink(source_dir, Path.join(sub_dir, "circular"))
+
+      local handler = spy.new()
+      watcher = FS.watch(source_dir, handler)
+
+      wait(300)
+
+      assert.is_equal(watcher.status, "watching")
+    end)
+
+    it("should recognize changes following symlinked dirs", function()
+      local change_path = get_fixture_path(source_dir, "change.txt")
+
+      FS.writefile(change_path, "something")
+      FS.symlink(source_dir, linked_dir)
+
+      local linked_file_path = Path.join(linked_dir, "change.txt")
+
+      local handler = spy.new()
+      watcher = FS.watch(linked_dir, handler)
+
+      wait(300)
+
+      FS.appendfile(change_path, " one two")
+
+      assert.is_true(wait_event(watcher, "change"), "Expected 'change' event for created file")
+      assert.spy(handler).called(1)
+      assert.spy(handler).called_with("change", linked_file_path, match._)
+    end)
+
+    it("should follow newly created symlinks", function()
+      local link_dir = Path.join(source_dir, "link")
+
+      local handler = spy.new()
+      watcher = FS.watch(source_dir, handler)
+
+      wait_watcher_to_be_ready(watcher)
+
+      FS.symlink(sub_dir, link_dir)
+
+      wait(300)
+
+      -- assert.is_true(wait_event(watcher, "add"), "Expected 'change' event for created file") -- NOTE: On chokidar, events traverse down the directories:
+      assert.spy(handler).called(1)
+      assert.spy(handler).called_with("add_dir", link_dir, match._)
+      -- assert.spy(handler).called_with("add", Path.join(link_dir, "add.txt"), match._)
+    end)
+
+    it("should not reuse watcher when following a symlink to elsewhere", function()
+      local linked_path = Path.join(source_dir, "outside")
+      local linked_file_path = Path.join(linked_path, "text.txt")
+      local link_path = Path.join(source_dir, "subdir/subsub")
+
+      FS.mkdir(linked_path)
+      FS.writefile(linked_file_path, "something")
+      FS.symlink(linked_path, link_path)
+
+      local handler = spy.new()
+      local watcher2 = FS.watch(sub_dir, handler)
+
+      wait_watcher_to_be_ready(watcher2)
+
+      local watched_path = Path.join(sub_dir, "subsub/text.txt")
+      local other_handler = spy.new()
+      watcher = FS.watch(watched_path, other_handler)
+
+      wait_watcher_to_be_ready(watcher)
+
+      FS.appendfile(watched_path, " another one")
+
+      wait(300)
+
+      assert.spy(other_handler).called(1)
+      assert.spy(other_handler).called_with("change", watched_path, match._)
+
+      watcher2:stop() -- NOTE: unwatch gives a runtime error
+    end)
+
+    it("should emit ready event even when broken symlinks are encountered", function()
+      local target_dir = Path.join(sub_dir, "nonexistent")
+
+      FS.mkdir(target_dir)
+
+      FS.symlink(target_dir, Path.join(sub_dir, "broken"))
+
+      FS.rmdir(target_dir)
+
+      local handler = spy.new()
+      watcher = FS.watch(sub_dir, handler)
+
+      wait_watcher_to_be_ready(watcher)
+      assert.is_equal(watcher.status, "watching")
+    end)
   end)
 end)
 
