@@ -1,5 +1,11 @@
+# TODO: discard keybinding doest work(d) instead it does a reset(?)
 # Make stage/unstage coloring correct
+# Make staged changes the 2nd Secondary window or add ability to scrollUp/DownSecondaryPanel
+# n-N sometimes doesn't work properly on Staged/unstaged
+# Investigate github browse commit/branch and PR, create a PR flow
+# Check dropping lines, drop all changes(incl staged) or drop unstaged changes
 # NOTE: read git-clif and git-flow integration with lazygit
+
 gui:
   expandFocusedSidePanel: true
   scrollHeight: 10
@@ -9,6 +15,7 @@ gui:
   border: "single" # one of 'single' | 'double' | 'rounded' | 'hidden'
 git:
   paging:
+    # useConfig: true # maybe this can finish it
     colorArg: always
     # useConfig: true
     pager: delta --dark --paging=never
@@ -17,7 +24,7 @@ refresher:
   refreshInterval: 6 # File/submodule refresh interval in seconds. Auto-refresh can be disabled via option 'git.autoRefresh'.
 keybinding:
   universal:
-    quit: "<C-q>" # exists the program
+    quit: "q" # exists the program
     quit-alt1: "<c-c>" # alternative/alias of quit
     return: "<esc>" # exit prompt, also acts as return to previous menu
     prevPage: "<c-u>" # go to next page in list
@@ -39,6 +46,13 @@ keybinding:
     viewStashOptions: "<c-s>"
   stash:
     popStash: "p"
+
+  # stash pop
+customCommands:
+  - key: "<c-z>"
+    context: "files"
+    command: 'echo "IM amazing"'
+    showOutput: true
 # Example:
 #
 # Branch name: feature/AB-123

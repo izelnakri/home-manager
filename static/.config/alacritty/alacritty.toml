@@ -29,16 +29,16 @@ draw_bold_text_with_bright_colors = false
 [colors.primary]
 background = "#{{base00}}"
 bright_foreground = "#{{base06}}" # TODO: use brighter nix function
-foreground = "#{{base05}}"        # TODO: use the white color from my palette
-# bright_foreground = "#ffffff" # TODO: use brighter nix function
-# foreground = "#eaeaea" # TODO: use the white color from my palette
+foreground = "#{{base05}}"        # TODO: use the white color from my palette TODO: This has to be brighter!! bright_foreground = "#ffffff" 
+# TODO: use brighter nix function foreground = "#eaeaea" 
+# TODO: use the white color from my palette 
 
 [colors.cursor]
-cursor = "#993F0B"   # Probably: base09
+cursor = "#993F0B"   # Probably: base09 
 text = "#{{base05}}"
 
 [colors.normal]
-black = "#{{base02}}"
+black = "#{{base04}}"
 blue = "#{{base0D}}"
 cyan = "#{{base0C}}"
 green = "#{{base0B}}"
@@ -48,7 +48,7 @@ white = "#{{base06}}"
 yellow = "#{{base0A}}"
 
 [colors.bright]
-black = "#071d16"   # #{{base10}}
+black = "#666666"   # #{{base10}}
 blue = "#0075CA"    # #{{base16}}
 cyan = "#4DABAA"    # #{{base15}}
 green = "#00A94F"   # #{{base14}}
@@ -60,7 +60,7 @@ yellow = "#FFA41B"  # #{{base13}}
 [selection]
 save_to_clipboard = true
 
-[shell]
+[terminal.shell]
 args = ["a"]
 program = "tmux"
 
@@ -82,9 +82,9 @@ mods = "Control"
 
 # This is ESSENTIAL for not trigger ESC for tmux copy-mode, couldnt do it in tmux.conf
 [[keyboard.bindings]]
-chars = "\u0001["
-key = "V"
+key = "E"
 mods = "Alt"
+chars = "\u0001["
 
 [[keyboard.bindings]]
 key = "N"
@@ -92,15 +92,17 @@ mods = "Alt"
 command = { program = "alacritty" }
 
 [[keyboard.bindings]]
-key = "W"
+key = "C"
 mods = "Alt"
 command = { program = "tmux", args = ["kill-window"] }
 
+# TODO: Instead this should create a new window with 4 panes
 [[keyboard.bindings]]
 key = "T"
 mods = "Alt"
-command = { program = "tmux", args = ["new-window"] }
+command = { program = "sd", args = ["tmux", "new-window"] }
 
+# NOTE: Does this hijack C-1 as wel!?!
 [[keyboard.bindings]]
 key = "Key1"
 mods = "Alt"
@@ -198,3 +200,211 @@ key = "PageUp"
 key = "P"
 mods = "Alt"
 command = { program = "tmux", args = ["kill-pane"] }
+
+# NOTE: Since xremap rebinds Fkeys, they are available for nvim consumption
+# Better to keep the ones below here instead of xremap because we want them to be scoped to terminal apps *only*
+# I treat <C-Num> as <C-FNum> AND <A-Num> as <A-FNum>
+# NOTE: \U001B is simply ^[ rest is same from showkey -a 
+
+[[keyboard.bindings]] # C-F1
+key = "Key1"
+mods = "Control"
+chars = "\u001B[1;5P"
+
+[[keyboard.bindings]] # C-F2
+key = "Key2"
+mods = "Control"
+chars = "\u001B[1;5Q"
+
+[[keyboard.bindings]] # C-F3
+key = "Key3"
+mods = "Control"
+chars = "\u001B[1;5R"
+
+[[keyboard.bindings]] # C-F4
+key = "Key4"
+mods = "Control"
+chars = "\u001B[1;5S"
+
+[[keyboard.bindings]] # C-F5
+key = "Key5"
+mods = "Control"
+chars = "\u001B[15;5~"
+
+[[keyboard.bindings]] # C-F6
+key = "Key6"
+mods = "Control"
+chars = "\u001B[17;5~"
+
+[[keyboard.bindings]] # C-F7
+key = "Key7"
+mods = "Control"
+chars = "\u001B[18;5~"
+
+[[keyboard.bindings]] # C-F8
+key = "Key8"
+mods = "Control"
+chars = "\u001B[19;5~"
+
+[[keyboard.bindings]] # C-F9
+key = "Key9"
+mods = "Control"
+chars = "\u001B[20;5~"
+
+[[keyboard.bindings]] # C-F10
+key = "Key0"
+mods = "Control"
+chars = "\u001B[21;5~"
+
+# [[keyboard.bindings]] # C-F11
+# key = "-"
+# mods = "Control"
+# chars = "\u001B[23;5~"
+#
+# [[keyboard.bindings]] # C-F12
+# key = "+"
+# mods = "Control"
+# chars = "\u001B[24;5~"
+
+[[keyboard.bindings]] # Alt-F1
+key = "Key1"
+mods = "Alt"
+chars = "\u001B[1;3P"
+
+[[keyboard.bindings]] # Alt-F2
+key = "Key2"
+mods = "Alt"
+chars = "\u001B[1;3Q"
+
+[[keyboard.bindings]] # Alt-F3
+key = "Key3"
+mods = "Alt"
+chars = "\u001B[1;3R"
+
+[[keyboard.bindings]] # Alt-F4
+key = "Key4"
+mods = "Alt"
+chars = "\u001B[1;3S"
+
+[[keyboard.bindings]] # Alt-F5
+key = "Key5"
+mods = "Alt"
+chars = "\u001B[15;3~"
+
+[[keyboard.bindings]] # Alt-F6
+key = "Key6"
+mods = "Alt"
+chars = "\u001B[17;3~"
+
+[[keyboard.bindings]] # Alt-F7
+key = "Key7"
+mods = "Alt"
+chars = "\u001B[18;3~"
+
+[[keyboard.bindings]] # Alt-F8
+key = "Key8"
+mods = "Alt"
+chars = "\u001B[19;3~"
+
+[[keyboard.bindings]] # Alt-F9
+key = "Key9"
+mods = "Alt"
+chars = "\u001B[20;3~"
+
+[[keyboard.bindings]] # Alt-F10 
+key = "Key0"
+mods = "Alt"
+chars = "\u001B[21;3~"
+
+# [[keyboard.bindings]] # Alt-F11
+# key = "-"
+# mods = "Alt"
+# chars = "\u001B[23;3~"
+#
+# [[keyboard.bindings]] # Alt-F12
+# key = "+"
+# mods = "Alt"
+# chars = "\u001B[24;3~"
+
+# [[keyboard.bindings]]
+# chars = "\u001BOP" # F1
+#
+# [[keyboard.bindings]]
+# chars = "\u001BOQ" # F2
+#
+# [[keyboard.bindings]]
+# chars = "\u001BOR" # F3
+#
+# [[keyboard.bindings]]
+# chars = "\u001BOS" # F4
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[15~" # F5
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[17~" # F6
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[18~" # F7
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[19~" # F8
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[20~" # F9
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[21~" # F10
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[23~" # F11
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[24~" # F12
+
+# [[keyboard.bindings]]
+# chars = "\u001B[1;2P" # S-F1
+
+# [[keyboard.bindings]]
+# chars = "\u001B[1;2Q" # S-F2
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[1;2R" # S-F3
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[1;2S" # S-F4
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[15;2~" # S-F5
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[17;2~" # S-F6
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[18;2~" # S-F7
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[19;2~" # S-F8
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[20;2~" # S-F9
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[21;2~" # S-F10
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[23;2~" # S-F11
+#
+# [[keyboard.bindings]]
+# chars = "\u001B[24;2~" # S-F12
+
+# [[hints.enabled]]
+# command = "xdg-open"                  # On Linux/BSD
+# hyperlinks = true
+# post_processing = true
+# mouse.enabled = true
+# binding = { key = "U", mods = "Alt" }
+# hyperlinks = true
+# post_processing = true
+# mouse.enabled = true
+# binding = { key = "U", mods = "Alt" }

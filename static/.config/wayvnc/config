@@ -1,0 +1,5 @@
+# wayvnc -gvpr -f=500 0.0.0.0
+# Experiment with -t (transient-seat), -D (detached), -v, -w (websocket)
+# Default port is 5900
+# Experiment with headless(or Hyprland plugin) so I can run keyboard and this simultaneously
+# Also check if I can run two vnc apps at the same time

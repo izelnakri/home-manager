@@ -1,1 +1,7 @@
+.git
 result
+static/.config/nvim/tmp
+static/.config/nvim/.tests
+static/.config/nvim/tests/izelnakri/tmp
+
+

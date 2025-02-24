@@ -1,0 +1,19 @@
+pub quit: GituiKeyEvent,
+pub exit_popup: GituiKeyEvent,
+pub home: GituiKeyEvent,
+pub end: GituiKeyEvent,
+pub blame: GituiKeyEvent,
+pub file_history: GituiKeyEvent,
+pub force_push: GituiKeyEvent,
+pub diff_hunk_next: GituiKeyEvent,
+pub diff_hunk_prev: GituiKeyEvent,
+
+toggle_workarea
+
+    exit: Some(( code: Char('q'), modifiers: "SPACE" )),
+    open_help: Some(( code: Char('?'), modifiers: "" )),
+    tree_collapse_recursive: Some(( code: Char('k'), modifiers: "CONTROL" )),
+    tree_expand_recursive: Some(( code: Char('j'), modifiers: "CONTROL" )),
+
+    commit_amend: Some(( code: Char('a'), modifiers: "SHIFT" ))
+

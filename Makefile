@@ -1,4 +1,3 @@
-# tmux set-env FOO bar -> sets it for subsequent session but putting it in showenv
 # every session has to run export $(tmux show-env) -> make a command to automate these 3 steps
 
 HOSTNAME = $(shell hostname)

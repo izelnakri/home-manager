@@ -1,8 +1,9 @@
+# Change base2(it needs to be darker and working better with rest) keep tmux background color(also the highlight), change the other one
 name: "Parrots of Paradise"
 author: "Izel Nakri(contact@izelnakri.com), izelnakri (https://github.com/izelnakri)"
-base00: "020f0c" # | ---: Selection Background -- dark green/black [needs to change]
+base00: "000E14" # | ---: Selection Background -- dark green/black [needs to change]
 base01: "0c241e" # | Default background, dark -- dark green/black
-base02: "0d372d" # | Lighter Background (Used for status bars) -- slightly lighter shade of dark green/black
+base02: "10302b" # | Lighter Background (Used for status bars) -- slightly lighter shade of dark green/black
 base03: "5E6E5E" # | Comments, Invisibles, Line Highlighting -- a muted greenish-gray for better readability
 base04: "485848" # | +: Dark Foreground (Used for status bars) -- darker shade for contrast with light text
 base05: "D6E3C6" # | ++: Default Foreground, Caret, Delimiters, Operators -- light gray for primary text
@@ -18,9 +19,9 @@ base0E: "B389D6" # | purple: Keywords, Storage, Selector, Markup Italic, Diff Ch
 base0F: "A87C50" # | brown: Deprecated Highlighting for Methods and Functions, Opening/Closing Embedded Language Tags -- earthy brown for deprecated elements
 
 # Final improved schema
-# base00: "#020f0c" # | ---: Selection Background -- dark green/black [needs to change]
-# base01: "#0c241e" # | Default background, dark -- dark green/black
-# base02: "#0d372d" # | Lighter Background (Used for status bars) -- slightly lighter shade of dark green/black
+# base00: "#000E14" # | ---: Selection Background -- dark green/black [needs to change]
+# base01: "#0c241e" # | Default background, dark -- dark green/black base02: "#10302b" # | Lighter Background (Used for status bars) -- slightly lighter shade of dark green/black
+# base02: "#10302b" # | Lighter Background (Used for status bars) -- slightly lighter shade of dark green/black
 # base03: "#5E6E5E" # | Comments, Invisibles, Line Highlighting -- a muted greenish-gray for better readability, maybe this needs to be lighter for markdown strong tag styling
 # base04: "#485848" # | +: Dark Foreground (Used for status bars) -- darker shade for contrast with light text
 # TODO: This has to be brighter!!:
@@ -88,4 +89,3 @@ base0F: "A87C50" # | brown: Deprecated Highlighting for Methods and Functions, O
 # base16: ""         | bright_blue: NA
 # base17: ""         | bright_purple: NA
 # https://github.com/tinted-theming/base24/blob/master/styling.md
-

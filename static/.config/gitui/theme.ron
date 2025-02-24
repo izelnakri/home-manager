@@ -1,0 +1,33 @@
+{
+    selected_tab: Some(Color::Reset),
+    command_fg: Some(Color::White),
+
+    selection_bg: Some(Color::Blue),
+    selection_fg: Some(Color::White),
+
+    cmdbar_bg: Some(Color::Blue),
+    cmdbar_extra_lines_bg: Some(Color::Blue),
+
+    disabled_fg: Some(Color::DarkGray),
+    diff_line_add: Some(Color::Green),
+    diff_line_delete: Some(Color::Red),
+
+    diff_file_added: Some(Color::Green),
+    diff_file_removed: Some(Color::Red),
+
+    diff_file_moved: Some(Color::LightMagenta),
+    diff_file_modified: Some(Color::Yellow),
+
+    commit_hash: Some(Color::Magenta),
+    commit_time: Some(Color::LightCyan),
+    commit_author: Some(Color::Green),
+
+    danger_fg: Some(Color::Red),
+    push_gauge_bg: Some(Color::Blue),
+    push_gauge_fg: Some(Color::Reset),
+    tag_fg: Some(Color::LightMagenta),
+
+    branch_fg: Some(Color::LightYellow),
+    line_break: "¶".to_string()),
+    block_title_focused: Some(Color::Reset),
+}
