@@ -81,7 +81,7 @@ local function build_stat_tree_async(watcher, options, callback)
 
                 -- Stat each file/directory asynchronously
                 uv.fs_stat(entry_path, function(err, entry_stat)
-                  vim.print("found path:", entry_path)
+                  -- vim.print("found path:", entry_path)
 
                   if not err then
                     watcher.statTree[entry_path] = { type = entry.type, stat = entry_stat }
@@ -156,11 +156,10 @@ start_fs_event = function(watcher, options)
 
   -- Track last event time for debouncing
   local debounce_timers = {}
-  vim.print("handle registration:", watcher.path)
+  -- vim.print("handle registration:", watcher.path)
   uv.fs_event_start(watcher.handle, watcher.path, flags, function(err, filename, fs_event)
     -- vim.print(filename)
     -- vim.print("EVENT:")
-    -- vim.print(vim.inspect(fs_event))
     if err then
       -- watcher:stop()
       return error("Error watching path: " .. err)
@@ -179,6 +178,7 @@ start_fs_event = function(watcher, options)
       return
     end
 
+    -- NOTE: Make so that this full_path setting is always relative to "./" removal
     local full_path
     if known_watcher_type == "file" then
       full_path = watcher.path
@@ -224,7 +224,7 @@ start_fs_event = function(watcher, options)
 end
 
 start_watcher = function(watcher, options)
-  vim.print("start_watcher runs for:", watcher.path)
+  -- vim.print("start_watcher runs for:", watcher.path)
 
   if watcher.status == "watching" then
     return error("can't run start_watcher for a watcher that is already watching")
@@ -283,6 +283,16 @@ local function clear_redundant_child_watchers_from(parent_watcher, child_watcher
   if parent_watcher.parent_watcher then
     clear_redundant_child_watchers_from(parent_watcher.parent_watcher, child_watchers)
   end
+end
+
+local function scope_filename_to_watcher_path(event_entry, watcher)
+  -- if event_entry.filename ~= watcher.path and String.starts_with(event_entry.filename, watcher.path) then
+  --   p("ZZZZZZZZZZZZZZZ:")
+  --   p(event_entry.filename)
+  --   return String.slice(event_entry.filename, #watcher.path + 2)
+  -- end
+
+  return event_entry.filename
 end
 
 create_watcher = function(path, options, parent_watcher) -- NOTE: sometimes parent_watcher can be few levels above
@@ -431,9 +441,25 @@ end
 
 -- Updated function to handle unlink and add events
 handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
-  vim.print("full_path: ", full_path)
+  -- TODO: maybe add convert-to-relative path here? ALSO NEEDS WATCHERS[path] fix maybe?
+
+  -- NOTE: is this a problem with watcher.statTree registration(?) ** statTree and other full_path dependent paths are wrong!
+  -- if String.starts_with(full_path, "./") then
+  --   full_path = String.slice(full_path, 3) -- TODO: Move this to start_fs_event for performance reasons
+  -- end
+
+  -- local filename = (String.starts_with(full_path, watcher.path) and String.slice(full_path, #watcher.path + 2))
+  local filename = full_path
+  -- local full_path_had_relative_handler = (full_path ~= watcher.path) and String.starts_with(full_path, watcher.path)
+  -- if full_path_had_relative_handler then
+  --   filename = String.slice(full_path, #watcher.path + 2)
+  -- end
+
+  -- vim.print("WATHCER PATH:", watcher.path)
+  -- vim.print("full_path: ", full_path)
   local old_entry = watcher.statTree[full_path] -- TODO: This exists(?)
-  local event_entry = { filename = full_path, fs_event = fs_event }
+
+  local event_entry = { filename = filename, fs_event = fs_event }
   -- p(old_entry)
   -- p(current_stat)
 
@@ -456,6 +482,7 @@ handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
       end
     end
   elseif not current_stat then
+    vim.print("full_path ISSSSSSSSSS:", full_path)
     event_entry.event = (old_entry.type == "directory" and EVENTS.UNLINK_DIR) or EVENTS.UNLINK
     watcher.statTree[full_path] = nil
 
@@ -497,7 +524,9 @@ handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
   end
 
   for _, cb in ipairs(watcher.callbacks) do
-    cb(event_entry.event, event_entry.filename, current_stat)
+    local target_filename = scope_filename_to_watcher_path(event_entry, watcher)
+
+    cb(event_entry.event, target_filename, current_stat)
   end
 
   if event_entry.rename then
@@ -517,6 +546,13 @@ handle_fs_event = function(watcher, options, full_path, current_stat, fs_event)
 end
 
 local function watch(path, options, callback)
+  if String.starts_with(path, "./") or path == "." then
+    path = vim.uv.cwd() .. String.slice(path, 2)
+  end
+
+  p("<<<<<<<<<<<<<<<<<<<<<<")
+  p(path)
+
   if WATCHERS[path] and List.any(WATCHERS[path], function(watcher)
     return watcher.main_watcher == nil
   end) then

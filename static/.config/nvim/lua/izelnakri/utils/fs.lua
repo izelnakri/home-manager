@@ -47,7 +47,8 @@ FS.appendfile = require("izelnakri.utils.fs.appendfile")
 FS.cp = require("izelnakri.utils.fs.cp")
 FS.readfile = require("izelnakri.utils.fs.readfile")
 FS.rm = require("izelnakri.utils.fs.rm")
-FS.watch = require("izelnakri.utils.fs.watch")
+FS.watch = require("izelnakri.utils.fs.watcher.event").watch
+FS.unwatch = require("izelnakri.utils.fs.watcher.event").unwatch
 FS.writefile = require("izelnakri.utils.fs.writefile")
 
 return FS
