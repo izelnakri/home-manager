@@ -1,5 +1,7 @@
+-- TODO: Help window half way down, InspectTree, When there are conform errors(show it small down)
+-- Find the trigger to open right with content
+-- Open a specific buffer on the right(for AI in the future)
 return {
-  { "stevearc/aerial.nvim" },
   {
     "folke/edgy.nvim",
     optional = true,
@@ -21,4 +23,17 @@ return {
       })
     end,
   },
+  -- {
+  --   "stevearc/aerial.nvim",
+  --   dependencies = { "folke/edgy.nvim" },
+  --   keys = {
+  --     {
+  --       "<leader>cs",
+  --       function()
+  --         require("aerial").toggle({ focus = true })
+  --       end,
+  --       desc = "Aerial (Symbols)",
+  --     },
+  --   },
+  -- },
 }

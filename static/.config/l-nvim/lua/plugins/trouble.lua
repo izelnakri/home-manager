@@ -2,6 +2,21 @@ return {
   {
     "folke/trouble.nvim",
     branch = "dev",
+
+    keys = {
+      {
+        "<leader>cs",
+        "<cmd>Trouble symbols toggle focus=true<cr>",
+        desc = "LSP Symbols (Trouble)",
+        remap = true,
+      },
+    },
+    -- {
+    --   "<leader>cS",
+    --   "<cmd>Trouble lsp toggle focus=false win.position=right<cr>",
+    --   desc = "LSP references/definitions/... (Trouble)",
+    -- },
+    -- show the screenshot stuff
     opts = function(_, opts)
       vim.api.nvim_create_autocmd("BufWritePost", {
         group = vim.api.nvim_create_augroup("Trouble", { clear = true }),

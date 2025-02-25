@@ -105,7 +105,8 @@ return {
       hi("WinBarNC", { fg = palette.base04 })
       -- NOTE: This is the background of K:hover, only add a border
       hi("NormalFloat", { fg = palette.base05 }) -- NOTE: Maybe make bg base00
-      hi("FloatBorder", { fg = palette.base05, bg = palette.base01 }) -- NOTE: Maybe make bg base00
+
+      hi("FloatBorder", { fg = palette.base05, bg = "#485848" }) -- NOTE: Maybe make bg base00
 
       -- Maybe in future change: BufferInactiveTarget, BufferVisible, BufferVisibleTarget, BufferVisibleMod
 

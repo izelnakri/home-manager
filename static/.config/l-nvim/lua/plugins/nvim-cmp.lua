@@ -1,3 +1,4 @@
+-- TODO: <C-k> and <C-j> should start completion suggestions on cmd mode
 return {
   {
     "L3MON4D3/LuaSnip",
@@ -26,6 +27,7 @@ return {
         cmp.select_next_item({ behavior = cmp.SelectBehavior.Insert })
       end
 
+      -- Luasnip_just_inserted
       -- TODO: Should this be only on insert mode?
       opts.mapping = cmp.mapping.preset.insert({
         ["<C-f>"] = function()
@@ -53,6 +55,8 @@ return {
         ["<S-Tab>"] = cmp.mapping(function(fallback)
           fallback()
         end),
+        -- ["<Tab>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+        -- ["<S-Tab>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
         ["<C-d>"] = cmp.mapping.scroll_docs(4),
         ["<C-u>"] = cmp.mapping.scroll_docs(-4),
       })

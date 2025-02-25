@@ -1,3 +1,5 @@
+-- TODO: also check https://github.com/ellisonleao/glow.nvim
+-- NOTE: grammar checking: vim-grammarous
 vim.cmd([[
   function! OpenMarkdownBrowserOnTheRight(url)
     let active_window = system('hyprctl -j activeworkspace | jq .id')
@@ -42,7 +44,7 @@ return {
   {
     "mfussenegger/nvim-lint",
     opts = function(_, opts)
-      -- N// OTE: markdownlint-cli2 support:
+      -- NOTE: markdownlint-cli2 support:
       -- local linter = require("lint")
       -- local efm = "%f:%l:%c %m,%f:%l %m"
       --
@@ -59,6 +61,7 @@ return {
 
       -- TODO: remove this in future releases of NeoVim(with better LSP support), so nested languages can be linted:
       opts.linters_by_ft.markdown = {}
+
       -- TO debug: null_ls.get_sources()
       local null_ls = require("null-ls")
 

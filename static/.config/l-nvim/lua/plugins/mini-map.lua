@@ -1,3 +1,4 @@
+-- MiniMap.refresh() needed when the window is resized
 return {
   {
     "echasnovski/mini.map",

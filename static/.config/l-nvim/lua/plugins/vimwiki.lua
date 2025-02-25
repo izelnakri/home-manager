@@ -4,6 +4,9 @@
 -- Vimwiki needs to be markdown
 -- integrate it with taskwarrior
 -- integrate it with calendar
+-- tags nvim plugin: <leader>T Rg :python: -> opens in quickfix buffer, also telescope. ALSO: each folder creates its tag for all its files
+-- watch neorg videos
+
 --
 -- TODO: diary template, note template, better <leader>now, : https://youtu.be/9Bb8Ljyqpt4?si=Icoa1MsZymCTgAOZ&t=1110
 return {
