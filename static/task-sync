@@ -1,0 +1,12 @@
+#!/bin/bash
+
+export PATH=$PATH:/usr/local/bin
+gstatus=`git status --porcelain`
+
+if [ ${#gstatus} -ne 0 ]; then
+  # git credentials approve <<<"url=https://onlyphantom:ghp_xxx@github.com"
+  git add --all
+  git commit -m "Sync: $gstatus"
+  git pull --rebase
+  git push
+fi

@@ -175,4 +175,222 @@
   system.stateVersion = "23.05";
 
   # users.users.matthew.extraGroups = [ "video" ];
+
+  # nix = {
+  #   # From flake-utils-plus
+  #   generateNixPathFromInputs = true;
+  #   generateRegistryFromInputs = true;
+  #   linkInputs = true;
+  # };
+
+  # networking = {
+  #   firewall = {
+  #     # Syncthing ports
+  #     allowedTCPPorts = [ 22000 ];
+  #     allowedUDPPorts = [ 21027 22000 ];
+  #   };
+  #   hostName = "t480";
+  #   useNetworkd = true;
+  #   wireless = {
+  #     userControlled.enable = true;
+  #     enable = true;
+  #     interfaces = [ "wlp3s0" ];
+  #   };
+  #   useDHCP = false;
+  #   interfaces = {
+  #     "enp0s31f6".useDHCP = true;
+  #     "wlp3s0".useDHCP = true;
+  #   };
+  # };
+
+  # services = {
+  #   udev.extraRules = ''
+  #     # Nreal Air Glasses
+  #     SUBSYSTEMS=="usb", ATTRS{idVendor}=="3318", ATTRS{idProduct}=="0424", GROUP="input", MODE="0666"
+  #     # Gamecube Controller Adapter
+  #     SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="057e", ATTRS{idProduct}=="0337", MODE="0666"
+  #     # Xiaomi Mi 9 Lite
+  #     SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="05c6", ATTRS{idProduct}=="9039", MODE="0666"
+  #     SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="2717", ATTRS{idProduct}=="ff40", MODE="0666"
+  #   '';
+  #   thermald.enable = true;
+  #   tlp = {
+  #     enable = true;
+  #     settings = {
+  #       PCIE_ASPM_ON_BAT = "powersupersave";
+  #       CPU_SCALING_GOVERNOR_ON_AC = "performance";
+  #       CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+  #       CPU_MAX_PERF_ON_AC = "100";
+  #       CPU_MAX_PERF_ON_BAT = "30";
+  #       STOP_CHARGE_THRESH_BAT1 = "95";
+  #       STOP_CHARGE_THRESH_BAT0 = "95";
+  #     };
+  #   };
+  #   logind.killUserProcesses = true;
+  # };
+
+  # boot = {
+  #   tmp.useTmpfs = true;
+  #   kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
+  #   kernelParams = [
+  #     "i915.modeset=1"
+  #     "i915.fastboot=1"
+  #     "i915.enable_guc=2"
+  #     "i915.enable_psr=1"
+  #     "i915.enable_fbc=1"
+  #     "i915.enable_dc=2"
+  #   ];
+  #   loader = {
+  #     systemd-boot = {
+  #       enable = true;
+  #       configurationLimit = 10;
+  #     };
+  #     efi = {
+  #       canTouchEfiVariables = true;
+  #     };
+  #   };
+  # };
+
+  # i18n.defaultLocale = "en_GB.UTF-8";
+  # console = {
+  #   font = "Lat2-Terminus16";
+  #   keyMap = "us";
+  # };
+
+  # time.timeZone = "Europe/London";
+  # location.provider = "geoclue2";
+
+  # hardware = {
+  #   opengl.enable = true;
+  #   trackpoint = {
+  #     enable = true;
+  #     sensitivity = 255;
+  #   };
+  # };
 }
+
+
+# Running GNOME:
+# services.xserver.enable = true;
+# services.xserver.displayManager.gdm.enable = true;
+# services.xserver.desktopManager.gnome.enable = true;
+
+# Enable dconf
+# programs.dconf.enable = true;
+
+# environment.gnome.excludePackages = (with pkgs; [
+#   gnome-photos
+#   gnome-tour
+# ]) ++ (with pkgs.gnome; [
+#   cheese # webcam tool
+#   gnome-music
+#   gnome-terminal
+#   gedit # text editor
+#   epiphany # web browser
+#   geary # email reader
+#   evince # document viewer
+#   gnome-characters
+#   totem # video player
+#   tali # poker game
+#   iagno # go game
+#   hitori # sudoku game
+#   atomix # puzzle game
+# ]);
+
+# Many applications rely heavily on having an icon theme available, GNOME’s Adwaita is a good choice but most recent icon themes should work as well.
+# environment.systemPackages = [ gnome.adwaita-icon-theme ];
+# Systray Icons
+# environment.systemPackages = with pkgs; [ gnomeExtensions.appindicator ];
+# services.udev.packages = with pkgs; [ gnome.gnome-settings-daemon ];
+
+# gnome.gnome-tweaks
+
+# gnome3.gnome-tweak-tool
+# gnome3.evince # pdf reader
+# # extensions
+# gnomeExtensions.appindicator
+# gnomeExtensions.dash-to-dock
+# gnomeExtensions.battery-status
+
+
+# Autologin
+# services.xserver.displayManager.autoLogin.enable = true;
+# services.xserver.displayManager.autoLogin.user = "account";
+# systemd.services."getty@tty1".enable = false;
+# systemd.services."autovt@tty1".enable = false;
+
+# Gnome cheatsheet:
+# https://wiki.gnome.org/Projects/GnomeShell/CheatSheet
+
+# dconf watch /
+# dconf write /org/gnome/desktop/interface/color-scheme "'default'"
+# dconf.settings = {
+#   "org/gnome/desktop/interface" = {
+#     color-scheme = "prefer-dark";
+#   };
+# "org/gnome/shell" = {
+# disable-user-extensions = false;
+
+# # `gnome-extensions list` for a list
+# enabled-extensions = [
+#   "user-theme@gnome-shell-extensions.gcampax.github.com"
+#   "trayIconsReloaded@selfmade.pl"
+#   "Vitals@CoreCoding.com"
+#   "dash-to-panel@jderose9.github.com"
+#   "sound-output-device-chooser@kgshank.net"
+#   "space-bar@luchrioh"
+# ];
+#   favorite-apps = [
+#     "firefox.desktop"
+#     "code.desktop"
+#     "org.gnome.Terminal.desktop"
+#     "spotify.desktop"
+#     "virt-manager.desktop"
+#     "org.gnome.Nautilus.desktop"
+#   ];
+# "org/gnome/shell/extensions/user-theme" = {
+#   name = "palenight";
+# };
+# };
+# };
+# Also download extension packages from gnomeExtensions.user-themes etc
+
+# $ dconf dump / > dconf.settings
+
+# { lib, ... }:
+# let
+#   mkTuple = lib.hm.gvariant.mkTuple;
+# in
+# {
+#   dconf.settings = {
+#     "org/gnome/desktop/peripherals/mouse" = {
+#       "natural-scroll" = false;
+#       "speed" = -0.5;
+#     };
+
+#     "org/gnome/desktop/peripherals/touchpad" = {
+#       "tap-to-click" = false;
+#       "two-finger-scrolling-enabled" = true;
+#     };
+
+#     "org/gnome/desktop/input-sources" = {
+#       "current" = "uint32 0";
+#       "sources" = [ (mkTuple [ "xkb" "us" ]) ];
+#       "xkb-options" = [ "terminate:ctrl_alt_bksp" "lv3:ralt_switch" "caps:ctrl_modifier" ];
+#     };
+
+#     "org/gnome/desktop/screensaver" = {
+#       "picture-uri" = "file:///home/gvolpe/Pictures/nixos.png";
+#     };
+#   };
+# }
+# dconf2nix
+
+
+# installGnomeSessionScript = pkgs.writeShellScriptBin "install-gnome-session" ''
+#   sudo ln -fs ${pkgs.gnome.gnome-session.sessions}/share/wayland-sessions/gnome.desktop /usr/share/wayland-sessions/gnome.desktop
+# '';
+
+# home.packages = [ installGnomeSessionScript ];
+
+# TODO: implement pipewire with wireplumber + alsa, pulse, jack etc

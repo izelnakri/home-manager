@@ -1,0 +1,9 @@
+- harpoon:list with indexes
+- fuzzy search
+- <C-d> to delete buffer (maybe whole save before delete shannenigans)
+- preview on the left
+- make prompt(top or bottom), make it mirrorable, also maybe other customizations
+- how to make these layouts smart based on screen size/screen width
+
+
+- maybe replicate harpoon interface add, remove

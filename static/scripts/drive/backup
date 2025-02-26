@@ -15,3 +15,19 @@ sudo btrfs subvolume snapshot -r /home /backup/home.$current_date
 # sudo btrfs send -v /backup/home.$current_date | pv | sudo btrfs receive /mnt/drive
 
 sudo btrfs send -v /backup/home.$current_date | sudo btrfs receive /mnt/drive
+
+
+# backup.js contents:
+#
+# 1- Create a snapshot with Timeshift
+#
+# 2- Create a read-only snapshot from the subvolume:
+# $ btrfs subvolume snapshot -r /run/timeshift/backup/timeshift-btrfs/snapshots/2021-06-07_05-07-03/@home /mnt/timeshift/backup/2021-06-07_05-07-03
+#
+# 3- Create a directory in hard-drive mounted at /mnt/drive
+# $ mkdir /mnt/drive/2021-06-07_04-56-33
+#
+# 4- Send existing snapshot to hard-drive
+# $ sudo btrfs send /mnt/timeshift/backup/2021-06-07_05-07-03 | sudo btrfs receive -v /mnt/drive/2021-06-07_05-07-03
+#
+# sudo btrfs send /mnt/timeshift/backup/timeshift-btrfs/snapshots/2020-02-15_19-15-02/@ | sudo btrfs receive /mnt/drive/2020-02-15_19-15-02

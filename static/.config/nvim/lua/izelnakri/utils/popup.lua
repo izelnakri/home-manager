@@ -1,0 +1,13 @@
+
+-- pum_getpos()                                                      *pum_getpos()*
+-- 		If the popup menu (see |ins-completion-menu|) is not visible,
+-- 		returns an empty |Dictionary|, otherwise, returns a
+-- 		|Dictionary| with the following keys:
+-- 			height		nr of items visible
+-- 			width		screen cells
+-- 			row		top screen row (0 first row)
+-- 			col		leftmost screen column (0 first col)
+-- 			size		total nr of items
+-- 			scrollbar	|TRUE| if scrollbar is visible
+--
+-- 		The values are the same as in |v:event| during |CompleteChanged|.

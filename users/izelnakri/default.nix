@@ -1,3 +1,59 @@
+# https://github.com/danth/stylix?tab=readme-ov-file
+# android runtime bin(zygote), android compile bin, android opened bin(xdg-open | snapd-xdg-open), flatpak(bubblejail run|generate-desktop-entry) | ~/.local/share/applications/$NAME.desktop
+
+# ~/.config/openxr/1/active_runtime.json.
+# so path: /nix/store/yf6z5bgff90kixmnp3l67vr9cd3dr8aa-home-manager-path/share/openxr/1/openxr_monado.so
+# ~/.nix-profile/share/openxr/1/openxr_monado.json
+
+# add to flatpak Steam(for SteamVR), flatseal
+
+
+# syncall -> gcal, gtasks <> taskwarrior synchonization cli in python
+
+
+# flatpak(how to flathub with nix), flatpak-builder, flatseal
+
+
+# Dbus debugging:
+# - dbus-monitor "type=error,sender='org.freedesktop.DBus'" --system
+# - Qt D-Bus Viewer -> shows the API calls, allows you to initiate calls with single / double clicks -> right-click to connect to msg then see it in the logs. (very good)
+# - Another one what was the name?!
+# - dbus-run-session gnome-session
+# - dbus-daemon dconf load / < ${iniFile}
+
+# Bluetooth debugging:
+# - bluez-utils
+# Research tailscale & zerotier
+# Polkit:
+# - .policy -> /usr/share/polkit-1/actions
+# - .rules -> /usr/share/polkit-1/rules.d 3rd party | /etc/polkit-1/rules.d local config
+# Polkit debugging: polkit-explorer-git
+# pkaction | each setting has 6 variant is it on 3 defaults(? -> allow_any, allow_inactive, allow_active)
+# pkcheck -a 'org.freedesktop.udisks2.open-device' -u -p $$
+
+
+# nome-settings-daemon state:
+#     services.udev.packages = [ pkgs.gnome-settings-daemon ];
+#
+# systemd.packages = [
+#   pkgs.gnome-settings-daemon
+# ];
+# services makes it registered to systemd . YES -> home-manager module makes it registered! Where is the one for gnome-notification-daemon? 
+# Compare services.syncthing to services.gnome-notification-daemon, networkmanager
+# check systembus-notify, avahi
+
+# syncthingtray.service . HOW?! From nixpkgs(?) also can overlay commands
+# fusuma: multitouch gestures, what is signaturepdf, avahi
+# TODO: add gtk4 to deps after checking gnome-settings issue
+# also check cosmic: https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=cosmic
+# remind shell command: https://opensource.com/article/22/1/linux-desktop-notifications#:~:text=To%20send%20notifications%20from%20the,your%20package%20manager%20of%20choice.
+
+# NOTE: Application runner rofi-wayland, wofi(gtk rofi), tofi, anyrun
+# Element/Matrix client notifications. Libindicator+notifications for desktop, discord, matrix, calendar, sms
+
+# Check Geary gnome mail client
+
+# carbonyl text based browser
 # git cliff integration(for paper_trail, also check lsp this way)
 # Gitui customization(needs Ctrl-D, drop staged/unstaged file, proper edit window)
 # make it compatible with snowflake standard
@@ -15,10 +71,15 @@
 # implement touchscreen (do it on hosts/raspberry-pi)
 # How to manage tokens secrets?(nixos-anywhere)
 
-# do the base color consistency
 # lib = to define helper variables
 
 # cmus media player? or other
+# make timesync correct
+# TODO: Make vimwiki a private separate git repo, git cloned or fetched on each switch and new version pushed 
+# Also while git fetch & push, do this for ~/.password-store as well
+
+
+# NOTE: NixOS has nice syncthing API but not available on home-manager
 { config, pkgs, inputs, lib, ... }: # nixosModules
 let
   wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs; };
@@ -34,6 +95,9 @@ in rec {
   colorScheme = inputs.nix-colors.lib.schemeFromYAML "parrots-of-paradise"
     (builtins.readFile ../../static/parrots-of-paradise.yaml);
 
+  # TODO: add stylix | https://stylix.danth.me/configuration.html
+  # stylix.base16Scheme = "../../static/parrots-of-paradise.yaml"
+
   targets.genericLinux.enable = true;
   nixpkgs.config.allowBroken = true;
 
@@ -42,22 +106,110 @@ in rec {
 
   home.username = "izelnakri";
   home.homeDirectory = "/home/izelnakri";
-  home.stateVersion = "23.11";
+  home.stateVersion = "24.05";
   home.activation = {
     # NOTE: This shouldnt be needed but unfortunately it is needed
     restartSystemdServices = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
       $DRY_RUN_CMD ${home.homeDirectory}/.nix-profile/bin/sd activation systemd-reset-services
     '';
   };
+
   home.packages = with pkgs; [
+    unstable.arion
+
+    (wrapNixGL droidcam) # NOTE: maybe use scrcpy instead
+    # libsForQt5.kdeconnect-kde
+    unstable.rustdesk
+    unstable.rustdesk-server
+
+    # For Flatpak:
+    unstable.flatpak
+    # === end Flatpak
+
+    # NOTE: Check pop-shell
+    # (wrapNixGL unstable.gnome-online-accounts-gtk)
+    unstable.systemctl-tui
     # calcurse (maybe use rust version) (daemon sends notifications)
+    # Check: yt-dlp # maybe not needed due to ffmpeg feature
+    (import ../../scripts/my-cowsay.nix { inherit pkgs; })
+    d-spy
+    unstable.dua
+    libp11
+    unstable.appimage-run
+
+    # For Meta Quest 3:
+    unstable.lan-mouse
+    # === end Meta Quest 3
+
+    alvr # streaming games
+    steam
+
+    # For scrcpy
+    android-tools # for adb
+    unstable.scrcpy
+    unstable.autoadb
+    unstable.wayvnc
+    # === end scrcpy
+
+    # For immersed:
+    xdg-desktop-portal
+    xdg-desktop-portal-gtk
+    xdg-desktop-portal-hyprland
+
+    unstable.krita
+
+    obs-studio
+    libva 
+    vaapiVdpau 
+    libvdpau-va-gl
+    # === end immersed
+
+    avahi # avahi-browse or avahi-resolve-host-name
+    # adwaita-icon-theme
+    (wrapNixGL unstable.gnome-shell)
+    # gnome-shell-extensions
+    # gnomeExtensions.gtk4-desktop-icons-ng-ding
+    # gnome-desktop
+    # gnome-settings-daemon
+    # gnome-session-ctl
+    (wrapNixGL unstable.gnome-session)
+    # gnome-remote-desktop
+    # gnome-notes
+    # nettool, also sticky-notes, gnome-bluetooth(?), gnome-weather, smenu, d-spy, sysprof, devhelp
+    unstable.gnome-calendar
+    # gnome-clocks
+    unstable.gnome-contacts
+    unstable.gnome-control-center
+    # dconf-editor
+    # caribou # touchpad & pointers
+    # gnome-maps
+    # weather
+    unstable.nautilus
+    # gnome-bluetooth
+    # gnome-backgrounds
+    # gnome-applets
+    # simple-scan
+    # sushi
+    # pomodoro
+    # gnome-system-monitor
+    # gnome-sound-recorder
+    # gnome-software
+    # gnome-settings-daemon43
+    # maybe add system-monitor, image-viewer | switcheroo, document-viewer, VLC, document scanner, gaphor, graphs(?)/plots, health, khronos, secrets, warp
     lightdm
     asdf-vm
     atuin
     # avahi (network discovery & connection)
     bat
+    # unstable.batman
     unstable.brave # previous reference: inputs.nixpkgs.legacyPackages.x86_64-linux.brave-browser
+    broot
     unstable.browsh
+    buildah
+    unstable.caddy
+    unstable.code-cursor
+    podman
+    podman-tui
     cbfmt
     direnv
     # devdocs-desktop
@@ -66,15 +218,18 @@ in rec {
     # flameshot # screenshot util, doesnt run yet on hyprland
     chromium
     comma
-    # deno
-    unstable.elixir_1_16
+    # unstable.deno
+    unstable.elixir_1_17
     # helix
     (wrapNixGL unstable.hyprlock)
     unstable.hypridle
     fd
-    flatpak
+    ffsend
+    # flatpak
+    # flatpak-builder
     folks
     fontconfig
+    unstable.fractal # Matrix messaging app
     freetype
     fx
     fzf
@@ -84,21 +239,28 @@ in rec {
     gimp
     unstable.git-cliff
     unstable.gitui
-    # unstable.gleam
+    unstable.gleam
     gpsd
     grim
     # Should I have grimshot instead?
     # groff
     # joplin
     htop
-    (wrapNixGL unstable.hyprland)
+    (wrapNixGL hyprland) # TODO: Maybe turn this for windowManager.hyprland
     hyprpicker
+    # hyperfine # Command-line benchmarking tool
+    unstable.home-assistant
 
     # inkspace
     inputs.xremap-flake.packages.${system}.default
     (wrapNixGL unstable.imagemagick)
+    # immersed-vr
+    unstable.appimage-run
+    libva-utils
     iperf
     unstable.ironbar
+    unstable.jnv
+    just
     kubectl
     # kubectl-tree
     kubernetes
@@ -112,13 +274,13 @@ in rec {
     localsend
     lsd
     lsof
-    lxc
-    lxcfs
-    lxd
+    # lxc
+    # lxcfs
+    lxd-lts
     lua
     unstable.luajitPackages.luarocks
     # lutris # play all games on linux
-    monado
+    (wrapNixGL unstable.monado)
     magic-wormhole
     mpv # Default media player
     neofetch
@@ -128,6 +290,7 @@ in rec {
     ninja
     nixos-rebuild
     nix-init
+    nix-index
     nix-prefetch-git
     ngrok
     unstable.nh # amazing nh nix helper, search, diff, switch etc, nom shell/nom develop
@@ -139,6 +302,7 @@ in rec {
     # mpd
     unstable.ollama
     openssl
+    page
     # pavucontrol
     # pgmodeler
     # postman
@@ -150,6 +314,7 @@ in rec {
     pspg
     python3Full
     # python.pkgs.pip
+    qrtool
     # rofi - dmenu replacement, window switcher
     unstable.ripdrag
     ripgrep
@@ -164,13 +329,19 @@ in rec {
     # synergy
     # swaycons
     slurp
+    # slumber -> terminal based http client that accepts files of routes
     statix
     swappy
     swaylock
     swww # wallpaper: maybe use programs.wpaperd instead(?)
     syncthing
-    taskwarrior
+    unstable.tailscale
+    # taskchampion-sync-server
+    taskopen # NOTE: how does this play with mail attachments/events(?)
+    taskwarrior3 # https://github.com/flickerfly/taskwarrior-notifications # https://github.com/DCsunset/taskwarrior-webui
+    taskwarrior-tui
     terminus-nerdfont
+    timewarrior
     tree
     # timeshift
     unstable.tmux
@@ -178,6 +349,9 @@ in rec {
     # transmission
     # trash-cli
     unstable.tree-sitter
+
+    # tui-journal
+
     qemu
     # playonlinux
     # variety
@@ -188,17 +362,24 @@ in rec {
     xh # http tool
     watchman
     wget
+    wlr-randr # Monitor cli for wayland
     wl-clipboard
     wl-screenrec
     # wl-screenrec # high-perf screen recording tool
+    unstable.wiper
+    # vit
     viu # image viewer
+    # visidata # => terminal based spreadsheet & DB tool
     vlc
     vnstat
     volta
-    # xfce.thunar
+    # unstable.wiper
     unstable.yazi
+
     zathura
     zeal
+    # (wrapNixGL unstable.zed-editor)
+    unstable.zenith
 
     # inputs.agenix.packages.x86_64-linux.default
 
@@ -232,9 +413,6 @@ in rec {
     # Display manager options: SDDM, GDM, LightDM | run first without a DM, use LY or Lemurs for TTY login?
     # lightdm-webkit-theme-litarvan
 
-    # TODO: instead just do ls-colors git checkout to ~/.nix-profile/share/LS_COLORS
-    # TODO: also checkout/pull this repo master branch to ~/.config/home-manager
-    # TODO: check if this could be done offline
     # TODO: Fetch LS_COLORS remotely and then copy it to the Nix Store, how to do this sequential or parallel
     (pkgs.runCommand "ls-colors" { } ''
       mkdir -p $out/bin $out/share
@@ -255,6 +433,12 @@ in rec {
     # NOTE: Remove this when LSP formatting is correctly implemented with default new NeoVim versions:
     ".dprint.jsonc".source =
       config.lib.file.mkOutOfStoreSymlink ../../static/.dprint.jsonc;
+    ".taskrc".source = config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/.config/home-manager/static/.taskrc";
+    ".task/parrots-of-paradise.theme".source =
+      config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/.task/parrots-of-paradise.theme";
+
     # TODO: Move this xdg desktopEntries:
     "/.local/share/applications/Alacritty.desktop".text = ''
       [Desktop Entry]
@@ -265,7 +449,10 @@ in rec {
     '';
     ".profile".source = ../../static/.profile;
     ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
-    "scripts".source = ../../static/scripts;
+    "scripts".source = config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/.config/home-manager/static/scripts";
+
+    # "vimwiki".source = config.lib.file.mkOutOfStoreSymlink ../../static/vimwiki;
 
     # NOTE: make all dbus messages to be logged:
     # "../../etc/dbus-1/system-local.conf".text = ''
@@ -280,9 +467,12 @@ in rec {
     #   </busconfig>
     #   # sudo dbus-monitor "type=error,sender='org.freedesktop.DBus'" --system
     # '';
+
+    # NOTE: Theming GTK:
+    #
+    # ".icons/bibata".source = "${pkgs.bibata-cursors}/share/icons/Bibata-Modern-Classic";
   };
 
-  #  ~/.nix-profile/etc/profile.d/hm-session-vars.sh or /etc/profiles/per-user/izelnakri/etc/profile.d/hm-session-vars.sh
   home.sessionVariables = rec {
     BROWSER = "brave-browser";
     EDITOR = "nvim";
@@ -292,15 +482,19 @@ in rec {
       "-kernel shell_history enabled -kernel shell_history_file_bytes 1024000";
     FZF_DEFAULT_COMMAND = "fd --type f";
     GDK_SCALE = 2;
+    LOL = "cool";
     # LANG = "en_US.UTF-8";
     # LC_ALL = "en_US.UTF-8";
-    MANPAGER = "bat -l man -p";
+    MANPAGER =
+      "nvim +Man!"; # TODO: When vim.bo.filetype == man do page numbers & do fzf file search keybinding on <leader>-/ *ONLY ON MANPAGER*, also make Backspace end enter work like C-] and C-t:exe 'Lexplore ' . expand('$VIMRUNTIME') . '/syntax'
+    MANWIDTH = 120;
+
     HISTTIMEFORMAT = "%d/%m/%y %T ";
     HISTFILE = "~/.cache/zsh/history";
     TERM = "xterm-256color";
     TERMINAL = "alacritty";
     BIN_PATHS =
-      "$HOME/.volta/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin";
+      "$HOME/.local/share/nvim/mason/bin:$HOME/.volta/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin";
     PATH = "${config.home.sessionVariables.BIN_PATHS}:$PATH";
     POSTGRES_USER = "postgres";
     POSTGRES_PASSWORD = "postgres";
@@ -410,7 +604,7 @@ in rec {
     };
 
     go.enable = true;
-    gpg.enable = true; # NOTE: publicKeys ?
+    # gpg.enable = true; # NOTE: publicKeys ?
     helix.enable = true; # configure if needed
     home-manager.enable = true;
     htop.enable = true;
@@ -486,12 +680,26 @@ in rec {
       settings = { performance = "Low"; };
     };
 
-    # rofi vs dmenu
-    rtx = { # asdf replacement
+    rofi = {
+      enable = true;
+      # cycle = null;
+      # font = "Droid Sans Mono 14";"
+      # location = "top-left"; # center
+      # pass.enable = true;
+      # pass.package = pkgs.rofi-pass-wayland;
+      # extraConfig = ''
+      # stores = []
+      # plugins = [
+      #
+      # ]
+    };
+
+    mise = { # asdf replacement
       enable = true;
       enableZshIntegration = true;
       # settings
     };
+
     script-directory = {
       enable = true;
       settings = {
@@ -578,7 +786,7 @@ in rec {
 
     zsh = {
       enable = true;
-      enableAutosuggestions = true;
+      autosuggestion = { enable = true; };
       enableCompletion = true;
       defaultKeymap = "viins";
       # historySubstringSearch = {
@@ -596,6 +804,7 @@ in rec {
       initExtra = ''
         unsetopt INC_APPEND_HISTORY # Write to the history file immediately, not when the shell exits.
         setopt PROMPT_SUBST # Enable parameter expansion, command substitution and arithmetic expansion in the prompt.
+        # NOTE: For gnome online accounts, then remove
 
         function cheat {
           curl cheat.sh/$argv
@@ -696,6 +905,21 @@ in rec {
           bindkey -M vicmd '^j' down-line-or-search
         }
         zvm_after_init_commands+=("bindkey '^k' up-line-or-search" "bindkey '^j' down-line-or-search")
+
+        # NOTE: Find all luarocks modules and add them to the path:
+        eval "$(luarocks path --bin)"
+
+        # NOTE: not needed due to check in its first line: source ~/.nix-profile/etc/profile.d/hm-session-vars.sh
+
+        edit() {
+          nvim <($@ 2>&1)
+        }
+
+        youtube() {
+          local filename=''${2:-"last-video"}
+          mpv --stream-record=$HOME/Youtube/$filename.mp4 $1
+          # NOTE: in future I can edit this video with ffmpeg if I need to, trim parts etc
+        }
       '';
 
       shellAliases = {
@@ -705,10 +929,11 @@ in rec {
         clip = "slurp | grim -g - - | wl-copy && wl-paste | swappy -f -";
         clip-record = ''wl-screenrec -g "$(slurp)" -f /tmp/recording.mp4'';
         colorpicker = "hyprpicker";
+        csv = "tw";
         d = "sudo docker";
         diff = "diff --color=auto";
         dockerremoveall = "sudo docker system prune -a";
-        e = "helix";
+        e = "edit";
         g = "yy";
         grep = "grep --color=auto";
         k = "kubectl";
@@ -716,6 +941,9 @@ in rec {
         ls = "ls --color=auto -F";
         lusd =
           "node /home/izelnakri/cron-jobs/curve-lusd.js"; # NOTE: maybe move to cmd
+        m = "nvim +Man!";
+        # TODO: add fzf and lookup to this, maybe open it up in nvim for all integration
+        # check that links / backwards work in both scenarios
         onport = "ps aux | grep";
         open = "xdg-open";
         pbcopy = "xclip -selection clipboard"; # TODO: move away from xclip
@@ -728,20 +956,31 @@ in rec {
         screenshot =
           "grim - | convert - -shave 1x1 PNG:- | wl-copy && wl-paste | swappy -f -";
         terminate = "lsof -ti:4200 | xargs kill";
+        tt = "taskwarrior-tui";
         todo = "nvim ~/Dropbox/TODO.md";
         v = "$EDITOR";
         vi = "nvim";
         vim = "nvim";
         weather = "curl http://wttr.in/";
+        wireframe = "brave https://excalidraw.com/";
         YT = "youtube-viewer";
         x = "sxiv -ft *";
         gnome-wayland =
-          "dbus-run-session -- gnome-shell --display-server --wayland";
+          "MOZ_ENABLE_WAYLAND=1 QT_QPA_PLATFORM=wayland XDG_SESSION_TYPE=wayland dbus-run-session gnome-session";
+        gnome-wayland-systemd =
+          "MOZ_ENABLE_WAYLAND=1 QT_QPA_PLATFORM=wayland XDG_SESSION_TYPE=wayland dbus-run-session gnome-session --systemd";
+
         gitfetch = "onefetch";
       };
       # shellGlobalAliases # => Similar to programs.zsh.shellAliases, but are substituted anywhere on a line.
     };
   };
+
+  services.flatpak.enable = true;
+  services.flatpak.packages = [
+    "io.github.wivrn.wivrn" # SteamVR app streaming from linux
+    "com.github.tchx84.Flatseal"
+  ];
 
   services = {
     # flameshot.enable = true;
@@ -751,9 +990,13 @@ in rec {
     #   enableZshIntegration = true;
     # }
 
+    # $ syncthing cli --
     syncthing = {
       enable = true;
-      extraOptions = [ ]; # ["--gui-apikey=apiKey"]
+      # TODO: options for gui user, gui authentication, api key, folders(contacts, tasks, Photos, 
+      # Videos, GIFs, Documents, emails, password-store, gpg keys, emails)
+      # per device folder sharing config(?)
+      # extraOptions = [ ]; # ["--gui-apikey=apiKey"]
       tray.enable = true;
     };
 
@@ -781,17 +1024,63 @@ in rec {
 
     xremap = {
       watch = true;
+      # mouse = true;
       withWlroots = true;
-      # debug = true;
+      # debug = true; # Logs everything
       yamlConfig = builtins.readFile ../../static/.config/xremap/config.yml;
     };
   };
 
+  # NOTE: Theming QT:
+  #
+  # qt = {
+  #   enable = true;
+  #   platformTheme = "gtk";
+  #
+  #   style = {
+  #     name = "adwaita-dark";
+  #     package = pkgs.adwaita-dark;
+  #   };
+  # };
+
+  # TODO: Maybe use this:
+  # pointerCursor = {
+  #   gtk.enable = true;
+  #   # x11.enable = true;
+  #   package = pkgs.bibata-cursors;
+  #   name = "Bibata-Modern-Classic";
+  #   size = 16;
+  # };
+
   gtk = {
     enable = true;
-    # theme.name = "adw-gtk3";
+
+    # NOTE: Theming GTK:
+    # cursorTheme.package = pkgs.bibata-cursors;
     # cursorTheme.name = "Bibata-Modern-Ice";
+    #
+    # theme.package = pkgs.adw-gtk3;
+    # theme.name = "adw-gtk3";
+    #
+    # iconTheme.package = gruvboxPlus;
     # iconTheme.name = "GruvboxPlus";
+
+    # font = {
+    #   name = "Sans";
+    #   size = 11;
+    # };
+  };
+
+  # NOTE: This gets merged with gsettings list-recursively /etc/dconf/profile
+  # default settings: gsettings list-recursively # saved location: ~/.config/dconf/$key
+  # Get GSettings schema numbers have to be *casted* . dconf2nix | Also research GResources
+  # DConf DB is stored in ~/.config/dconf/user(binary)
+  # NOTE: Reset dconf db on each home-manager switch(lookup on impermanence)
+  # dbus-daemon dconf load / < ${iniFile}
+  dconf = {
+    enable = true;
+
+    # settings = {}
   };
 
   systemd = {
@@ -810,6 +1099,48 @@ in rec {
         };
 
         Install.WantedBy = [ "default.target" ];
+      };
+      tailscale = {
+        Unit = {
+          Description = "Tailscale deamon";
+          After = [ "network-online.target" ];
+        };
+
+        Service = {
+          ExecStart = "sudo ${pkgs.unstable.tailscale}/bin/tailscaled";
+          Restart = "always";
+          RestartSec = "10";
+        };
+
+        Install.WantedBy = [ "default.target" ];
+      };
+      webserver = {
+        Unit = {
+          Description = "Caddy HTTPS Server of /Public";
+          After = [ "network-online.target" ];
+        };
+
+        Service = {
+          ExecStart = "${pkgs.unstable.caddy}/bin/caddy file-server -l localhost:9999 --browse -a -r ${config.home.homeDirectory}/Public";
+          Restart = "always";
+          RestartSec = "10";
+        };
+
+        Install.WantedBy = [ "default.target" ];
+      };
+      tailscale-serve = {
+        Unit = {
+          Description = "Tailscale serve webserver";
+          After = [ "network-online.target" ];
+        };
+
+        Service = {
+          ExecStart = "${pkgs.unstable.tailscale}/bin/tailscale serve 9999";
+          Restart = "always";
+          RestartSec = "10";
+        };
+
+        Install.WantedBy = [ "default.target" "webserver" ];
       };
     };
     # user.services.example = {
@@ -861,6 +1192,16 @@ in rec {
       "alacritty/alacritty.toml".text = (replaceColorReferences
         (builtins.readFile ../../static/.config/alacritty/alacritty.toml)
         config.colorScheme.palette);
+      "gitui".source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/.config/home-manager/static/.config/gitui";
+      # NOTE: Theming GTK:
+      # "gtk-4.0/gtk.css".text = (replaceColorReferences
+      #   (builtins.readFile ../../static/.config/gtk-4.0/gtk.css)
+      #   config.colorScheme.palette);
+      #  Make it symlink instead of text:
+      # "gtk-3.0/gtk.css".text = (replaceColorReferences
+      #   (builtins.readFile ../../static/.config/gtk-4.0/gtk.css)
+      #   config.colorScheme.palette);
       "hypr" = {
         source = ../../static/.config/hypr;
         onChange = "~/.nix-profile/bin/hyprctl reload";
@@ -871,30 +1212,19 @@ in rec {
       "mako/config".text = (replaceColorReferences
         (builtins.readFile ../../static/.config/mako/config)
         config.colorScheme.palette);
-
       "nvim".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/nvim";
-      "gitui".source = config.lib.file.mkOutOfStoreSymlink
-        "${config.home.homeDirectory}/.config/home-manager/static/.config/gitui";
       "swappy/config".source = ../../static/.config/swappy/config;
       "system-colors.json".text = (builtins.toJSON config.colorScheme.palette);
-      # "wlogout/config".source = ../../static/.config/wlogout/config; # https://github.com/nabakdev/dotfiles/blob/main/.config/wlogout/style.css
       "tmux/theme.conf".text = (replaceColorReferences
         (builtins.readFile ../../static/.config/tmux/theme.conf)
         config.colorScheme.palette);
+      # "wlogout/config".source = ../../static/.config/wlogout/config; # https://github.com/nabakdev/dotfiles/blob/main/.config/wlogout/style.css
       "waybar".source = ../../static/.config/waybar;
       "wlogout".source = ../../static/.config/wlogout;
       "yazi".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/yazi";
 
-      # NOTE: Theming GTK:
-      "gtk-4.0/gtk.css".text = (replaceColorReferences
-        (builtins.readFile ../../static/.config/gtk-4.0/gtk.css)
-        config.colorScheme.palette);
-      #  Make it symlink instead of text:
-      "gtk-3.0/gtk.css".text = (replaceColorReferences
-        (builtins.readFile ../../static/.config/gtk-4.0/gtk.css)
-        config.colorScheme.palette);
     };
 
     mime.enable = true;
@@ -922,6 +1252,8 @@ in rec {
 
         "application/pdf" =
           "brave-browser.desktop"; # NOTE: make it zathura or other document viewer?
+        "application/x-shellscript" = "Alacritty.desktop";
+
         # "image/*" = [ "sxiv.desktop" ]; # NOTE: probably change sxiv to new one
         # "video/png" = [ "mpv.desktop" ];
         # "video/jpg" = [ "mpv.desktop" ];
@@ -949,7 +1281,25 @@ in rec {
     #   enable = true;
     #   extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
     # };
+
     desktopEntries = {
+      # firefox = {
+      #   name = "Firefox";
+      #   genericName = "Web Browser";
+      #   exec = "firefox %U";
+      #   terminal = false;
+      #   categories = [ "Application" "Network" "WebBrowser" ];
+      #   mimeType = [ "text/html" "text/xml" ];
+      #   # icon
+      #   # actions(left list)
+      #   # comment
+      #   # noDisplay true/false
+      #   # prefersNonDefaultGPU
+      #   # settings = { Keywords = "calc;math"; DBusActivatable = "false"; }
+      #   # startupNotify
+      #   # type (“Application”, “Link”, “Directory”)
+      # };
+
       # alacritty = {
       #   name = "Alacritty";
       #   genericName = "GPU Terminal";
@@ -988,12 +1338,12 @@ in rec {
 }
 
 # check these:
-# gnome3.gnome-tweak-tool
+# gnome-tweak-tool
 # control-center, applet, common, background, file-manager
-# gnome.adwaita-icon-theme
+# adwaita-icon-theme
 # dconf.enable
 # gnomeExtensions.appindicator
-# gnome.gnome-settings-daemon
+# gnome-settings-daemon
 
 # # extensions
 # gnomeExtensions.appindicator
@@ -1031,3 +1381,40 @@ in rec {
 # Implement https://github.com/banister/method_source for TS, elixir
 
 # https://heywoodlh.io/nixos-gnome-settings-and-keyboard-shortcuts
+
+# clone if doesnt exist pattern: 	if [ -d ~/git/neovim ]; then echo "[nvim]: git/neovim Already found"; else git clone https://github.com/neovim/neovim ~/git/neovim; fi
+# 	if [ -d ~/build/neovim ]; then cd ~/build/neovim && git pull; else git clone https://github.com/neovim/neovim ~/build/neovim; fi
+## cd ~/build/neovim/ && make -j2 -s --no-print-directory && sudo make install -s
+
+# NOTE: systemd timer instead of cron, read up on docs, how to view it easily
+# systemd.user.timers = mapRemotes (name: remoteCfg: {
+#   Unit = { Description = "muchsync periodic sync (${name})"; };
+#   Timer = {
+#     Unit = "muchsync-${name}.service";
+#     OnCalendar = remoteCfg.frequency;
+#     Persistent = true;
+#   };
+#   Install = { WantedBy = [ "timers.target" ]; };
+# });
+
+# battery monitoring, network monitoring, homescreen(check with anyrun), try running it also with bluetooth
+
+# Ref: https://nixos.wiki/wiki/Home_Assistant#OCI_container
+#   virtualisation = {
+#     oci-containers = {
+#       backend = "podman";
+#       containers.homeassistant = {
+# #        volumes = [ "home-assistant:/config" ];
+#         volumes = [ "/srv/home-assistant:/config" ];
+#         environment.TZ = "${timeZone}";
+#         image = "ghcr.io/home-assistant/home-assistant:${imageTag}"; # Warning: if the tag does not change, the image will not be updated
+#         extraOptions = [ 
+#           "--network=host" 
+#         ];
+#       };
+#     };
+#   };
+
+# disko example: https://gitlab.com/cryptochasm/nixos-home-assistant/-/tree/main?ref_type=heads
+# for pdf markup: drawboard
+# implement rustowl

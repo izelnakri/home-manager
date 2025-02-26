@@ -1,0 +1,462 @@
+# include .task/parrots-of-paradise.theme
+# include solarized-light-256.theme
+
+# data.location=~/.config/task # TODO: after the sync
+
+# TODO: Set up the holidays for calendar
+# holidays.tr-TR.rc
+# holidays.es-ES.rc
+# holidays.nl-NL.rc
+# holidays.en-US.rc
+# holidays.en-GB.rc
+# holidays.it-IT.rc
+
+
+
+
+
+
+# # include /xlr/asdasda.theme
+#
+# color.tagged=
+# rule.color.merge=0
+# verbose=blank,header,footnote,label,new-id,affected,edit,special,unwait,recur
+# indent.report=1
+#
+# weekstart=Monday
+# default.project=Inbox
+#
+# # Show all projects
+# # list.all.projects=1
+# #
+# # Block recurrence by default. Allow on main client.
+# # recurrence=yes
+#
+# # Remove irrational urgency coefficients:
+# urgency.annotations.coefficient=0
+# urgency.blocking.coefficient=0
+# urgency.blocked.coefficient=0
+# urgency.project.coefficient=0
+# urgency.tags.coefficient=0
+#
+# # Support expected urgency coefficients:
+# urgency.user.tag.mit.coefficient=10.0
+# urgency.user.tag.urgent.coefficient=10.0
+# urgency.uda.priority.H.coefficient=3.0
+# urgency.uda.priority.M.coefficient=1.0
+# urgency.uda.priority.L.coefficient=2.0
+# urgency.due.coefficient=26.25
+# urgency.inherit=1
+#
+# alias.@=context
+# context.pq=project:PQ
+# context.home=project:Personal
+#
+# # Component UDA. Useful for separating bugs in software projects.
+# uda.component.type=string 
+# uda.component.label=Component
+#
+# # Estimate UDA. Important thing for urgency - the bugger the amount of work,
+# # Measured in hours.
+# uda.estimate.type=string
+# uda.estimate.label=Estimate
+# uda.estimate.values=qh,hh,h,h2,h3,h4,h5,h6,h7,h8
+# urgency.uda.estimate.qh.coefficient=0.0
+# urgency.uda.estimate.hh.coefficient=0.5
+# urgency.uda.estimate.h.coefficient=1.0
+# urgency.uda.estimate.h2.coefficient=2.0
+# urgency.uda.estimate.h3.coefficient=3.0
+# urgency.uda.estimate.h4.coefficient=4.0
+# urgency.uda.estimate.h5.coefficient=5.0
+# urgency.uda.estimate.h6.coefficient=6.0
+# urgency.uda.estimate.h7.coefficient=7.0
+# urgency.uda.estimate.h8.coefficient=8.0
+#
+# report.next.filter=+PENDING -BLOCKING limit:20
+# report.next.labels=ID,Active,Age,Deps,P,Project,Comp,Tag,Recur,S,Due,Until,Description,Urg
+# report.next.columns=id,start.age,age,entry.age,depends,priority,project,component,tags,recur,scheduled.countdown,due.relative,until.remaining,description,urgency
+#
+#
+#
+#
+#
+# # data.location=~/.tasks
+# #
+# # urgency.annotations.coefficient=0
+# # urgency.tags.coefficient=0
+# # urgency.project.coefficient=0
+# # urgency.user.project.Work.coefficient=1
+#
+# # uda.effort.type=string
+# # uda.effort.label=Effort
+# # uda.effort.values=s,ml,xl,xxl
+# # urgency.uda.effort.s.coefficient=1.5
+# # urgency.uda.effort.m.coefficient=1.1
+# # urgency.uda.effort.l.coefficient=1
+# # urgency.uda.effort.xx.coefficient=0.2
+#
+# # color.uda.effort.s=color180
+# # color.uda.effort.m=color210
+# # color.uda.effort.xxl=color255
+#
+# # uda.score.type=numeric
+# # uda.score.label=Score 🏆
+# # urgency.uda.score.coefficient=2
+#
+# # color.project.Supertype=black on blue
+#
+#
+# # search.case.sensitive=no
+# #
+# # report.next.labels=ID,Active,Age,Deps,P,:muscle: Effort,Score 🏆,Description
+# # report.next.columns=id,active,age,entry.age,depends,priority
+# #
+# # uda.reviewed.type=date
+# # uda.reviewed.label=Reviewed
+# #
+# #
+# #
+# #
+# # ==================
+# # Reference from existing config
+#
+# #
+# # [Created by task 2.6.2 5/6/2024 04:00:21]
+# # Taskwarrior program configuration file.
+# # For more documentation, see https://taskwarrior.org or try 'man task', 'man task-color',
+# # 'man task-sync' or 'man taskrc'
+#
+# # Here is an example of entries that use the default, override and blank values
+# #   variable=foo   -- By specifying a value, this overrides the default
+# #   variable=      -- By specifying no value, this means no default
+# #   #variable=foo  -- By commenting out the line, or deleting it, this uses the default
+#
+# # You can also refence environment variables:
+# #   variable=$HOME/task
+# #   variable=$VALUE
+#
+# # Use the command 'task show' to see all defaults and overrides
+#
+# # Files
+# data.location=/home/izelnakri/.task
+#
+# # To use the default location of the XDG directories,
+# # move this configuration file from ~/.taskrc to ~/.config/task/taskrc and uncomment below
+#
+# #data.location=~/.local/share/task
+# #hooks.location=~/.config/task/hooks
+#
+# # Color theme (uncomment one to use)
+# #include light-16.theme
+# #include light-256.theme
+# #include dark-16.theme
+# #include dark-256.theme
+# #include dark-red-256.theme
+# #include dark-green-256.theme
+# #include dark-blue-256.theme
+# #include dark-violets-256.theme
+# #include dark-yellow-green.theme
+# #include dark-gray-256.theme
+# #include dark-gray-blue-256.theme
+# #include solarized-dark-256.theme
+# #include solarized-light-256.theme
+# #include no-color.theme
+#
+# uda.anan.type=date
+# uda.anan.label=Anan
+#
+# # report.next.labels=ID,Active,Age,Deps,P,:muscle: Effort,Score 🏆,Description
+# # report.next.columns=id,active,age,entry.age,depends,priority
+# report.next.labels=ID,entry
+# report.next.columns=id,entry
+#
+#
+# news.version=2.6.0
+#
+# context.work.read=project:Work or +work
+# context.work.write=project:Work or +work
+#
+# ========================================
+# _forcecolor
+# abbreviation.minimum
+# active.indicator
+# alias.burndown
+# alias.ghistory
+# alias.history
+# alias.rm
+# allow.empty.filter
+# avoidlastcolumn
+# bulk
+# calendar.details
+# calendar.details.report
+# calendar.holidays
+# calendar.legend
+# calendar.offset
+# calendar.offset.value
+# color
+# color.active
+# color.alternate
+# color.blocked
+# color.blocking
+# color.burndown.done
+# color.burndown.pending
+# color.burndown.started
+# color.calendar.due
+# color.calendar.due.today
+# color.calendar.holiday
+# color.calendar.overdue
+# color.calendar.scheduled
+# color.calendar.today
+# color.calendar.weekend
+# color.calendar.weeknumber
+# color.completed
+# color.debug
+# color.deleted
+# color.due
+# color.due.today
+# color.error
+# color.footnote
+# color.header
+# color.history.add
+# color.history.delete
+# color.history.done
+# color.label
+# color.label.sort
+# color.overdue
+# color.project.none
+# color.recurring
+# color.scheduled
+# color.summary.background
+# color.summary.bar
+# color.sync.added
+# color.sync.changed
+# color.sync.rejected
+# color.tag.next
+# color.tag.none
+# color.tagged
+# color.uda.priority.H
+# color.uda.priority.L
+# color.uda.priority.M
+# color.undo.after
+# color.undo.before
+# color.until
+# color.warning
+# column.padding
+# complete.all.tags
+# confirmation
+# data.location
+# date.iso
+# dateformat
+# dateformat.annotation
+# dateformat.edit
+# dateformat.holiday
+# dateformat.info
+# dateformat.report
+# debug
+# debug.tls
+# default.command
+# default.timesheet.filter
+# defaultheight
+# defaultwidth
+# dependency.confirmation
+# dependency.indicator
+# dependency.reminder
+# detection
+# displayweeknumber
+# due
+# exit.on.missing.db
+# expressions
+# fontunderline
+# gc
+# hooks
+# hyphenate
+# indent.annotation
+# indent.report
+# journal.info
+# journal.time
+# journal.time.start.annotation
+# journal.time.stop.annotation
+# json.array
+# list.all.projects
+# list.all.tags
+# locking
+# nag
+# news.version
+# obfuscate
+# print.empty.columns
+# recurrence
+# recurrence.confirmation
+# recurrence.indicator
+# recurrence.limit
+# regex
+# report.active.columns
+# report.active.context
+# report.active.description
+# report.active.filter
+# report.active.labels
+# report.active.sort
+# report.all.columns
+# report.all.context
+# report.all.description
+# report.all.labels
+# report.all.sort
+# report.blocked.columns
+# report.blocked.context
+# report.blocked.description
+# report.blocked.filter
+# report.blocked.labels
+# report.blocked.sort
+# report.blocking.columns
+# report.blocking.context
+# report.blocking.description
+# report.blocking.filter
+# report.blocking.labels
+# report.blocking.sort
+# report.completed.columns
+# report.completed.context
+# report.completed.description
+# report.completed.filter
+# report.completed.labels
+# report.completed.sort
+# report.list.columns
+# report.list.context
+# report.list.description
+# report.list.filter
+# report.list.labels
+# report.list.sort
+# report.long.columns
+# report.long.context
+# report.long.description
+# report.long.filter
+# report.long.labels
+# report.long.sort
+# report.ls.columns
+# report.ls.context
+# report.ls.description
+# report.ls.filter
+# report.ls.labels
+# report.ls.sort
+# report.minimal.columns
+# report.minimal.context
+# report.minimal.description
+# report.minimal.filter
+# report.minimal.labels
+# report.minimal.sort
+# report.newest.columns
+# report.newest.context
+# report.newest.description
+# report.newest.filter
+# report.newest.labels
+# report.newest.sort
+# report.next.columns
+# report.next.context
+# report.next.description
+# report.next.filter
+# report.next.labels
+# report.next.sort
+# report.oldest.columns
+# report.oldest.context
+# report.oldest.description
+# report.oldest.filter
+# report.oldest.labels
+# report.oldest.sort
+# report.overdue.columns
+# report.overdue.context
+# report.overdue.description
+# report.overdue.filter
+# report.overdue.labels
+# report.overdue.sort
+# report.ready.columns
+# report.ready.context
+# report.ready.description
+# report.ready.filter
+# report.ready.labels
+# report.ready.sort
+# report.recurring.columns
+# report.recurring.context
+# report.recurring.description
+# report.recurring.filter
+# report.recurring.labels
+# report.recurring.sort
+# report.timesheet.context
+# report.timesheet.filter
+# report.unblocked.columns
+# report.unblocked.context
+# report.unblocked.description
+# report.unblocked.filter
+# report.unblocked.labels
+# report.unblocked.sort
+# report.waiting.columns
+# report.waiting.context
+# report.waiting.description
+# report.waiting.filter
+# report.waiting.labels
+# report.waiting.sort
+# reserved.lines
+# row.padding
+# rule.color.merge
+# rule.precedence.color
+# search.case.sensitive
+# sugar
+# summary.all.projects
+# tag.indicator
+# taskd.ciphers
+# taskd.trust
+# uda.priority.label
+# uda.priority.type
+# uda.priority.values
+# undo.style
+# urgency.active.coefficient
+# urgency.age.coefficient
+# urgency.age.max
+# urgency.annotations.coefficient
+# urgency.blocked.coefficient
+# urgency.blocking.coefficient
+# urgency.due.coefficient
+# urgency.inherit
+# urgency.project.coefficient
+# urgency.scheduled.coefficient
+# urgency.tags.coefficient
+# urgency.uda.priority.H.coefficient
+# urgency.uda.priority.L.coefficient
+# urgency.uda.priority.M.coefficient
+# urgency.user.tag.next.coefficient
+# urgency.waiting.coefficient
+# verbose
+# weekstart
+# xterm.title
+
+
+# List of virtual tags:
+# =========================
+# BLOCKED - Is the task dependent on another incomplete task?
+# UNBLOCKED - The opposite of BLOCKED, for convenience. Note +BLOCKED == -UNBLOCKED and vice versa.
+# BLOCKING - Does another task depend on this incomplete task?
+# DUE - Is this task due within 7 days? Determined by rc.due
+# DUETODAY - Is this task due sometime today?
+# TODAY - Is this task due sometime today?
+# OVERDUE - Is this task past its due date?
+# WEEK - Is this task due this week? 2.3.0
+# MONTH - Is this task due this month? 2.3.0
+# QUARTER - Is this task due this quarter? 2.6.0
+# YEAR - Is this task due this year? 2.3.0
+# ACTIVE - Is the task active, i.e. does it have a start date?
+# SCHEDULED - Is the task scheduled, i.e. does it have a scheduled date?
+# PARENT - Is the task a hidden parent recurring task? 2.3.0
+# CHILD - Is the task a recurring child task?
+# UNTIL - Does the task expire, i.e. does it have an until date?
+# WAITING - Is the task hidden, i.e. does it have a wait date?
+# ANNOTATED - Does the task have any annotations?
+# READY - Is the task pending, not blocked, and either not scheduled, or scheduled before now. 2.4.0
+# YESTERDAY - Was the task due yesterday? 2.4.0
+# TOMORROW - Is the task due tomorrow? 2.4.0
+# TAGGED - Does the task have any tags?
+# PENDING - Is the task in the pending state? 2.4.0
+# COMPLETED - Is the task in the completed state? 2.4.0
+# DELETED - Is the task in the deleted state? 2.4.0
+# UDA - Does the task contain any UDA values? 2.5.0
+# ORPHAN - Does the task contain any orphaned UDA values? 2.5.0
+# PRIORITY - Does the task have a priority? 2.5.0
+# PROJECT - Does the task have a project? 2.5.0
+# LATEST - Is the task the most recently added task? 2.5.0
+nag=You have more urgent tasks.

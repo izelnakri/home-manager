@@ -1,0 +1,82 @@
+-- TODO: Maybe do it in future
+-- FS.unwatch implementation
+-- FS_unwatch(path, watcher_to_remove)
+--     -- Check if watchers exist for the provided path
+--     if watchers[path] then
+--         for i, watcher in ipairs(watchers[path]) do
+--             if watcher == watcher_to_remove then
+--                 -- Stop and remove the watcher
+--                 watcher:stop()
+--                 table.remove(watchers[path], i)
+--
+--                 -- Clean up the path entry if no more watchers exist
+--                 if #watchers[path] == 0 then
+--                     watchers[path] = nil
+--                 end
+--                 return true
+--             end
+--         end
+--     end
+--     return false -- Watcher not found
+-- end
+
+-- --- Unwatch a path, or a specific watcher if provided
+-- --- @param path string Path to stop watching
+-- --- @param watcher_handle? userdata Optional watcher handle to unwatch only the specified watcher
+-- local function unwatch(path, watcher_handle)
+--   if not watchers[path] then
+--     return
+--   end
+--
+--   if watcher_handle then
+--     -- Stop the specific watcher if handle is provided
+--     watcher_handle:stop()
+--     for i, watcher in ipairs(watchers[path]) do
+--       if watcher == watcher_handle then
+--         table.remove(watchers[path], i)
+--         break
+--       end
+--     end
+--     if #watchers[path] == 0 then
+--       watchers[path] = nil
+--     end
+--   else
+--     -- Stop all watchers if no handle is provided
+--     for _, watcher in ipairs(watchers[path]) do
+--       watcher:stop()
+--     end
+--     watchers[path] = nil
+--   end
+-- end
+
+-- --- Unwatches a directory or file. Stops all watches on the path or by specific watcher.
+-- --- @param path_or_watcher string|userdata: The path to unwatch or the specific watcher handle to stop.
+-- function FS.unwatch(path_or_watcher)
+--   if type(path_or_watcher) == "userdata" then
+--     -- Unwatch a specific watcher handle
+--     for path, watcher_list in pairs(watchers) do
+--       for i, watcher in ipairs(watcher_list) do
+--         if watcher == path_or_watcher then
+--           watcher:stop()
+--           table.remove(watcher_list, i)
+--           -- Clean up if there are no more watchers on this path
+--           if #watcher_list == 0 then
+--             watchers[path] = nil
+--           end
+--           return
+--         end
+--       end
+--     end
+--   elseif type(path_or_watcher) == "string" then
+--     -- Unwatch all watchers for a given path
+--     local watcher_list = watchers[path_or_watcher]
+--     if watcher_list then
+--       for _, watcher in ipairs(watcher_list) do
+--         watcher:stop()
+--       end
+--       watchers[path_or_watcher] = nil
+--     end
+--   else
+--     error("Invalid argument for FS.unwatch: expected path or watcher handle")
+--   end
+-- end

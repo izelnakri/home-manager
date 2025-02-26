@@ -1,0 +1,110 @@
+Cursor -> TODO: CHECK IF THIS WOULD MOVE THE CURSOR: WINDOW = botline and topline--> maybe cursor top/bottom view -> is this setregview(?) probably not
+
+Is Buffer.set needed?
+yes/strange bufnr  -> instead create and new/build
+yes/strange changed 0|1  -> triggers save
+strange - changedtick number Number of changes made to the buffer.
+strange - command 0|1 1 if the buffer belongs to the command-line window |cmdwin|
+yes hidden 0|1 1 if the buffer is hidden.
+strange - lastused integer Timestamp in seconds, like |localtime()|, when the buffer was last used.
+strange / instead we have text manipulation - linecount integer Number of lines in the buffer (only valid when loaded)
+yes listed 0|1  1 if the buffer is listed.
+irrelavant lnum integer Line number when buffer opened in window. It is NOT the last known cursor position.
+yes loaded 0|1 1 if the buffer is loaded.
+stupid name string Full path to the file in the buffer.
+no signs vim.fn.sign[] List of signs placed in the buffer. Sign{id, lnum, name}
+notneeded variables table<string,any> Buffer-local variables
+notneeded windows integer[] List of winids that display this buffer
+
+Buffer.hide(buffer) | Buffer.show(buffer)
+
+Buffer text manipulation methods
+
+Buffer.list(buffer) | Buffer.unlist(buffer) -> for bufferline
+
+Buffer.unload!(buffer) | Buffer.load(buffer) -- Wipe from memory
+
+Buffer.delete(buffer) --> Unloads and deletes from the list
+
+============= WINDOW =============
+
+Is Window.set needed?
+yes botline integer Bottom buffer line
+yes bufnr integer Windows buffer number
+yes height integer Windows height (excluding winbar)
+yes loclist integer 1 if showing a location list
+yes quickfix integer 1 if showing a quickfix or location list window
+yes tabnr integer Windows tab page number
+no terminal integer 1 if a terminal window
+no textoff integer Number of columns on the left space, occupied by 'foldcolumn', 'signcolumn' and line
+yes topline integer Top buffer line
+maybe variables table<string,any> Window-local variables
+yes width integer Windows width
+maybe winbar integer 1 if the window has a toolbar(usually on the top), not statusline
+maybe wincol integer Leftmost X offset from the screen. Same as col in vim.fn.win_screenpos(winid)
+no winid integer Window id
+maybe winnr integer window number. Used in window switches, :exe $winnr .. "wincmd w" options
+maybe winrow integer Topmost Y offset from the screen. Same as row in vim.fn.win_screenpos(winid)
+
+Cursor -> TODO: CHECK IF THIS WOULD MOVE THE CURSOR: botline and topline--> maybe cursor top/bottom view -> is this setregview(?) probably not
+
+Window.change_buffer()
+Window.toggle_loclist() Window.open_loclist() Window.
+Window.toggle_quickfix() Window.open_quickfix()
+Window.change_tab_page()
+Window.change_winnr() --> Is this needed?
+
+X-Y offset and X-Y width/height
+
+Decision: Try without Window.set() first, undecided
+
+
+
+
+we have all options registered with scope, its values are seperated and under vim.opt, vim.opt_global, vim.wo and vim.bo
+we have all variables registered and obtained when we query TabPage, Window and Buffer and under vim.t, vim.w and vim.b
+
+Each query object change is special handling, some are simple variable change, some are variable call
+Implement this under Buffer.set(), Window.set, TabPage.set() . Read up quickly on options
+
+
+-- Some buffer props are on variables, some are on buffer options as different name!
+
+Buffer.set()
+-- Test if I can change bufnr, changedtick, make it hidden, linecount, listed(I can on vim.bo), lnum, loaded, name(!!)
+-- Try adding it to windows: [], direct addition probably doesnt work, and changing existing window buffer is complicated by setting it on the buffer
+
+
+
+
+Implement dashboard oil.nvim
+implement Telescope search
+
+-- nvim_exec2
+-- nvim_window_set_width, nvim_window_set_height
+-- nvim_select_popupmenu_item
+-- vim.api.nvim_feedkeys("ygv", "n", false) -> this cant work to feed into the yank instead register at "
+
+
+-- 1 - FIX/reorganize Keymaps
+-- 2 - Implement/Adjust according to Tj Devries config
+
+{ "nvim-tree/nvim-web-devicons", lazy = true },
+-- ui components
+{ "MunifTanjim/nui.nvim", lazy = true },
+
+TJs config.nvim
+Primeagean - init.nvim
+LazyVim + My configuration
+
+
+Check if I can eliminate nvim-autopairs & indent-blankline
+
+add lang namespace
+
+
+Plenary.job = https://github.com/nvim-lua/plenary.nvim?tab=readme-ov-file#plenaryjob
+Plenary.testHarness = https://github.com/nvim-lua/plenary.nvim?tab=readme-ov-file#plenarytest_harness
+
+
+Check vim-be-good and vim-with-me

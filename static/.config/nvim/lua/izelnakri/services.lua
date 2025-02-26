@@ -1,0 +1,2 @@
+-- NOTE: Logging, status check, commands(then maybe cli),
+-- scripts have to be in the ~/scripts, systemd integration

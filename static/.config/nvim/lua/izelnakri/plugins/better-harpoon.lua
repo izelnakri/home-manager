@@ -1,0 +1,23 @@
+return {}
+-- local bufnrs = vim.tbl_filter(function(bufnr)
+--   if 1 ~= vim.fn.buflisted(bufnr) then
+--     return false
+--   end
+--   -- only hide unloaded buffers if opts.show_all_buffers is false, keep them listed if true or nil
+--   if opts.show_all_buffers == false and not vim.api.nvim_buf_is_loaded(bufnr) then
+--     return false
+--   end
+--   if opts.ignore_current_buffer and bufnr == vim.api.nvim_get_current_buf() then
+--     return false
+--   end
+--
+--   local bufname = vim.api.nvim_buf_get_name(bufnr)
+--
+--   if opts.cwd_only and not buf_in_cwd(bufname, vim.loop.cwd()) then
+--     return false
+--   end
+--   if not opts.cwd_only and opts.cwd and not buf_in_cwd(bufname, opts.cwd) then
+--     return false
+--   end
+--   return true
+-- end, vim.api.nvim_list_bufs())

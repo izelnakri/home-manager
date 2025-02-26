@@ -1,0 +1,3 @@
+-- let child = Command::new("/bin/cat")
+--         .stdin(Stdio::piped())
+--         .stdout(Stdio::piped())

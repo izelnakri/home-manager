@@ -1,0 +1,104 @@
+vim.wo.number = true
+
+-- TODO: Improve man pages treesitter for flags etc
+
+-- TODO: Add this
+--
+-- if #require("bufferline").get_elements().elements == 0 then
+--   vim.cmd(string.format("silent cd %s", "~/.nix-profile/share/man"))
+-- end
+--
+-- local telescope = require("telescope.builtin")
+-- -- require("telescope").load_extension("fzf")
+--
+-- -- local line = require("telescope.actions.state").get_current_line()
+--
+-- LazyVim.notify(vim.uv.cwd())
+--
+-- -- LazyVim.notify(line)
+--
+-- -- TODO: THESE DONT WORK: MAKE IT WORK + Ripgrep
+-- -- :Telescope man_pages'
+-- -- vim.keymap.set("n", "<leader>/", function()
+-- --   -- --- Search for a string and get results live as you type, respects .gitignore
+-- --   -- ---@param opts table: options to pass to the picker
+-- --   -- ---@field cwd string: root dir to search from (default: cwd, use utils.buffer_dir() to search relative to open buffer)
+-- --   -- ---@field grep_open_files boolean: if true, restrict search to open files only, mutually exclusive with `search_dirs`
+-- --   -- ---@field search_dirs table: directory/directories/files to search, mutually exclusive with `grep_open_files`
+-- --   --
+-- --   -- ---@field glob_pattern string|table: argument to be used with `--glob`, e.g. "*.toml", can use the opposite "!*.toml"
+-- --   --
+-- --   -- ---@field type_filter string: argument to be used with `--type`, e.g. "rust", see `rg --type-list`
+-- --   -- ---@field additional_args function|table: additional arguments to be passed on. Can be fn(opts) -> tbl
+-- --   -- ---@field max_results number: define a upper result value
+-- --   -- ---@field disable_coordinates boolean: don't show the line & row numbers (default: false)
+-- --   -- ---@field file_encoding string: file encoding for the entry & previewer
+-- --   -- builtin.live_grep = require_on_exported_call("telescope.builtin.__files").live_grep
+-- --
+-- --   telescope.live_grep({ cwd = vim.uv.cwd(), show_untracked = true, default_text = "" })
+-- -- end, { desc = "Grep (Root Dir) changed" })
+--
+-- -- apropos -r '.*'
+--
+-- -- man -wK /task | fzf
+--
+-- vim.keymap.set({ "n", "i" }, "<leader><leader>", telescope.man_pages, { desc = "Find manual for program" })
+--
+-- vim.keymap.set({ "n", "i" }, "<leader>/", function()
+--   telescope.find_files({ cwd = require("lazy.core.config").options.root })
+-- end, { desc = "Find Plugin File" })
+--
+-- -- opts.attach_mappings = function(_, map)
+-- --   -- opts.desc is overridden by telescope, until it's changed there is this fix
+-- --   map("i", "<a-c>", open_cwd_dir, { desc = "Open cwd Directory" })
+-- --   return true
+-- -- end
+--
+-- -- internal.man_pages = function(opts)
+-- --   opts.sections = vim.F.if_nil(opts.sections, { "1" })
+-- --   assert(vim.tbl_islist(opts.sections), "sections should be a list")
+-- --   opts.man_cmd = utils.get_lazy_default(opts.man_cmd, function()
+-- --     local uname = vim.loop.os_uname()
+-- --     local sysname = string.lower(uname.sysname)
+-- --     if sysname == "darwin" then
+-- --       local major_version = tonumber(vim.fn.matchlist(uname.release, [[^\(\d\+\)\..*]])[2]) or 0
+-- --       return major_version >= 22 and { "apropos", "." } or { "apropos", " " }
+-- --     elseif sysname == "freebsd" then
+-- --       return { "apropos", "." }
+-- --     else
+-- --       return { "apropos", "" }
+-- --     end
+-- --   end)
+-- --   opts.entry_maker = opts.entry_maker or make_entry.gen_from_apropos(opts)
+-- --   opts.env = { PATH = vim.env.PATH, MANPATH = vim.env.MANPATH }
+-- --
+-- --   pickers
+-- --     .new(opts, {
+-- --       prompt_title = "Man",
+-- --       finder = finders.new_oneshot_job(opts.man_cmd, opts),
+-- --       previewer = previewers.man.new(opts),
+-- --       sorter = conf.generic_sorter(opts),
+-- --       attach_mappings = function(prompt_bufnr)
+-- --         action_set.select:replace(function(_, cmd)
+-- --           local selection = action_state.get_selected_entry()
+-- --           if selection == nil then
+-- --             utils.__warn_no_selection "builtin.man_pages"
+-- --             return
+-- --           end
+-- --
+-- --           local args = selection.section .. " " .. selection.value
+-- --           actions.close(prompt_bufnr)
+-- --           if cmd == "default" or cmd == "horizontal" then
+-- --             vim.cmd("Man " .. args)
+-- --           elseif cmd == "vertical" then
+-- --             vim.cmd("vert Man " .. args)
+-- --           elseif cmd == "tab" then
+-- --             vim.cmd("tab Man " .. args)
+-- --           end
+-- --         end)
+-- --
+-- --         return true
+-- --       end,
+-- --     })
+-- --     :find()
+-- -- end

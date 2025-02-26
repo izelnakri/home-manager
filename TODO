@@ -1,11 +1,189 @@
-https://www.youtube.com/watch?v=30WTWkFe910&t=762s
+--> Run on the phone ssh, nix, docker, systemd(?) | -> do I need proot and even qemu?
 
+--> Services(termux-services):
+$PREFIX/var/service/<service>
+$PREFIX/var/log/sv/<service>/current
+
+
+-- :lua debug.debug() opens a lua repl! --> maybe open it on split
+
+-- Check https://github.com/rktjmp/fwatch.nvim for file watching
+
+There is no Node:connect in lua, check its interop
+
+-- TODO: figure out a way to record every 
+!ls and other commands (:redir END then redir => output, we do one redir at the beginning)
+
+--> So basically I have to listen to cmd-line ENTER event, or Command Execute!!
+--> I HAVE TO LISTEN TO BEFORE(for redir set) AND AFTER(redir END)
+
+
+
+
+-- read redir, cmd-line and Events, status-bar
+
+
+
+-- Try winfixbuf = true(this means window cannot have another buffer)
+-- Also check neo-tree.utils.get_appropriate_window, current_win is a big deal, 
+-- also maybe neotree.utils.resolve_width
+
+
+
+-- TODO: Openining in split with telescope fucks the layout
+
+
+
+
+
+telnet gitlab.example.com 25 https://docs.gitlab.com/ee/administration/reply_by_email_postfix_setup.html
+
+
+
+
+Also learn/customize wireshark for port working/debugging, make webserver exposed online
+firewall debugging
+
+
+
+
+
+syncthing for tasks, contacts, emails, gpg-keys, password-store, photos, videos
+
+users, user groups
+
+Reverse engineer syncall for google contacts and taskwarrior(also can execute hooks this way): 
+https://github.com/bergercookie/syncall Create Snapshot data structure from task-champion-server, goobook
+
+kickstart.nvim needs:
+- LazyVim like icon description
+- Some of its autocmd
+- Default language configuration/integration
+- Some of the fixes and keybinds
+
+LazyVim 'neovim/nvim-lspconfig' is a MESS, kickstart seems more correct but check neoconf:
+{ "folke/neoconf.nvim", cmd = "Neoconf", config = false, dependencies = { "nvim-lspconfig" } },
+{ "folke/neodev.nvim", opts = {} },
+"mason.nvim",
+"williamboman/mason-lspconfig.nvim",
+
+
+kickstart.nvim uses:
+{ 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
+'williamboman/mason-lspconfig.nvim',
+'WhoIsSethDaniel/mason-tool-installer.nvim', -- NOTE: THIS DOESNT EXIST IN LAZYVIM
+
+Bufferline & bufferline offsets, check mini.diff
+
+
+Window sizing: anuvyklack/windows.nvim -> there is minwidth per filetype, is it height for bottom windows?
+Add keyboard shortcut to make <C-w>, hold and the other
+<C-w>t moves to tab
+<C-w>v vertical split
+Make >C-w>d delete window like <space>wd
+Make :Man register in bufferline, open in vertical split (able to put it in tab and navigate)
+Allow for default height/width and orientation setup
+
+on telescope buffers, toggle unlisted buffers & show indexed buffers + bufferid, make pressing index open the buffer: https://youtu.be/0moS8UHupGc?si=gNTrb0iQXrw3U3Hg&t=2681
+
+Check snippet go to next area(from TJ but not <C-k>), check/test multicursor one more time & do replace with them :s!
+Current buffer fuzzy(Shift-s)
+
+
+
+Make <leader>s Replace command and Move all <leader>s to <leader>f
+
+Read gitsigns.nvim & promise-async
+
+nvim-keylogger buffer, window, augroup, events, motion
+typed lua for neovim
+typed version of lapis, more sequelize like (also missing promises)
+
+research nginx for lua, create lapis project(make it typed: nelua, teal, luau)
+
+read up on taskwarrior server sync, web ui, notification on due, start, end(if not completed)
+type of tasks: Meeting, Task
+
+taskwarrior tui
+Enhance keybinds(for history up/down, tab completion, task details scroll)
+Build a color theme
+reporting(?)
+
+custom_attr, add custom_attr config of the video:
+
+push notification integration(not when its done but when its due, start, end(if not completed))
+
+make database fetcheable/separate git repository(commit on each home-manager update & task mutation(fetch update))
+
+Why do I need timew(?) Read up on this one
+
+Make taskwarrior-tui integrated to NeoVim (view taskwarrior-tui) also add "Add task stuff"
+
+
+Make taskwarrior, timewarrior all calendar entries
+
+Go through this tutorial: https://github.com/tjdevries/config.nvim.git AND his videos
+
+- check also markdown-tui package & its nvim plugin
+- /w/w for vimwiki diary | <leader>w<leader>i diary index page | diary/diary.md | MDWiki(generates client side rendering)
+- Control space makes todo items toggled | create the list item, then on normal mode hit control space
+- set expandtab?
+- /td allows editing TaskWarrior Task inside nvim
+- on header do | +tag to populate tags under a header (viewport)
+- .config/nvim/after/synrax/markdown.vim | vimwiki.vim:
+  syntax match todoCheckbox '\v.*\[\ \]'hs=e-2 conceal cchar=$FIND 
+  syntax match todoCheckbox '\v.*\[X\]'hs=e-2 conceal cchar=$FIND
+  setlocal conceallevel=2
+  hi Conceal guibg=NONE
+  " hi clear Conceal
+
+
+- find references
+- project wide diagnostics
+- rename refactor heading/reference links
+
+
+
+
+NeoVim v0.10 WILL HAVE LSP?! https://www.lazyvim.org/plugins/lsp#nvim-lspconfig
+
+:LspInfo shows which LSP clients running
+lsp internal functions interact with these clients
+You can use none-ls, efm-langserver, hover etc
+there is treesitter AND LSP
+
+
+
+TODO: USE none-ls instead of null-ls
+Use vim.lsp.buf.format(). See :help vim.lsp.buf.format() for usage instructions.
+https://github.com/nvimtools/none-ls.nvim/wiki/Formatting-on-save
+
+
+
+
+
+Using a formatter is better than not using a linter for markdown at all(linters need plugins(not smart or can fix sometimes things))
+Both linting and fomatting should be leveraged by the LSP addons
+NOT every LSP server supports formatting
+
+
+
+
+
+dprint formats on save (dprint use textWrap always and lineWidth 120)
+configure markdown linting to use dprint config (textWrap always and lineWidth 120)
+
+check code linting inside the markdown! with markdownlint(maybe I still need markdownlint-cli2 for package.json configuration)
+
+markdown format fix should fix max 120 chars per line thing
+
+Try treesitter indent
 
 folks-inspect requires: 
 (folks-inspect:347289): GLib-GIO-ERROR **: 17:56:35.335: Settings schema 'org.freedesktop.folks' is not installed
 Probably gtk3-gtk4 not installed issue
 
-
+lua_ls is slow, replace it with smt faster
 
 get scope structs with llvm debug/DAP & bugstalker
 Implement DAP/linter(deno and eslint linter at the same time(start with use deno always, if no deno ref, use eslint)) for qunitx
@@ -142,17 +320,6 @@ services.xserver = {
 ...
 
 
-
-  # Enable the X11 windowing system.
-  services.xserver = {
-    enable = true;
-    layout = "us";
-    videoDrivers = [ "nvidia" ];
-    displayManager.lightdm.enable = true;
-    windowManager.i3.enable = true;
-  };
-
-
   hardware.opengl.setLdLibraryPath = true;
 
 # open it in relevant pane
@@ -162,3 +329,25 @@ services.xserver = {
 https://blog.habets.se/2022/02/SSH-over-Bluetooth-cleanly.html
 
 - Do this tutorial: https://www.shuttle.rs/blog/2023/10/16/graphql-in-rust
+
+
+
+Max laptop width for my bags: 15.6 inch = 33.2 x 381.6 x 253 ( = 1.31 x 15.02 x 9.96 in)
+
+Build an FFI in Deno, node.js & Rust
+
+
+
+
+# Syncthing(on .config/syncthing xml) 
+# - There are devices and folders
+# - Only NixOS provides ways to configure them, NOT home-manager
+# - Accessible via Webgui->Actions->ShowID
+# Research versioning and file retention details/safe recovery
+# How to make it so syncthing only works on *certain* internet connections(?) - No Roaming
+# !! Learn more about secret management and deployment so I can have a list of device-id and folders:
+# -> MAP it to syncthing XML, all checked-in to this repo
+
+
+
+API Design has for Array query operations on singular/plural, is for other query operations on singular/plural

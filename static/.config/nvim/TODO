@@ -1,0 +1,8 @@
+-- Get last 'message' to right side
+
+
+-- Make dashboard show oil.nvim buffer when its a directory, get inspired from neotree config
+
+
+-- Keybind on method to show struct shape on the right with symbols
+-- Keybind on method to show the returned data struct shape on the right (no popup needed, hover already exists)

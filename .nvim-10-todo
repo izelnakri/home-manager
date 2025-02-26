@@ -1,0 +1,7 @@
+* [] Check the below line rust-like diagnostics
+* [] commentary.nvim should not be needed anymore
+* [] Check markdown web link open with :set conceallevel=2 and also click
+* [] Check inlay hints vim.lsp.inlay_hint.enable(). :h news LSP section
+* [] tree-sitter query editor for documentation plugin, press o in InspectTree window (:EditQuery or vim.treesitter.query.edit())
+* [] :botright terminal open at the bottom
+* [] gx in normal mode is vim.ui.open() -> xdg_open
