@@ -82,11 +82,21 @@
 # NOTE: NixOS has nice syncthing API but not available on home-manager
 { config, pkgs, inputs, lib, ... }: # nixosModules
 let
+  system = "x86_64-linux"; # move to self.system or smt
+  overlay-unstable = final: prev: {
+    unstable = import inputs.nixpkgs-unstable {
+      inherit system;
+      config.allowUnfree = true;
+    };
+  };
   wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs; };
   replaceColorReferences =
     import ../../modules/functions/replace-color-references.nix;
 in rec {
   imports = [
+    inputs.stylix.homeManagerModules.stylix
+    inputs.nix-flatpak.homeManagerModules.nix-flatpak
+    # hyprland.homeManagerModules.default
     inputs.nix-colors.homeManagerModules.default
     inputs.xremap-flake.homeManagerModules.default
     # ../../modules/alacritty.nix
@@ -99,10 +109,6 @@ in rec {
   # stylix.base16Scheme = "../../static/parrots-of-paradise.yaml"
 
   targets.genericLinux.enable = true;
-  nixpkgs.config.allowBroken = true;
-
-  nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.allowUnfreePredicate = _: true;
 
   home.username = "izelnakri";
   home.homeDirectory = "/home/izelnakri";
@@ -115,6 +121,7 @@ in rec {
   };
 
   home.packages = with pkgs; [
+    unstable.cowsay
     unstable.arion
 
     (wrapNixGL droidcam) # NOTE: maybe use scrcpy instead
@@ -210,6 +217,7 @@ in rec {
     unstable.code-cursor
     podman
     podman-tui
+    cmake
     cbfmt
     direnv
     # devdocs-desktop
@@ -218,7 +226,7 @@ in rec {
     # flameshot # screenshot util, doesnt run yet on hyprland
     chromium
     comma
-    # unstable.deno
+    unstable.deno
     unstable.elixir_1_17
     # helix
     (wrapNixGL unstable.hyprlock)
@@ -240,6 +248,7 @@ in rec {
     unstable.git-cliff
     unstable.gitui
     unstable.gleam
+    gnumake
     gpsd
     grim
     # Should I have grimshot instead?

@@ -73,10 +73,11 @@
           system = "x86_64-linux";
           modules = [
             ({ config, pkgs, ... }: {
-              nixpkgs.overlays = [ overlay-unstable ];
+              nixpkgs.overlays = [ overlay-unstable nixGL.overlay ];
             })
-            ./hosts/omnibook/configuration.nix
+            # nix-flatpak.nixosModules.nix-flatpak
             home-manager.nixosModules.home-manager
+            ./hosts/omnibook/configuration.nix
           ];
           specialArgs = { inherit inputs; };
         };

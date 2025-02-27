@@ -1,11 +1,12 @@
 # Edit this configuration file to define what should be installed on your system. Help is available in the configuration.nix(5) man page, on 
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
-{ imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix ];
+{ 
+  imports = with inputs.self.nixosModules; [ 
+    ./hardware-configuration.nix 
+  ];
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true; 
@@ -14,6 +15,10 @@
   nix.extraOptions = ''
     experimental-features = nix-command flakes
   '';
+  nixpkgs.config.allowUnfree = true;
+  # nixpkgs.config.allowUnfreePredicate = _: true;
+  # nixpkgs.config.allowBroken = true;
+
 
   networking.hostName = "omnibook"; # Define your hostname.
   # Pick only one of the below networking options.
@@ -55,16 +60,20 @@
   services.libinput.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
+  users.defaultUserShell = pkgs.zsh;
   users.users.izelnakri = { 
    isNormalUser = true; 
-   home = "/home/izelnakri";
    password = "corazon";
    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
-   packages = with pkgs; [
-      # tree
-      brave
-      home-manager
-    ];
+  };
+
+  home-manager = {
+    useGlobalPkgs = true;
+    users = import "${inputs.self}/users";
+    extraSpecialArgs = {
+      inherit inputs;
+      headless = false;
+    };
   };
 
   # programs.firefox.enable = true;
@@ -76,7 +85,8 @@
     curl
     kitty
     git
-    cowsay
+    home-manager
+    brave
   ];
 
   # Some programs need SUID wrappers, can be configured further or are started in user sessions. programs.mtr.enable = true; programs.gnupg.agent = {
@@ -111,6 +121,7 @@
 
   programs.hyprland.enable = true;
   programs.hyprlock.enable = true;
+  programs.zsh.enable = true;
 
   services.btrfs.autoScrub = { enable = true; interval = "monthly"; fileSystems = [ "/" ];
  };

@@ -2,7 +2,9 @@
 
 - `hosts/` - Machines/Hardware definitions.
 
-  - `x1-carbon/` - My laptop
+  - `omnibook/` - My current laptop
+
+  - `x1-carbon/` - My old laptop
 
   - `zfold-5/` - My android Samsung Z Fold 5
 
