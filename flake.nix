@@ -69,6 +69,18 @@
       nixosModules = import ./modules { lib = nixpkgs.lib; };
 
       nixosConfigurations = {
+        omnibook = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            ({ config, pkgs, ... }: {
+              nixpkgs.overlays = [ overlay-unstable ];
+            })
+            ./hosts/omnibook/configuration.nix
+            home-manager.nixosModules.home-manager
+          ];
+          specialArgs = { inherit inputs; };
+        };
+
         # TODO: Implement btrfs with this: https://mt-caret.github.io/blog/posts/2020-06-29-optin-state.html
         pi4-nas = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
