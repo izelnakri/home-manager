@@ -24,9 +24,7 @@
     xremap-flake.url = "github:xremap/nix-flake";
   };
 
-  # TODO: make ~/.config/home-manager present with git pulled
   # TODO: make mako & alacritty configured with base16 https://www.youtube.com/watch?v=jO2o0IN0LPE
-  # Make everything run as btrfs after home-manager install is complete
   outputs = inputs@{ 
     self, nixinate, nixpkgs, nixpkgs-unstable, nixos-hardware, nix-flatpak, home-manager, nixGL, stylix, ... 
   }:

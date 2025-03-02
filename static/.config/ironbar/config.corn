@@ -1,7 +1,7 @@
 {
   position = "top"
   height = 35
-  autohide = 0
+  autohide = 1
   name = "top-bar"
   start = [
     {

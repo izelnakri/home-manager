@@ -51,12 +51,7 @@ return {
     version = "0.1.8",
     dependencies = {
       "nvim-lua/plenary.nvim",
-      {
-        "nvim-telescope/telescope-fzf-native.nvim",
-        enabled = vim.fn.executable("make") == 1 or vim.fn.executable("cmake") == 1,
-        build = vim.fn.executable("make") == 1 and "make"
-          or "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build",
-      },
+      { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' },
       -- { "nvim-telescope/telescope-ui-select.nvim" },
       { "nvim-tree/nvim-web-devicons", enabled = vim.g.have_nerd_font },
     },

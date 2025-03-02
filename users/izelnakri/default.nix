@@ -83,6 +83,7 @@
 { config, pkgs, inputs, lib, ... }: # nixosModules
 let
   system = "x86_64-linux"; # move to self.system or smt
+  HOSTNAME = "omnibook"; # TODO: This has to be dynamically generated
   overlay-unstable = final: prev: {
     unstable = import inputs.nixpkgs-unstable {
       inherit system;
@@ -113,12 +114,12 @@ in rec {
   home.username = "izelnakri";
   home.homeDirectory = "/home/izelnakri";
   home.stateVersion = "24.05";
-  home.activation = {
-    # NOTE: This shouldnt be needed but unfortunately it is needed
-    restartSystemdServices = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
-      $DRY_RUN_CMD ${home.homeDirectory}/.nix-profile/bin/sd activation systemd-reset-services
-    '';
-  };
+  # home.activation = {
+  #   # NOTE: This shouldnt be needed but unfortunately it is needed
+  #   restartSystemdServices = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
+  #     $DRY_RUN_CMD ${home.homeDirectory}/.nix-profile/bin/sd activation systemd-reset-services
+  #   '';
+  # };
 
   home.packages = with pkgs; [
     unstable.cowsay
@@ -1036,7 +1037,9 @@ in rec {
       # mouse = true;
       withWlroots = true;
       # debug = true; # Logs everything
-      yamlConfig = builtins.readFile ../../static/.config/xremap/config.yml;
+      yamlConfig = (builtins.readFile (builtins.toPath "${config.home.homeDirectory}/.config/home-manager/static/.config/xremap/${HOSTNAME}/config.yml"));
+
+      # yamlConfig = builtins.readFile (builtins.toString ../../static/.config/xremap + "/" + (builtins.readFile "/proc/sys/kernel/hostname") + "/config.yml");
     };
   };
 
@@ -1109,20 +1112,6 @@ in rec {
 
         Install.WantedBy = [ "default.target" ];
       };
-      tailscale = {
-        Unit = {
-          Description = "Tailscale deamon";
-          After = [ "network-online.target" ];
-        };
-
-        Service = {
-          ExecStart = "sudo ${pkgs.unstable.tailscale}/bin/tailscaled";
-          Restart = "always";
-          RestartSec = "10";
-        };
-
-        Install.WantedBy = [ "default.target" ];
-      };
       webserver = {
         Unit = {
           Description = "Caddy HTTPS Server of /Public";
@@ -1137,21 +1126,8 @@ in rec {
 
         Install.WantedBy = [ "default.target" ];
       };
-      tailscale-serve = {
-        Unit = {
-          Description = "Tailscale serve webserver";
-          After = [ "network-online.target" ];
-        };
-
-        Service = {
-          ExecStart = "${pkgs.unstable.tailscale}/bin/tailscale serve 9999";
-          Restart = "always";
-          RestartSec = "10";
-        };
-
-        Install.WantedBy = [ "default.target" "webserver" ];
-      };
     };
+
     # user.services.example = {
     #   Unit = {
     #     Description = "Service example";

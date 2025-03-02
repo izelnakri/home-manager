@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Connects my main bluetooth headphone Sony WF-1000XM4 via bluetoothctl connect
+
+#  sd activation galaxy-buds
+
+bluetoothctl connect B0:54:76:FA:A9:73
