@@ -3,6 +3,7 @@
 { 
   imports = with inputs.self.nixosModules; [ 
     ./hardware-configuration.nix 
+    # move systemd and virtualization to a new file
   ];
 
   boot.loader.systemd-boot.enable = true; # Use the systemd-boot EFI boot loader.
@@ -21,17 +22,21 @@
   networking.hostName = "omnibook"; # Define your hostname.
   # Configure network proxy if necessary networking.proxy.default = "http://user:password@proxy:port/"; networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
+  systemd.services.NetworkManager-wait-online.enable = false; # Workaround for an update problem
+
   time.timeZone = "Europe/Amsterdam"; # Set your time zone.
 
   i18n.defaultLocale = "en_US.UTF-8";
   # console = { font = "Lat2-Terminus16"; keyMap = "us"; useXkbConfig = true; # use xkb.options in tty. };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
+  users.groups.input = {};
+  users.groups.bitbox = {};
   users.defaultUserShell = pkgs.zsh;
   users.users.izelnakri = { 
    isNormalUser = true; 
    password = "corazon";
-   extraGroups = [ "wheel" "input"]; # Enable ‘sudo’ for the user.
+   extraGroups = [ "wheel" "input" "bitbox" ]; # Enable ‘sudo’ for the user.
   };
 
   home-manager = {
@@ -62,10 +67,6 @@
     sd-switch
   ];
 
-  # List services that you want to enable:
-
-  # services.openssh.enable = true; # Enable the OpenSSH daemon.
-
   # Open ports in the firewall. 
   # networking.firewall.allowedTCPPorts = [ ... ]; 
   # networking.firewall.allowedUDPPorts = [ ... ]; 
@@ -86,14 +87,26 @@
     enableSSHSupport = true;
   };
 
+  powerManagement.powertop.enable = true;
+
   services.btrfs.autoScrub = { 
     enable = true; 
     interval = "monthly"; 
     fileSystems = [ "/" ]; 
   };
 
+  # TODO: maybe also need to add bitbox group or create user(s)
   services.udev.extraRules = ''
+    # xremap needs this:
     KERNEL=="uinput", GROUP="input", TAG+="uaccess"
+
+    # BitBox2 needs BB01 rule:
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2402", TAG+="uaccess", TAG+="udev-acl", SYMLINK+="dbb%n"
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2402", TAG+="uaccess", TAG+="udev-acl", SYMLINK+="dbbf%n"
+
+    # BitBox2 needs BB02 rule:
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2403", TAG+="uaccess", TAG+="udev-acl", MODE="0660", GROUP="bitbox", SYMLINK+="bitbox02-%n"
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2403", TAG+="uaccess", TAG+="udev-acl", MODE="0660", GROUP="bitbox", SYMLINK+="bitbox02-f%n"
   '';
 
   services.xserver = {
@@ -104,7 +117,6 @@
   services.displayManager.autoLogin.user = "izelnakri";
   services.displayManager.defaultSession = "hyprland";
   services.displayManager.hiddenUsers = [ "root" ];
-  services.tailscale.enable = true;
 
   services.printing.enable = true;
 
@@ -116,13 +128,21 @@
 
   services.libinput.enable = true; # Enable touchpad support (enabled default in most desktopManager).
 
+  services = {
+    # openssh.enable = true; # To enable openssh
+
+    postgresql.enable = true;
+    tailscale.enable = true;
+    taskchampion-sync-server.enable = true;
+    # tlp.enable = true;
+  };
 
   systemd.services = {
     tailscale-serve = {
       description = "Tailscale serve webserver";
       after = [ "network-online.target" ];
       serviceConfig = {
-        ExecStart = "${pkgs.unstable.tailscale}/bin/tailscale serve 9999";
+        ExecStart = "${pkgs.unstable.tailscale}/bin/tailscale funnel 9999";
         Restart = "always";
         RestartSec = "10";
       };
@@ -136,4 +156,8 @@
   #     listenStreams = [ "/var/run/tailscale/tailscaled.sock" ];
   #   };
   # };
+
+  virtualisation = {
+    waydroid.enable = true;
+  };
 }

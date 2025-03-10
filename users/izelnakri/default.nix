@@ -1,5 +1,6 @@
 # https://github.com/danth/stylix?tab=readme-ov-file
-# android runtime bin(zygote), android compile bin, android opened bin(xdg-open | snapd-xdg-open), flatpak(bubblejail run|generate-desktop-entry) | ~/.local/share/applications/$NAME.desktop
+# android runtime bin(zygote), android compile bin, android opened bin(xdg-open | snapd-xdg-open), 
+# flatpak(bubblejail run|generate-desktop-entry) | ~/.local/share/applications/$NAME.desktop
 
 # ~/.config/openxr/1/active_runtime.json.
 # so path: /nix/store/yf6z5bgff90kixmnp3l67vr9cd3dr8aa-home-manager-path/share/openxr/1/openxr_monado.so
@@ -114,6 +115,7 @@ in rec {
   home.username = "izelnakri";
   home.homeDirectory = "/home/izelnakri";
   home.stateVersion = "24.05";
+
   # home.activation = {
   #   # NOTE: This shouldnt be needed but unfortunately it is needed
   #   restartSystemdServices = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
@@ -155,7 +157,7 @@ in rec {
     # For scrcpy
     android-tools # for adb
     unstable.scrcpy
-    unstable.autoadb
+    # unstable.autoadb # this one is removed.
     unstable.wayvnc
     # === end scrcpy
 
@@ -369,6 +371,7 @@ in rec {
     unzip
     unixtools.nettools
     # upower
+    # unstable.xan # CSV chartmaker add this after nix flake update!
     xh # http tool
     watchman
     wget
@@ -484,7 +487,7 @@ in rec {
   };
 
   home.sessionVariables = rec {
-    BROWSER = "brave-browser";
+    BROWSER = "brave";
     EDITOR = "nvim";
     OPENER = "xdg-open";
     ELIXIR_ERL_OPTIONS = "+fnu";
@@ -542,6 +545,7 @@ in rec {
     browserpass.enable = true; # => just trying
     # chromium & settings(if needed, for extension & config)
     # comodoro # => check this
+    command-not-found.enable = true;
     dircolors = {
       enable = true;
       enableZshIntegration = true;
@@ -666,7 +670,7 @@ in rec {
     man.enable = true;
     mpv = { enable = true; };
     ncspot.enable = true;
-    neomutt.enable = true;
+    # neomutt.enable = true; # notmuchh build failed so commented out
     neovim = { # TODO: BIG CONFIG DO it here from nixcfg
       enable = true;
       package = pkgs.unstable.neovim-unwrapped;
@@ -812,6 +816,8 @@ in rec {
       }];
 
       initExtra = ''
+        source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
+
         unsetopt INC_APPEND_HISTORY # Write to the history file immediately, not when the shell exits.
         setopt PROMPT_SUBST # Enable parameter expansion, command substitution and arithmetic expansion in the prompt.
         # NOTE: For gnome online accounts, then remove
@@ -968,6 +974,8 @@ in rec {
         terminate = "lsof -ti:4200 | xargs kill";
         tt = "taskwarrior-tui";
         todo = "nvim ~/Dropbox/TODO.md";
+        # update = "make -C ~/.config/home-manager";
+        # update-all = "sudo make switch -C ~/.config/home-manager";
         v = "$EDITOR";
         vi = "nvim";
         vim = "nvim";

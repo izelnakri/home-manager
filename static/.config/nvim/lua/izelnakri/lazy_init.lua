@@ -32,7 +32,7 @@ require("lazy").setup({
     -- "izelnakri/callback.nvim",
     dir = "~/Github/async.nvim",
     config = function()
-      vim.print("CALLLING CONFIG")
+      -- vim.print("CALLLING CONFIG")
       -- async_it = require("async.test").async_it
       Callback = require("callback")
       Promise = require("promise")
