@@ -249,6 +249,25 @@ nix run -f ./script.nix
 objdump -p /home/izelnakri/.nix-profile/bin/deno | grep NEEDED
 # or
 ldd /home/izelnakri/.nix-profile/bin/deno
+# or:
+patchelf --print-needed masterpdfeditor4
+
+# to set specific ldd interpreter
+patchelf \
+      --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+      masterpdfeditor4
+
+# to set specific ldd dependencies:
+$ nix repl '<nixpkgs>'
+# .out can be omitted because this is the default output for all packages
+# makeLibraryPath outputs the correct path for each package to use as rpath
+nix-repl> with pkgs; lib.makeLibraryPath [ sane-backends libsForQt5.qt5.qtbase libsForQt5.qt5.qtsvg stdenv.cc.cc.lib ]
+"/nix/store/7lbi3gn351j4hix3dqhis58adxbmvbxa-sane-backends-1.0.25/lib:/nix/store/0990ls1p2nnxq6605mr9lxpps8p7qvw7-qtbase-5.9.1/lib:/nix/store/qzhn2svk71886fz3a79vklps781ah0lb-qtsvg-5.9.1/lib:/nix/store/snc31f0alikhh3a835riyqhbsjm29vki-gcc-6.4.0-lib/lib"
+
+# then apply the dependencies:
+$ patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" --set-rpath /nix/store/7lbi3gn351j4hix3dqhis58adxbmvbxa-sane-backends-1.0.25/lib:/nix/store/0990ls1p2nnxq6605mr9lxpps8p7qvw7-qtbase-5.9.1/lib:/nix/store/qzhn2svk71886fz3a79vklps781ah0lb-qtsvg-5.9.1/lib:/nix/store/snc31f0alikhh3a835riyqhbsjm29vki-gcc-6.4.0-lib/lib   masterpdfeditor4
+$ ./masterpdfeditor4
+# SUCCESS!!!
 
 # Send a notification from the command line:
 notify-send "My title" "Description"
@@ -269,3 +288,10 @@ dbus-send --system / net.nuetzlich.SystemNotifications.Notify "string:hello worl
 ```
 https://laymonage.com/posts
 ```
+
+
+#### Things not yet declared:
+
+- encrypted private keys
+- syncthing
+- Brave extensions & Rabbit config

@@ -6,14 +6,9 @@
 # so path: /nix/store/yf6z5bgff90kixmnp3l67vr9cd3dr8aa-home-manager-path/share/openxr/1/openxr_monado.so
 # ~/.nix-profile/share/openxr/1/openxr_monado.json
 
-# add to flatpak Steam(for SteamVR), flatseal
-
+# add to flatpak Steam(for SteamVR)
 
 # syncall -> gcal, gtasks <> taskwarrior synchonization cli in python
-
-
-# flatpak(how to flathub with nix), flatpak-builder, flatseal
-
 
 # Dbus debugging:
 # - dbus-monitor "type=error,sender='org.freedesktop.DBus'" --system
@@ -24,7 +19,7 @@
 
 # Bluetooth debugging:
 # - bluez-utils
-# Research tailscale & zerotier
+# zerotier
 # Polkit:
 # - .policy -> /usr/share/polkit-1/actions
 # - .rules -> /usr/share/polkit-1/rules.d 3rd party | /etc/polkit-1/rules.d local config
@@ -32,13 +27,10 @@
 # pkaction | each setting has 6 variant is it on 3 defaults(? -> allow_any, allow_inactive, allow_active)
 # pkcheck -a 'org.freedesktop.udisks2.open-device' -u -p $$
 
-
-# nome-settings-daemon state:
-#     services.udev.packages = [ pkgs.gnome-settings-daemon ];
-#
 # systemd.packages = [
 #   pkgs.gnome-settings-daemon
 # ];
+
 # services makes it registered to systemd . YES -> home-manager module makes it registered! Where is the one for gnome-notification-daemon? 
 # Compare services.syncthing to services.gnome-notification-daemon, networkmanager
 # check systembus-notify, avahi
@@ -79,9 +71,8 @@
 # TODO: Make vimwiki a private separate git repo, git cloned or fetched on each switch and new version pushed 
 # Also while git fetch & push, do this for ~/.password-store as well
 
-
 # NOTE: NixOS has nice syncthing API but not available on home-manager
-{ config, pkgs, inputs, lib, ... }: # nixosModules
+{ config, pkgs, inputs, lib, ... }:
 let
   system = "x86_64-linux"; # move to self.system or smt
   HOSTNAME = "omnibook"; # TODO: This has to be dynamically generated
@@ -96,6 +87,17 @@ let
     import ../../modules/functions/replace-color-references.nix;
 in rec {
   imports = [
+    inputs.ironbar.homeManagerModules.default
+    {
+      programs.ironbar = {
+        enable = true;
+        # systemd = true; # probably remove
+        config = "";
+        # style = "";
+        # package = inputs.ironbar; # NOTE: does this point to master branch(?)
+        # features = [];
+      }; # NOTE: Try to move this below
+    }
     inputs.stylix.homeManagerModules.stylix
     inputs.nix-flatpak.homeManagerModules.nix-flatpak
     # hyprland.homeManagerModules.default
@@ -129,12 +131,10 @@ in rec {
 
     (wrapNixGL droidcam) # NOTE: maybe use scrcpy instead
     # libsForQt5.kdeconnect-kde
-    unstable.rustdesk
-    unstable.rustdesk-server
+    # unstable.rustdesk # Build failed on unstable
+    # unstable.rustdesk-server # Build failed on unstable
 
-    # For Flatpak:
     unstable.flatpak
-    # === end Flatpak
 
     # NOTE: Check pop-shell
     # (wrapNixGL unstable.gnome-online-accounts-gtk)
@@ -146,10 +146,6 @@ in rec {
     unstable.dua
     libp11
     unstable.appimage-run
-
-    # For Meta Quest 3:
-    unstable.lan-mouse
-    # === end Meta Quest 3
 
     alvr # streaming games
     steam
@@ -207,6 +203,8 @@ in rec {
     # gnome-settings-daemon43
     # maybe add system-monitor, image-viewer | switcheroo, document-viewer, VLC, document scanner, gaphor, graphs(?)/plots, health, khronos, secrets, warp
     lightdm
+
+    acpi
     asdf-vm
     atuin
     # avahi (network discovery & connection)
@@ -218,6 +216,7 @@ in rec {
     buildah
     unstable.caddy
     unstable.code-cursor
+    # cosmic-files | causes atuin crash
     podman
     podman-tui
     cmake
@@ -227,7 +226,7 @@ in rec {
     unstable.dprint
     # eww - Widget library for unix
     # flameshot # screenshot util, doesnt run yet on hyprland
-    chromium
+    # chromium # THis increases master branch build, so ommitted
     comma
     unstable.deno
     unstable.elixir_1_17
@@ -236,8 +235,7 @@ in rec {
     unstable.hypridle
     fd
     ffsend
-    # flatpak
-    # flatpak-builder
+    flatpak-builder
     folks
     fontconfig
     unstable.fractal # Matrix messaging app
@@ -254,14 +252,14 @@ in rec {
     gnumake
     gpsd
     grim
-    # Should I have grimshot instead?
+    # Should I have grimshot instead? or grimblast?
     # groff
     # joplin
     htop
     (wrapNixGL hyprland) # TODO: Maybe turn this for windowManager.hyprland
     hyprpicker
     # hyperfine # Command-line benchmarking tool
-    unstable.home-assistant
+    # unstable.home-assistant # Build test fails 
 
     # inkspace
     inputs.xremap-flake.packages.${system}.default
@@ -270,7 +268,7 @@ in rec {
     unstable.appimage-run
     libva-utils
     iperf
-    unstable.ironbar
+    # unstable.ironbar
     unstable.jnv
     just
     kubectl
@@ -281,9 +279,10 @@ in rec {
     # lens
     libevdev
     libnotify
-    (wrapNixGL unstable.libreoffice-fresh)
+    (wrapNixGL libreoffice-fresh)
     # unstable.lmstudio
     localsend
+    unstable.local-ai
     lsd
     lsof
     # lxc
@@ -304,6 +303,7 @@ in rec {
     nix-init
     nix-index
     nix-prefetch-git
+    nix-template
     ngrok
     unstable.nh # amazing nh nix helper, search, diff, switch etc, nom shell/nom develop
     nodejs
@@ -312,8 +312,14 @@ in rec {
     mako
     unstable.manix
     # mpd
+
+    # TODO: change this to normal ollama if nothing works
+    # https://github.com/nix-community/nix-ld?tab=readme-ov-file#my-pythonnodejsrubyinterpreter-libraries-do-not-find-the-libraries-configured-by-nix-ld
+    # zluda # Build fails: Check that zludas libcuda.so is in LD_LIBRARY_PATH | try stable one if unstable doesnt work 
     unstable.ollama
+
     openssl
+    # openvino
     page
     # pavucontrol
     # pgmodeler
@@ -373,6 +379,7 @@ in rec {
     # upower
     # unstable.xan # CSV chartmaker add this after nix flake update!
     xh # http tool
+    xournalpp
     watchman
     wget
     wlr-randr # Monitor cli for wayland
@@ -421,6 +428,18 @@ in rec {
       while true; do
         main
       done
+    '')
+    (pkgs.writeShellScriptBin "meson-deps" ''
+      grep -Po "dependency\(\s*'[^']+'" "meson.build" \
+        | cut -d"'" -f2 \
+        | sort -u \
+        | while read -r dep; do
+            if pkg-config --exists "$dep"; then
+              echo "✅ $dep is available"
+            else
+              echo "❌ $dep is MISSING"
+            fi
+          done
     '')
 
     # Display manager options: SDDM, GDM, LightDM | run first without a DM, use LY or Lemurs for TTY login?
@@ -634,6 +653,12 @@ in rec {
       '';
       # extraConfig, plugins
     };
+
+    # ironbar = {
+    #   enable = true;
+    #   # package, style, config, features
+    # };
+
     joshuto = { # TODO: instead maybe use xplr
       enable = true;
       # keymap
@@ -758,38 +783,6 @@ in rec {
         tl = [ "es" "fr" ];
       };
     };
-
-    waybar =
-      { # Inspiration: https://forum.garudalinux.org/uploads/default/optimized/2X/d/d8407cbcc1d56f99f37bd7da681348ace09058e1_2_1380x862.jpeg
-        enable = true;
-        # package
-        # battery, bluetooth, clock, CPU, Disk, Memory, MPD, Network, PulseAudio, Temperature/Weather,
-        # Hyprland, idle_inhibitor(!?), sndio(?), sway, check tray, taskbar(?)
-        # On left: Workspaces
-        # also add flux indicator
-        # onclick pavucontrol(?) -> pulseaudio
-        # start_hidden = true;
-        # height, spacing,
-        # modules-left = ["sway/workspaces" "sway/mode"];
-        # modules-center = ["sway/window"];
-        # modules hyprland  https://github.com/Alexays/Waybar/wiki/Module:-Hyprland
-        # sway/window = {
-        #     "max-length": 50;
-        # };
-        # battery = {
-        #     format = "{capacity}% {icon}";
-        #     format-icons = ["" "" "" "" ""];
-        # };
-        # clock = {
-        #   format-alt = "{:%a, %d. %b  %H:%M}";
-        # };
-        settings = [
-          (builtins.fromJSON
-            (builtins.readFile ../../static/.config/waybar/config))
-        ];
-        style = builtins.readFile ../../static/.config/waybar/style.css;
-        systemd.enable = true;
-      };
 
     wlogout = { enable = true; };
 
@@ -939,7 +932,7 @@ in rec {
       '';
 
       shellAliases = {
-        bitbox-bridge = "/opt/bitbox-bridge/bin/bitbox-bridge";
+        rotate-hyprland = "hyprctl keyword monitor eDP-1,preferred,auto,2,transform,1"; # 1, 2, 3, 4
         checkrepo =
           "git log --pretty=format: --name-only | sort | uniq -c | sort -rg | head -10";
         clip = "slurp | grim -g - - | wl-copy && wl-paste | swappy -f -";
@@ -950,6 +943,7 @@ in rec {
         diff = "diff --color=auto";
         dockerremoveall = "sudo docker system prune -a";
         e = "edit";
+        find-devices = "avahi-browse"; # TODO: Make this work
         g = "yy";
         grep = "grep --color=auto";
         k = "kubectl";
@@ -971,6 +965,7 @@ in rec {
           "curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -";
         screenshot =
           "grim - | convert - -shave 1x1 PNG:- | wl-copy && wl-paste | swappy -f -";
+        query = "nix-store -q --references ";
         terminate = "lsof -ti:4200 | xargs kill";
         tt = "taskwarrior-tui";
         todo = "nvim ~/Dropbox/TODO.md";
@@ -998,6 +993,7 @@ in rec {
   services.flatpak.packages = [
     "io.github.wivrn.wivrn" # SteamVR app streaming from linux
     "com.github.tchx84.Flatseal"
+    "org.freedesktop.Bustle"
   ];
 
   services = {
@@ -1017,6 +1013,8 @@ in rec {
       # extraOptions = [ ]; # ["--gui-apikey=apiKey"]
       tray.enable = true;
     };
+
+    mpris-proxy.enable = true;
 
     # autorandr|kanshi, avizo|dunst|fnott|mako(?) - notification daemon, batsignal, betterlockscreen, borgmatic, comodoro
     # dropbox, dunst, dwm, etesync-dav(cal, contacts, tasks, notes), flameshot,fusuma(touchpad), gammastep(flux)|sctd|wlsunset,

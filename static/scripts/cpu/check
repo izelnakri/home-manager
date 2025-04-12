@@ -1,6 +1,4 @@
-#!/bin/bash
-
-source ~/.config/ironbar/scripts/variables.sh
+#!/usr/bin/env bash
 
 # Function to get CPU percentage
 get_cpu_percent() {
@@ -15,22 +13,11 @@ get_load_average() {
     printf "%.2f" "$load_average"
 }
 
-get_load_color() {
-  if [ $1 -gt 90 ]; then
-      echo $red_color
-  elif [ $1 -gt 75 ]; then
-      echo $orange_color
-  else
-      echo $green_color
-  fi
-}
-
 main() {
     cpu_percent=$(get_cpu_percent)
     load_average=$(get_load_average)
-    load_color=$(get_load_color $cpu_percent)
 
-    echo "<span color='$load_color'>💻 $cpu_percent% [$load_average GHz]</span>"
+    echo "💻 $cpu_percent% [$load_average GHz]"
 }
 
 main

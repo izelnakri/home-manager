@@ -1,7 +1,6 @@
 { pkgs, config, lib, inputs, ... }:
 {
   imports = with inputs.self.nixosModules; [
-#     ./disks.nix
 #     ./hardware-configuration.nix
 #     users-izelnakri # This is NOT the /users/path
 #     profiles-tailscale
@@ -139,13 +138,6 @@
     };
     timesyncd.enable = true;
     # flatpak.enable = true;
-    # dbus.enable = true;
-
-    # gpg-agent = {
-    #   enable = true;
-    #   defaultCacheTtl = 1800;
-    #   enableSshSupport = true;
-    # };
   };
 
   # NOTE: Takes long, optimize it(?)
@@ -229,37 +221,6 @@
   #   logind.killUserProcesses = true;
   # };
 
-  # boot = {
-  #   tmp.useTmpfs = true;
-  #   kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
-  #   kernelParams = [
-  #     "i915.modeset=1"
-  #     "i915.fastboot=1"
-  #     "i915.enable_guc=2"
-  #     "i915.enable_psr=1"
-  #     "i915.enable_fbc=1"
-  #     "i915.enable_dc=2"
-  #   ];
-  #   loader = {
-  #     systemd-boot = {
-  #       enable = true;
-  #       configurationLimit = 10;
-  #     };
-  #     efi = {
-  #       canTouchEfiVariables = true;
-  #     };
-  #   };
-  # };
-
-  # i18n.defaultLocale = "en_GB.UTF-8";
-  # console = {
-  #   font = "Lat2-Terminus16";
-  #   keyMap = "us";
-  # };
-
-  # time.timeZone = "Europe/London";
-  # location.provider = "geoclue2";
-
   # hardware = {
   #   opengl.enable = true;
   #   trackpoint = {
@@ -268,12 +229,6 @@
   #   };
   # };
 }
-
-
-# Running GNOME:
-# services.xserver.enable = true;
-# services.xserver.displayManager.gdm.enable = true;
-# services.xserver.desktopManager.gnome.enable = true;
 
 # Enable dconf
 # programs.dconf.enable = true;
@@ -313,9 +268,6 @@
 # gnomeExtensions.battery-status
 
 
-# Autologin
-# services.xserver.displayManager.autoLogin.enable = true;
-# services.xserver.displayManager.autoLogin.user = "account";
 # systemd.services."getty@tty1".enable = false;
 # systemd.services."autovt@tty1".enable = false;
 
@@ -385,7 +337,6 @@
 #   };
 # }
 # dconf2nix
-
 
 # installGnomeSessionScript = pkgs.writeShellScriptBin "install-gnome-session" ''
 #   sudo ln -fs ${pkgs.gnome.gnome-session.sessions}/share/wayland-sessions/gnome.desktop /usr/share/wayland-sessions/gnome.desktop

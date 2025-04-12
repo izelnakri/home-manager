@@ -10,8 +10,13 @@ ifndef HOSTNAME
  $(error Hostname unknown)
 endif
 
+# sudo make -C ~/.config/home-manager switch:
 switch:
 	nixos-rebuild switch --flake .#${HOSTNAME} -L --impure
+
+module-dev:
+	nixos-rebuild switch --override-input nixpkgs ~/Github/nixpkgs --flake .#${HOSTNAME} -L --impure
+
 
 boot:
 	nixos-rebuild boot --use-remote-sudo --flake .#${HOSTNAME} -L --impure

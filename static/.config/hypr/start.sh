@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # initializing wallpaper deamon
 swww-daemon &
 swww img ~/Wallpapers/arch-monk.jpg &
@@ -7,7 +9,7 @@ swww img ~/Wallpapers/arch-monk.jpg &
 # pkgs.networkmanagerapplet
 nm-applet --indicator &
 
-ironbar &
+systemctl --user restart ironbar.service
 
 dunst # replace with mako
 
