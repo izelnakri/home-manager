@@ -292,6 +292,7 @@ https://laymonage.com/posts
 
 #### Things not yet declared:
 
-- encrypted private keys
+- encrypted general private keys
 - syncthing
+- pgp private key migration & $ pass git clone
 - Brave extensions & Rabbit config
