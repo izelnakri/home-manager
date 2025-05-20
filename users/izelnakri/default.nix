@@ -802,6 +802,7 @@ in rec {
       # searchUpKey = [ "^K" "^[[A" ]; # Ctrl-K
       # };
       syntaxHighlighting.enable = true;
+      syntaxHighlighting.highlighters = [ "main" ];
       plugins = [{
         name = "vi-mode";
         src = pkgs.unstable.zsh-vi-mode;
@@ -813,7 +814,6 @@ in rec {
 
         unsetopt INC_APPEND_HISTORY # Write to the history file immediately, not when the shell exits.
         setopt PROMPT_SUBST # Enable parameter expansion, command substitution and arithmetic expansion in the prompt.
-        # NOTE: For gnome online accounts, then remove
 
         function cheat {
           curl cheat.sh/$argv
@@ -823,7 +823,7 @@ in rec {
           local job_count=$(jobs -s | wc -l | tr -d " ")
 
           if [ $job_count -gt 0 ]; then
-            echo "%B%{$fg[yellow]%}|%j| ";
+            echo "%B%F{yellow}%j| ";
           fi
         }
 
@@ -878,11 +878,6 @@ in rec {
           git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\ ->\ \1/'
         }
 
-        autoload -U colors && colors
-
-        PROMPT='%{$fg[blue]%}$(date +%H:%M:%S) $(display_jobs_count_if_needed)%B%{$fg[green]%}%n %{$fg[blue]%}%~%{$fg[yellow]%}$(parse_git_branch) %{$reset_color%}';
-        ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#${config.colorScheme.palette.base03},bold";
-
         # NOTE: This adds quit-to-directory functionality to yazi
         function yy() {
           local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
@@ -893,8 +888,15 @@ in rec {
           rm -f -- "$tmp"
         }
 
-        # TODO: Find another way to get ahead of /$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin in the future:
-        export PATH="$BIN_PATHS:$PATH"
+        edit() {
+          nvim <($@ 2>&1)
+        }
+
+        youtube() {
+          local filename=''${2:-"last-video"}
+          mpv --stream-record=$HOME/Youtube/$filename.mp4 $1
+          # NOTE: in future I can edit this video with ffmpeg if I need to, trim parts etc
+        }
 
         eval $(dircolors ~/.nix-profile/share/LS_COLORS)
         eval "$(direnv hook zsh)"
@@ -915,20 +917,20 @@ in rec {
         }
         zvm_after_init_commands+=("bindkey '^k' up-line-or-search" "bindkey '^j' down-line-or-search")
 
+        autoload -U colors && colors
+
+        # NOTE: For gnome online accounts, then remove
+
+        PROMPT='%F{blue}$(date +%H:%M:%S) $(display_jobs_count_if_needed)%B%F{green}%n %F{blue}%~%F{cyan}%F{yellow}$(parse_git_branch) %f%{$reset_color%}'
+        ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#${config.colorScheme.palette.base03},bold";
+
+        # TODO: Find another way to get ahead of /$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin in the future:
+        export PATH="$BIN_PATHS:$PATH"
+
         # NOTE: Find all luarocks modules and add them to the path:
         eval "$(luarocks path --bin)"
 
         # NOTE: not needed due to check in its first line: source ~/.nix-profile/etc/profile.d/hm-session-vars.sh
-
-        edit() {
-          nvim <($@ 2>&1)
-        }
-
-        youtube() {
-          local filename=''${2:-"last-video"}
-          mpv --stream-record=$HOME/Youtube/$filename.mp4 $1
-          # NOTE: in future I can edit this video with ffmpeg if I need to, trim parts etc
-        }
       '';
 
       shellAliases = {
