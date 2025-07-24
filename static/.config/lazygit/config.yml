@@ -46,13 +46,12 @@ keybinding:
     viewStashOptions: "<c-s>"
   stash:
     popStash: "p"
-
-  # stash pop
+    # stash pop
 customCommands:
   - key: "<c-z>"
     context: "files"
     command: 'echo "IM amazing"'
-    showOutput: true
+    output: popup
 # Example:
 #
 # Branch name: feature/AB-123

@@ -1,5 +1,4 @@
 # TODO: ollama-sycl & llama.cpp implementation: https://github.com/MordragT/nixos/blob/master/pkgs/by-name/ollama-sycl/default.nix
-
 { config, lib, pkgs, modulesPath, ... }:
 
 {
@@ -8,7 +7,7 @@
   ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" ];
-  boot.initrd.kernelModules = [ "xe" ]; # NOTE: nixos-hardware specifically adds it, remove on nixos-hardware add
+  boot.initrd.kernelModules = [ "xe" ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.extraModulePackages = [ ];
@@ -51,20 +50,28 @@
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
   hardware.enableAllFirmware = true;
+
   # NOTE: clinfo
+  hardware.graphics.enable = true;
   hardware.graphics.extraPackages = [ 
     # pkgs.unstable.intel-media-driver # configuration.nix suggests
     # maybe add also what doc suggests and check npu toggle
     # pkgs.intel-ocl # I found it on nixpkgs
     pkgs.unstable.intel-compute-runtime # This exposes intel graphic drivers to clinfo, check the build recipe
+    pkgs.unstable.intel-compute-runtime.drivers # NOTE: Probably absolutely necessary
     pkgs.unstable.intel-media-driver # Needed from nixos-hardware lunar-lake, check the build recipe
     pkgs.unstable.vpl-gpu-rt # Needed from nixos-hardware lunar-lake, check the build recipe
+    pkgs.intel-graphics-compiler # ChatGPT recommends: # Required by intel-compute-runtime
+
+    # libvdpau-va-gl # Do I need this?
 
     (pkgs.callPackage ./intel-npu-driver.nix {})
   ];
+
   hardware.cpu.intel.updateMicrocode = true;
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = true; # powers up the default Bluetooth controller on boot
+  hardware.sane.enable = true;
 
   hardware.sensor.iio.enable = true; # Trying out gyroscope sensor for screen rotation on the covertible laptop
 
@@ -74,11 +81,11 @@
     (
       let
         model = "40xx";
-        version = "0.0";
+        version = "1";
 
         firmware = pkgs.fetchurl {
-          url = "https://github.com/intel/linux-npu-driver/raw/v1.16.0/firmware/bin/vpu_${model}_v${version}.bin";
-          hash = "sha256-NRYkIcKkp/7Ee3ZnxvobufuciJRlUoJp23SUfamhHCA=";
+          url = "https://github.com/intel/linux-npu-driver/raw/v1.19.0/firmware/bin/vpu_${model}_v${version}.bin";
+          hash = "sha256-KPQxenmwvliOFLiYP5l5D4aSdia13JQIzounj9qs+UY=";
         };
       in
       pkgs.runCommand "intel-vpu-firmware-${model}-${version}" { } ''

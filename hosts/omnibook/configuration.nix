@@ -1,10 +1,9 @@
-# https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
+# Maybe I need: pkgs.linux-firmware on hardware.firmware?
 { config, lib, pkgs, inputs, ... }:
 { 
   imports = with inputs.self.nixosModules; [ 
     ./hardware-configuration.nix 
     ./services.nix
-    # move systemd and virtualization to a new file
   ];
 
   # TODO: Try and maybe remove these:
@@ -17,11 +16,11 @@
   #   });
   # '';
 
-
-  boot.loader.systemd-boot.enable = true; # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 25;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  nix.package = pkgs.nixVersions.latest;
   nix.extraOptions = ''
     experimental-features = nix-command flakes
   '';
@@ -30,37 +29,28 @@
   nix.gc.options = "--delete-older-than 50d";
 
   nixpkgs.config.allowUnfree = true;
-  # nixpkgs.config.allowUnfreePredicate = _: true;
-  # nixpkgs.config.allowBroken = true;
 
   # Pick only one of the below networking options.
   # networking.wireless.enable = true; # Enables wireless support via wpa_supplicant. 
   networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
-  networking.hostName = "omnibook"; # Define your hostname.
+  networking.hostName = "omnibook";
   # Configure network proxy if necessary networking.proxy.default = "http://user:password@proxy:port/"; networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   systemd.services.NetworkManager-wait-online.enable = false; # Workaround for an update problem
 
-  time.timeZone = "Europe/Amsterdam"; # Set your time zone.
+  time.timeZone = "Europe/Amsterdam";
 
   i18n.defaultLocale = "en_US.UTF-8";
   # console = { font = "Lat2-Terminus16"; keyMap = "us"; useXkbConfig = true; # use xkb.options in tty. };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.groups.input = {};
-  # users.groups.bitbox = {};
   users.defaultUserShell = pkgs.zsh;
   users.users.izelnakri = { 
    isNormalUser = true; 
    password = "corazon";
-   extraGroups = [ "wheel" "input" "bitbox" "uinput" "render" "video" ];
+   extraGroups = [ "kvm" "wheel" "input" "uinput" "render" "video" "scanner" "lp" ]; # NOTE: what if I removed "bitbox"
   };
-  # users.users.bitbox = {
-  #   group = "bitbox";
-  #   description = "bitbox-bridge daemon user";
-  #   isNormalUser = true;
-  #   extraGroups = [ "wheel" "input" "bitbox" ]; # Enable ‘sudo’ for the user.
-  # };
 
   home-manager = {
     backupFileExtension = "backup";
@@ -75,55 +65,54 @@
   environment.variables = {
     EDITOR = "nvim";
   };
-  # List packages installed in system profile. To search, run: $ nix search wget
+
   environment.systemPackages = with pkgs; [
+    android-studio
     uv
 
-    unstable.linuxKernel.packages.linux_6_14.iio-utils # is it needded for the sensor info?
+    linuxKernel.packages.linux_6_15.iio-utils # is it needded for the sensor info?
 
     # unstable.ocl-icd # OpenCL ICD Loader for opencl-headers-2024.10.24
     # unstable.opencl-headers # opencl-headers-2024.10.24
 
     intel-gpu-tools # provides lsgpu
     # maybe vpl-gpu-rt for video processing
-    unstable.llama-cpp
+    # unstable.llama-cpp
 
-    unstable.openvino # has cudaSupport option! , TODO: research this further
+    # unstable.openvino # has cudaSupport option! , TODO: research this further
     unstable.intel-compute-runtime
-    python312Packages.optimum # trying to see if this converts to intel optimized models via optimum-cli
+    # python312Packages.optimum # trying to see if this converts to intel optimized models via optimum-cli
 
-    neovim
+    copyq # Temporarily added for VM clipboard share test
     wget 
     curl
     kitty
     git
     home-manager
     brave
-    script-directory # maybe required
+    script-directory
     sd-switch
     unstable.iio-sensor-proxy # NOTE: check later if this is needed
     # inputs.iio-hyprland.packages.${pkgs.system}.default # check the version
 
     # https://github.com/nix-community/nix-ld?tab=readme-ov-file#my-pythonnodejsrubyinterpreter-libraries-do-not-find-the-libraries-configured-by-nix-ld
-    (pkgs.writeShellScriptBin "python" ''
-      export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
-      exec ${pkgs.python3}/bin/python "$@"
-    '')
+    # (pkgs.writeShellScriptBin "python" ''
+    #   export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
+    #   exec ${pkgs.python3}/bin/python "$@"
+    # '')
   ];
 
   # Open ports in the firewall. 
   # networking.firewall.allowedTCPPorts = [ ... ]; 
   # networking.firewall.allowedUDPPorts = [ ... ]; 
-  # Or disable the firewall altogether. 
-  # networking.firewall.enable = false;
+  # networking.firewall.enable = false; # Or disable the firewall altogether.
 
-  # This value does NOT affect the Nixpkgs version your packages and OS are pulled from, so changing it will NOT upgrade your system - see 
-  # https://nixos.org/manual/nixos/stable/#sec-upgrading for how to actually do that.
-  # Do NOT change this value unless you have manually inspected all the changes it would make to your configuration, and migrated your data accordingly.
-  # For more information, see `man configuration.nix` or https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion .
-  system.stateVersion = "24.11";
+  system.stateVersion = "25.05";
 
   powerManagement.powertop.enable = true;
+
+  programs.alvr.enable = true;
+  programs.alvr.openFirewall = true;
 
   programs.hyprland.enable = true;
   programs.hyprlock.enable = true;
@@ -135,6 +124,7 @@
   };
   programs.firefox.enable = true;
   programs.git.lfs.enable = true;
+  programs.java.enable = true;
   programs.mdevctl.enable = true;
   programs.nix-ld = {
     enable = true;
@@ -144,30 +134,29 @@
     # ];
   };
 
+  # programs.steam = {
+  #   enable = true;
+  #   remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
+  #   dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
+  #   localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
+  # };
+
   services.btrfs.autoScrub = { 
     enable = true; 
     interval = "monthly"; 
     fileSystems = [ "/" ]; 
   };
 
-  # TODO: maybe also need to add bitbox group or create user(s)
   services.udev.extraRules = ''
     # xremap needs this:
     KERNEL=="uinput", GROUP="input", TAG+="uaccess"
   '';
 
-  # # BitBox2 needs BB01 rule:
-  # SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2402", TAG+="uaccess", TAG+="udev-acl", SYMLINK+="dbb%n"
-  # KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2402", TAG+="uaccess", TAG+="udev-acl", SYMLINK+="dbbf%n"
-  #
-  # # BitBox2 needs BB02 rule:
-  # SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2403", TAG+="uaccess", TAG+="udev-acl", MODE="0660", GROUP="bitbox", SYMLINK+="bitbox02-%n"
-  # KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2403", TAG+="uaccess", TAG+="udev-acl", MODE="0660", GROUP="bitbox", SYMLINK+="bitbox02-f%n"
-
   services.xserver = {
     enable = true;
     displayManager.lightdm.enable = true;
     desktopManager.gnome.enable = true;
+    videoDrivers = [ "modesetting" ]; # NOTE: should this be "intel-neo" instead?
   };
   services.displayManager.autoLogin.user = "izelnakri";
   services.displayManager.defaultSession = "hyprland";
@@ -213,6 +202,22 @@
   # };
 
   virtualisation = {
+    containers.enable = true;
+    podman = {
+      enable = true;
+      dockerCompat = true; # Create a `docker` alias for podman, to use it as a drop-in replacement
+      defaultNetwork.settings.dns_enabled = true; # Required for containers under podman-compose to be able to talk to each other.
+    };
     waydroid.enable = true;
   };
+
+  # TODO: DO this with flake-project backend and test it on the systemd
+  # virtualisation.oci-containers.backend = "podman";
+  # virtualisation.oci-containers.containers = {
+  #   container-name = {
+  #     image = "container-image";
+  #     autoStart = true;
+  #     ports = [ "127.0.0.1:1234:1234" ];
+  #   };
+  # };
 }

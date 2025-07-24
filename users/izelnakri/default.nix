@@ -1,6 +1,14 @@
+# safetensors_explorer => cargo install safetensors_explorer
+
+# nixos tests 
+# create alias for [without flake]:
+# nixos-test, nix-build client-server-test.nix
+# nixos-test-shell: $(nix-build -A driverInteractive client-server-test.nix)/bin/nixos-test-driver
+# nixos-test-delete: rm -rf result && nix-store --delete $result_link
+
 # https://github.com/danth/stylix?tab=readme-ov-file
-# android runtime bin(zygote), android compile bin, android opened bin(xdg-open | snapd-xdg-open), 
-# flatpak(bubblejail run|generate-desktop-entry) | ~/.local/share/applications/$NAME.desktop
+# android opened bin(xdg-open | snapd-xdg-open), 
+# generate-desktop-entry: ~/.local/share/applications/$NAME.desktop
 
 # ~/.config/openxr/1/active_runtime.json.
 # so path: /nix/store/yf6z5bgff90kixmnp3l67vr9cd3dr8aa-home-manager-path/share/openxr/1/openxr_monado.so
@@ -126,15 +134,30 @@ in rec {
   # };
 
   home.packages = with pkgs; [
+    # (pkgs.buildGoModule {
+    #   pname = "sqlfs";
+    #   version = "latest";
+    #   goPackagePath = "github.com/yoogottamk/sqlfs";
+    #   src = pkgs.fetchFromGitHub { 
+    #     owner="yoogottamk"; 
+    #     repo="sqlfs"; 
+    #     rev="master"; 
+    #     sha256="sha256-UD9a5mvNxJHYyD+F6roFuRUF6/h2OCsExUZ3OwfWM20="; 
+    #   };
+    #   vendorHash = "sha256-wIoa/qjcPOrtOfcUpko4XfBwUoEJOrGQh59fZIn43/8=";
+    #   doCheck = false;
+    #   # checkPhase = false;
+    # })
+
     unstable.cowsay
     unstable.arion
 
     (wrapNixGL droidcam) # NOTE: maybe use scrcpy instead
     # libsForQt5.kdeconnect-kde
-    # unstable.rustdesk # Build failed on unstable
-    # unstable.rustdesk-server # Build failed on unstable
+    unstable.rustdesk # Build failed on unstable
+    unstable.rustdesk-server # Build failed on unstable
 
-    unstable.flatpak
+    flatpak
 
     # NOTE: Check pop-shell
     # (wrapNixGL unstable.gnome-online-accounts-gtk)
@@ -148,7 +171,7 @@ in rec {
     unstable.appimage-run
 
     alvr # streaming games
-    steam
+    # steam
 
     # For scrcpy
     android-tools # for adb
@@ -218,6 +241,7 @@ in rec {
     unstable.code-cursor
     # cosmic-files | causes atuin crash
     podman
+    podman-compose
     podman-tui
     cmake
     cbfmt
@@ -228,13 +252,16 @@ in rec {
     # flameshot # screenshot util, doesnt run yet on hyprland
     # chromium # THis increases master branch build, so ommitted
     comma
-    unstable.deno
-    unstable.elixir_1_17
+    unstable.deno 
+    unstable.elixir_1_18
     # helix
-    (wrapNixGL unstable.hyprlock)
-    unstable.hypridle
+    (wrapNixGL hyprlock)
+    hypridle
     fd
     ffsend
+
+    ffmpeg
+
     flatpak-builder
     folks
     fontconfig
@@ -243,9 +270,10 @@ in rec {
     fx
     fzf
     gcc
+    gdb
     geoclue2
     gh
-    gimp
+    gimp3
     unstable.git-cliff
     unstable.gitui
     unstable.gleam
@@ -255,6 +283,7 @@ in rec {
     # Should I have grimshot instead? or grimblast?
     # groff
     # joplin
+    heaptrack
     htop
     (wrapNixGL hyprland) # TODO: Maybe turn this for windowManager.hyprland
     hyprpicker
@@ -265,12 +294,14 @@ in rec {
     inputs.xremap-flake.packages.${system}.default
     (wrapNixGL unstable.imagemagick)
     # immersed-vr
+    irust
     unstable.appimage-run
     libva-utils
     iperf
     # unstable.ironbar
     unstable.jnv
     just
+    # jupyter
     kubectl
     # kubectl-tree
     kubernetes
@@ -291,14 +322,17 @@ in rec {
     lua
     unstable.luajitPackages.luarocks
     # lutris # play all games on linux
-    (wrapNixGL unstable.monado)
+    # (wrapNixGL unstable.monado) # NOTE: Slow compilation, takes ages
     magic-wormhole
     mpv # Default media player
     neofetch
-    (nerdfonts.override { fonts = [ "Noto" ]; }) # maybe add Meslo
+
+    # TODO: This is probably buggy:
+    # (nerdfonts.override { fonts = [ "Noto" ]; }) # maybe add Meslo, this upgraded into:
+    pkgs.nerd-fonts.noto
     networkmanagerapplet
     # nfs-utils
-    ninja
+    # ninja
     nixos-rebuild
     nix-init
     nix-index
@@ -342,6 +376,7 @@ in rec {
     ruby
     rustup
     # sc
+    unstable.scooter # Find & Replace UI for neovim etc
     sd-switch
     # sxiv
     # synergy
@@ -358,11 +393,12 @@ in rec {
     taskopen # NOTE: how does this play with mail attachments/events(?)
     taskwarrior3 # https://github.com/flickerfly/taskwarrior-notifications # https://github.com/DCsunset/taskwarrior-webui
     taskwarrior-tui
-    terminus-nerdfont
+    nerd-fonts.terminess-ttf # replaces terminus-nerdfont
     timewarrior
     tree
     # timeshift
-    unstable.tmux
+    tmux
+    tomb
     # touchegg
     # transmission
     # trash-cli
@@ -387,6 +423,8 @@ in rec {
     wl-screenrec
     # wl-screenrec # high-perf screen recording tool
     unstable.wiper
+    whois
+    virt-viewer
     # vit
     viu # image viewer
     # visidata # => terminal based spreadsheet & DB tool
@@ -668,7 +706,7 @@ in rec {
     jq.enable = true;
     lazygit = {
       enable = true;
-      package = pkgs.unstable.lazygit;
+      package = pkgs.lazygit;
       # settings
     };
     ledger = {
@@ -698,7 +736,7 @@ in rec {
     # neomutt.enable = true; # notmuchh build failed so commented out
     neovim = { # TODO: BIG CONFIG DO it here from nixcfg
       enable = true;
-      package = pkgs.unstable.neovim-unwrapped;
+      # package = pkgs.neovim; # TODO: make this unstable.neovim-unwrapped;
       # coc.enable = true;
       # coc.settings , suggest.enablePreview, languageserver
       defaultEditor = true;
@@ -809,11 +847,20 @@ in rec {
         file = "share/zsh-vi-mode/zsh-vi-mode.plugin.zsh";
       }];
 
-      initExtra = ''
+      initContent = ''
         source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
 
         unsetopt INC_APPEND_HISTORY # Write to the history file immediately, not when the shell exits.
         setopt PROMPT_SUBST # Enable parameter expansion, command substitution and arithmetic expansion in the prompt.
+
+        function def() {
+          if [ -z "$1" ]; then
+            echo "Usage: def filename"
+            return 1
+          fi
+          echo "# Enter text. Ctrl+D when done." >&2
+          cat > "$1"
+        }
 
         function cheat {
           curl cheat.sh/$argv
@@ -941,16 +988,18 @@ in rec {
         clip-record = ''wl-screenrec -g "$(slurp)" -f /tmp/recording.mp4'';
         colorpicker = "hyprpicker";
         csv = "tw";
-        d = "sudo docker";
+        d = "docker";
         diff = "diff --color=auto";
-        dockerremoveall = "sudo docker system prune -a";
+        dockerremoveall = "docker system prune -a";
+        docker = "podman"; # TODO: Also remove actual docker, docker-compose and try
+        docker-compose = "podman-compose";
         e = "edit";
         find-devices = "avahi-browse"; # TODO: Make this work
         g = "yy";
         grep = "grep --color=auto";
         k = "kubectl";
         kube = "kubectl";
-        ls = "ls --color=auto -F";
+        # ls = "ls --color=auto -F"; # NOTE: this was conflicting with lsd
         lusd =
           "node /home/izelnakri/cron-jobs/curve-lusd.js"; # NOTE: maybe move to cmd
         m = "nvim +Man!";
@@ -996,6 +1045,7 @@ in rec {
     "io.github.wivrn.wivrn" # SteamVR app streaming from linux
     "com.github.tchx84.Flatseal"
     "org.freedesktop.Bustle"
+    "com.valvesoftware.Steam"
   ];
 
   services = {

@@ -164,7 +164,7 @@
   # [1] https://github.com/NixOS/nixpkgs/blob/9e5aa25/nixos/modules/profiles/installation-device.nix#L76
   systemd.services.sshd.wantedBy = lib.mkOverride 40 [ "multi-user.target" ];
 
-  system.stateVersion = "23.05";
+  system.stateVersion = "25.05";
 
   # users.users.matthew.extraGroups = [ "video" ];
 

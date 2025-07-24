@@ -9,12 +9,15 @@ WINIT_HIDPI_FACTOR = "2"
 size = 10.2 # 8.5 # 6.5 prev
 
 [font.bold]
-family = "NotoSansM Nerd Font Mono"
+family = "Noto Sans Mono" # old: family = "NotoSansM Nerd Font Mono" # try: Noto Sans Mono
 style = "ExtraBold"
 
 [font.normal]
-family = "NotoSansM Nerd Font Mono"
+family = "Noto Sans Mono" # old: family = "NotoSansM Nerd Font Mono"
 style = "Medium"
+
+# family = "NotoSansM NFM Med" # old: NotoSansM Nerd Font Mono
+# style = "Medium"
 
 # [font.italic]
 # family = "NotoSans NF Med"

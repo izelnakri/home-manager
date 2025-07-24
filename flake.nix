@@ -4,15 +4,15 @@
   inputs = {
     disko.url = "github:nix-community/disko";
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # iio-hyprland.url = "github:JeanSchoeller/iio-hyprland";
-    ironbar.url = "github:JakeStanger/ironbar";
+    ironbar.url = "github:JakeStanger/ironbar?ref=v0.16.1";
 
     nix-colors.url = "github:misterio77/nix-colors";
-    nix-flatpak.url = "github:gmodena/nix-flatpak?ref=v0.5.0"; # unstable branch. Use github:gmodena/nix-flatpak/?ref=<tag> to pin releases.
+    nix-flatpak.url = "github:gmodena/nix-flatpak?ref=v0.6.0"; # unstable branch. Use github:gmodena/nix-flatpak/?ref=<tag> to pin releases.
     nixGL = {
       url = "github:guibou/nixGL";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -22,16 +22,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-hardware.url = "github:nixos/nixos-hardware";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
-    nixpkgs-fork.url = "git:/home/izelnakri/Github/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    # nixpkgs-fork.url = "git:/home/izelnakri/Github/nixpkgs";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    stylix.url = "github:danth/stylix/release-24.11";
+    stylix.url = "github:danth/stylix/release-25.05";
     xremap-flake.url = "github:xremap/nix-flake";
   };
 
   # TODO: make mako & alacritty configured with base16 https://www.youtube.com/watch?v=jO2o0IN0LPE
   outputs = inputs@{ 
-    self, nixinate, nixpkgs, nixpkgs-fork, nixpkgs-unstable, nixos-hardware, nix-flatpak, home-manager, nixGL, stylix, 
+    self, nixinate, nixpkgs, nixpkgs-unstable, nixos-hardware, nix-flatpak, home-manager, nixGL, stylix, 
     ... 
   }:
     let
@@ -47,10 +47,10 @@
           inherit system;
           config.allowUnfree = true;
         };
-        fork = import nixpkgs-fork {
-          inherit system;
-          config.allowUnfree = true;
-        };
+        # fork = import nixpkgs-fork {
+        #   inherit system;
+        #   config.allowUnfree = true;
+        # };
       };
       x86Pkgs = nixpkgs.legacyPackages.x86_64-linux;
       armPkgs = nixpkgs.legacyPackages.aarch64-linux;
@@ -74,10 +74,10 @@
 
             pkgs.gnutls # could add: pkgs.curl, zlib, sqlite, freetype, libpng
 
-            (python.withPackages (python-pkgs: [
-              # python-pkgs.openvino_genai
-            ]))
-            pkgs.python3Packages.virtualenv
+            # (python.withPackages (python-pkgs: [
+            #   # python-pkgs.openvino_genai
+            # ]))
+            # pkgs.python3Packages.virtualenv
             pkgs.openvino
             pkgs.zlib 
             pkgs.stdenv.cc.cc.lib

@@ -1,14 +1,54 @@
 { config, lib, pkgs, modulesPath, ... }:
 {
   config = {
-    programs.mouse-actions.enable = true;
+    programs.mouse-actions.enable = true; # To enable accessibility shortcuts with mouse etc
     programs.mouse-actions.autorun = true;
+
+    services.avahi = {
+      enable = true;
+      nssmdns4 = true;
+      openFirewall = true;
+    };
+    services.printing.enable = true;
+    services.printing.drivers = [ pkgs.hplip ];
 
     services.blueman.enable = true;
     services.fwupd.enable = true;
-    # services.bitbox-bridge.enable = true; # waiting for next release of NixOS
+    services.bitbox-bridge.enable = true;
     services.flatpak.enable = true;
     services.geoclue2.enable = true;
+
+    services.hercules-ci-agent.enable = true;
+
+    services.spice-vdagentd.enable = true; # NOTE: For future VM work
+
+    # NOTE: For meta quest 3 streaming server
+    services.sunshine = {
+      enable = true;
+      autoStart = true;
+      capSysAdmin = true;
+      openFirewall = true;
+    };
+
+    # NOTE: Just added now for clipboard sharing with VM:
+    systemd.user.services.copyq = rec {
+      script = "${pkgs.copyq}/bin/copyq";
+      postStart = "${script} config item_data_threshold 8192";
+      serviceConfig.Restart = "on-failure";
+      environment.QT_QPA_PLATFORM = "xcb";
+      wantedBy = [ "graphical-session.target" ];
+    };
+
+    # NOTE: if you want to enable ttyd web terminal:
+    # services.ttyd = {
+    #   enable = true;
+    #   port = 61116;
+    #   entrypoint = [
+    #     (lib.getExe pkgs.zsh)
+    #   ];
+    #   user = "izelnakri";
+    #   writeable = true;
+    # };
 
     services.syncthing = {
       enable = true; # "127.0.0.1:8384"
@@ -36,9 +76,9 @@
           label = "GIFS";
         };
       };
+      # settings.options
 
       user = "izelnakri";
-      # settings.options
     };
 
     systemd.extraConfig = ''

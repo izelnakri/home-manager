@@ -44,7 +44,7 @@ vim.opt.shiftwidth = 2
 vim.opt.expandtab = true
 vim.opt.smartindent = true
 
-vim.opt.wrap = false
+vim.opt.wrap = true -- Makes long text multiple lines while keeping line number
 
 vim.opt.undofile = true
 vim.opt.undolevels = 10000

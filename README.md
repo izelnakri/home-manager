@@ -152,11 +152,13 @@ nix build nixpkgs#wl-clipboard --print-out-paths --no-link
 # cd /nix/store/ww2421123213123213-wl-clipboard-2.1.0 && exe --tree .
 # => Shows whats inside
 
+# There is also a way to get all related packages:
+nix build "nixpkgs#openssl^*" --print-out-paths
+
 # Dependency Tree Ops:
-nix-store -q --tree `which hello`
+nix-store -q --tree `which hello` # tree of dependencies
 nix-store -q --references `which hello` # runtime dependencies
 nix-store -q --referrers `which hello` # all referrers that touches the binary
-nix-store -q --tree `which hello` # tree of dependencies
 nix-instantiate hello.nix
 nix-store -q --references /nix/store/z77vn965a59irqnrrjvbspiyl2rph0jp-hello.drv
 
