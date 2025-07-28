@@ -245,7 +245,19 @@ nix run -f ./script.nix
 ````
 #### Miscellanous
 
-```bash
+```zsh
+# Show the contents of a derivation!:
+nix-tree --derivation 'nixpkgs#llvmPackages_20.libcxxStdenv'
+# or for existing system:
+nix-tree /nix/var/nix/profiles/system
+# or for a flake:
+nix-tree --derivation '.#'
+# or:
+nix-tree --derivation '.#devShells.x86_64-linux.default'
+# or a visual svg:
+nix-du -s=500MB | dot -Tsvg > store.svg # or -Tpng or simple .dot etc
+# or:
+nix-du --root ./result | dot -Tsvg > store.svg # could be from flake
 
 # List linked dependencies:
 objdump -p /home/izelnakri/.nix-profile/bin/deno | grep NEEDED
