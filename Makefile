@@ -34,6 +34,23 @@ upgrade:
 home-switch:
 	home-manager --impure switch --flake .
 
+new-rage-identity:
+	@echo "Generating new SSH key for Nix secrets..."
+	ssh-keygen -t ed25519 -f ~/.ssh/nix-secrets -C "Nix secrets" -N ""
+
+# Only check-in the secrets.nix.age on git where I have the public key of ~/.ssh/nix-secrets
+encrypt:
+	@echo "Encrypting secrets.nix..."
+	rage -e -i ~/.ssh/nix-secrets secrets.nix -o secrets.nix.age
+
+# Only check-in the secrets.nix.age on git where I have the public key of ~/.ssh/nix-secrets
+decrypt:
+	@echo "Decrypting secrets.nix.age..."
+	rage -d -i ~/.ssh/nix-secrets secrets.nix.age -o output.nix
+
+# decrypt-sample-age-file:
+# use ragenix command for this one
+
 # TODO: Read more in depth
 # disko:
 # 	nix run github:nix-community/disko -- --mode disko /tmp/disk-config.nix # NOTE: mode is mount/format/disko(both)
