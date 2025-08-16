@@ -23,15 +23,15 @@
     };
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-    # nixpkgs-fork.url = "git:/home/izelnakri/Github/nixpkgs";
+    nixpkgs-fork.url = "path:/home/izelnakri/Github/nixpkgs";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     stylix.url = "github:danth/stylix/release-25.05";
-    xremap-flake.url = "github:xremap/nix-flake";
+    xremap-flake.url = "github:xremap/nix-flake/1924f2dc1a7c219b5323050a7fb27920e3a225d4";
   };
 
   # TODO: make mako & alacritty configured with base16 https://www.youtube.com/watch?v=jO2o0IN0LPE
   outputs = inputs@{ 
-    self, nixinate, nixpkgs, nixpkgs-unstable, nixos-hardware, nix-flatpak, home-manager, nixGL, stylix, 
+    self, nixinate, nixpkgs, nixpkgs-unstable, nixpkgs-fork, nixos-hardware, nix-flatpak, home-manager, nixGL, stylix, 
     ... 
   }:
     let
@@ -47,10 +47,10 @@
           inherit system;
           config.allowUnfree = true;
         };
-        # fork = import nixpkgs-fork {
-        #   inherit system;
-        #   config.allowUnfree = true;
-        # };
+        fork = import nixpkgs-fork {
+          inherit system;
+          config.allowUnfree = true;
+        };
       };
       x86Pkgs = nixpkgs.legacyPackages.x86_64-linux;
       armPkgs = nixpkgs.legacyPackages.aarch64-linux;

@@ -18,7 +18,7 @@
     services.flatpak.enable = true;
     services.geoclue2.enable = true;
 
-    services.hercules-ci-agent.enable = true;
+    # services.hercules-ci-agent.enable = true;
 
     services.spice-vdagentd.enable = true; # NOTE: For future VM work
 

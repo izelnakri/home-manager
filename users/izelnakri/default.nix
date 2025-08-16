@@ -1,11 +1,5 @@
 # safetensors_explorer => cargo install safetensors_explorer
 
-# nixos tests 
-# create alias for [without flake]:
-# nixos-test, nix-build client-server-test.nix
-# nixos-test-shell: $(nix-build -A driverInteractive client-server-test.nix)/bin/nixos-test-driver
-# nixos-test-delete: rm -rf result && nix-store --delete $result_link
-
 # https://github.com/danth/stylix?tab=readme-ov-file
 # android opened bin(xdg-open | snapd-xdg-open), 
 # generate-desktop-entry: ~/.local/share/applications/$NAME.desktop
@@ -149,7 +143,8 @@ in rec {
     #   # checkPhase = false;
     # })
 
-    unstable.cowsay
+    cargo-binstall
+    cowsay
     unstable.arion
 
     (wrapNixGL droidcam) # NOTE: maybe use scrcpy instead
@@ -185,7 +180,7 @@ in rec {
     xdg-desktop-portal-gtk
     xdg-desktop-portal-hyprland
 
-    unstable.krita
+    unstable.krita # paint application
 
     obs-studio
     libva 
@@ -238,14 +233,13 @@ in rec {
     unstable.browsh
     buildah
     unstable.caddy
-    unstable.code-cursor
+    # unstable.code-cursor # uncommented out since compilation times are massive
     # cosmic-files | causes atuin crash
     podman
     podman-compose
     podman-tui
     cmake
     cbfmt
-    direnv
     # devdocs-desktop
     unstable.dprint
     # eww - Widget library for unix
@@ -253,6 +247,7 @@ in rec {
     # chromium # THis increases master branch build, so ommitted
     comma
     unstable.deno 
+    dufs # HTTP File server
     unstable.elixir_1_18
     # helix
     (wrapNixGL hyprlock)
@@ -302,9 +297,10 @@ in rec {
     unstable.jnv
     just
     # jupyter
-    kubectl
+    k3s
+    # kubectl # k3s installs it
     # kubectl-tree
-    kubernetes
+    # kubernetes
     kubernetes-helm
     # ktop
     # lens
@@ -363,10 +359,12 @@ in rec {
     playerctl
     postgresql
     # unstable.pulumi-bin
+    process-compose
     pspg
     python3Full
     # python.pkgs.pip
     qrtool
+    rage
     # rofi - dmenu replacement, window switcher
     unstable.ripdrag
     ripgrep
@@ -409,7 +407,7 @@ in rec {
     qemu
     # playonlinux
     # variety
-    unstable.ueberzugpp
+    unstable.ueberzugpp # Enables drawing images etc on terminal
     unzip
     unixtools.nettools
     # upower
@@ -422,7 +420,6 @@ in rec {
     wl-clipboard
     wl-screenrec
     # wl-screenrec # high-perf screen recording tool
-    unstable.wiper
     whois
     virt-viewer
     # vit
@@ -431,13 +428,12 @@ in rec {
     vlc
     vnstat
     volta
-    # unstable.wiper
     unstable.yazi
 
     zathura
     zeal
     # (wrapNixGL unstable.zed-editor)
-    unstable.zenith
+    unstable.zenith # like htop but better charts, has network stats, GPU stats
 
     # inputs.agenix.packages.x86_64-linux.default
 
@@ -558,6 +554,7 @@ in rec {
     MANPAGER =
       "nvim +Man!"; # TODO: When vim.bo.filetype == man do page numbers & do fzf file search keybinding on <leader>-/ *ONLY ON MANPAGER*, also make Backspace end enter work like C-] and C-t:exe 'Lexplore ' . expand('$VIMRUNTIME') . '/syntax'
     MANWIDTH = 120;
+    NIXPKGS_ALLOW_UNFREE = 1;
 
     HISTTIMEFORMAT = "%d/%m/%y %T ";
     HISTFILE = "~/.cache/zsh/history";
@@ -610,6 +607,8 @@ in rec {
     direnv = {
       enable = true;
       enableZshIntegration = true;
+      nix-direnv.enable = true;
+      silent = true;
     };
     # eww -> use for building your own widgets
     # foot -> terminal, investigate
@@ -843,7 +842,7 @@ in rec {
       syntaxHighlighting.highlighters = [ "main" ];
       plugins = [{
         name = "vi-mode";
-        src = pkgs.unstable.zsh-vi-mode;
+        src = pkgs.zsh-vi-mode;
         file = "share/zsh-vi-mode/zsh-vi-mode.plugin.zsh";
       }];
 
@@ -871,6 +870,14 @@ in rec {
 
           if [ $job_count -gt 0 ]; then
             echo "%B%F{yellow}%j| ";
+          fi
+        }
+
+        function snowflake_indicator {
+          if [ -n "$DIRENV_FILE" ]; then
+            echo " ❄";
+          else
+            echo "";
           fi
         }
 
@@ -968,7 +975,7 @@ in rec {
 
         # NOTE: For gnome online accounts, then remove
 
-        PROMPT='%F{blue}$(date +%H:%M:%S) $(display_jobs_count_if_needed)%B%F{green}%n %F{blue}%~%F{cyan}%F{yellow}$(parse_git_branch) %f%{$reset_color%}'
+        PROMPT='%F{blue}$(date +%H:%M:%S) $(display_jobs_count_if_needed)%B%F{green}%n %F{blue}%~%F{cyan}$(snowflake_indicator)%F{yellow}$(parse_git_branch) %f%{$reset_color%}'
         ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#${config.colorScheme.palette.base03},bold";
 
         # TODO: Find another way to get ahead of /$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin in the future:
@@ -989,6 +996,7 @@ in rec {
         colorpicker = "hyprpicker";
         csv = "tw";
         d = "docker";
+        dc = "docker-compose";
         diff = "diff --color=auto";
         dockerremoveall = "docker system prune -a";
         docker = "podman"; # TODO: Also remove actual docker, docker-compose and try
@@ -1163,7 +1171,7 @@ in rec {
         };
 
         Service = {
-          ExecStart = "${pkgs.unstable.hypridle}/bin/hypridle";
+          ExecStart = "${pkgs.hypridle}/bin/hypridle";
           Restart = "always";
           RestartSec = "10";
         };

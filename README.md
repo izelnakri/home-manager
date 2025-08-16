@@ -242,7 +242,66 @@ in
 nix run -f ./script.nix
 ```
 
-````
+### Agenix with SSH keys
+
+First create a `secrets.nix` file that references your public key. Ragenix knows from where to get the private key from the key type:
+```nix {
+  # Declare recipients for each secret file
+  "supersecret.age".publicKeys = [
+    # Replace this with your actual public key
+    "ssh-ed25519 AAAAC3NzaZ1lZDI1NTE5ABBBIJwZQqIddghrteWbhR68RtHimKF27o24AuJAbEnAuMga contact@izelnakri.com"
+  ];
+}
+```
+
+Now you can create an encrypted non-existent file on for `supersecret.age` by executing this command, it will
+open up the editor to put the contents that are to be encrypted:
+
+```zsh
+ragenix -e supersecret.age # since **only** supersecret.age declared in secrets.nix
+```
+
+Now supersecret.age exists in the filesystem and includes **only** the cyphertext. In order to decrypt it somewhere:
+
+```zsh
+rage -d -i ~/.ssh/id_ed25519 supersecret.age -o found.txt
+```
+
+### Agenix on Home-manager or NixOS:
+
+- First add the agenix flake to your `nixosConfigurations.yourhostname` or `homeConfigurations.yourusername`.
+- Then create the `secrets.nix` object/file so `agenix -e someSecretfile.age` works.
+- Add/Check-in these encrypted files to nix store via: `age.secrets.example-secret.file = ../secrets/secret1.age;` Can even optionally have mode, owner, group.
+- Reference these files now via: ```config.age.secrets.example-secret.path```
+- By default secrets are mounted on NixOS at `/run/agenix.d`. Can be changed on: age.secretsMountPoint
+
+Now the content you stored and previously encrypted is stored as raw text file on found.txt.
+
+### PGP Encyption
+
+Age, Rage, Agenix, Ragenix doesnt work with PGP directly. However if you want PGP to encrypt/decrypt files:
+
+```zsh
+# --recipient is your public PGP KEY:
+# To encrypt, creates file.txt.gpg :
+GPG_PUBLIC_KEY_ID=$(gpg --list-public-keys --with-colons | awk -F: '/^fpr/ {print $10; exit}')
+gpg --encrypt --recipient $GPG_PUBLIC_KEY_ID file.txt
+# To decrypt:
+gpg --decrypt --recipient $GPG_PUBLIC_KEY_ID file.txt.gpg > file.txt
+```
+
+### PGP Export
+
+```zsh
+gpg --export-secret-keys --armor $PGP_PUBLIC_KEY_ID > ~/private.pgp
+
+# Metadata of the private key:
+gpg --show-keys ./private.pgp
+
+# Import it to gpg:
+gpg --import ./private.pgp
+```
+
 #### Miscellanous
 
 ```zsh
@@ -306,7 +365,6 @@ https://laymonage.com/posts
 
 #### Things not yet declared:
 
-- encrypted general private keys
+- I choose to not declare my agenix SSH public keys for post-quantum harvest now, decrypt later attacks.
 - syncthing
-- pgp private key migration & $ pass git clone
 - Brave extensions & Rabbit config
