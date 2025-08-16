@@ -48,8 +48,16 @@ decrypt:
 	@echo "Decrypting secrets.nix.age..."
 	rage -d -i ~/.ssh/nix-secrets secrets.nix.age -o output.nix
 
-# decrypt-sample-age-file:
-# use ragenix command for this one
+# First we need to add "secrets/sample-secret".publicKeys = [ nixSecretsSSHPublicKey ] then run this:
+create-sample-secret:
+	rm secrets/sample-secret.age
+	ragenix --identity ~/.ssh/nix-secrets -e secrets/sample-secret.age # saved cyphertext to secrets/sample-secret.age
+	make encrypt
+	# Then add it to: age.secrets.example-secret.file = ../secrets/secret1.age; then reference is config.age.secrets.example-secret.path
+
+decrypt-sample-secret-file: decrypt
+	rage -d -i ~/.ssh/nix-secrets secrets/sample-secret.age -o
+
 
 # TODO: Read more in depth
 # disko:

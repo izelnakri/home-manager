@@ -25,14 +25,15 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     nixpkgs-fork.url = "path:/home/izelnakri/Github/nixpkgs";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    ragenix.url = "github:yaxitech/ragenix";
     stylix.url = "github:danth/stylix/release-25.05";
     xremap-flake.url = "github:xremap/nix-flake/1924f2dc1a7c219b5323050a7fb27920e3a225d4";
   };
 
   # TODO: make mako & alacritty configured with base16 https://www.youtube.com/watch?v=jO2o0IN0LPE
   outputs = inputs@{ 
-    self, nixinate, nixpkgs, nixpkgs-unstable, nixpkgs-fork, nixos-hardware, nix-flatpak, home-manager, nixGL, stylix, 
-    ... 
+    self, nixinate, nixpkgs, nixpkgs-unstable, nixpkgs-fork, nixos-hardware, nix-flatpak, home-manager, nixGL, ragenix,
+    stylix, ... 
   }:
     let
       allSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
@@ -126,6 +127,7 @@
             })
             # nix-flatpak.nixosModules.nix-flatpak
             home-manager.nixosModules.home-manager
+            ragenix.nixosModules.default
             ./hosts/omnibook/configuration.nix
           ];
           specialArgs = { inherit inputs; };

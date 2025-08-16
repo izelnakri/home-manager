@@ -9,7 +9,7 @@
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" ];
   boot.initrd.kernelModules = [ "xe" ];
   boot.kernelModules = [ "kvm-intel" ];
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.unstable.linuxPackages_latest;
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
@@ -65,7 +65,12 @@
 
     # libvdpau-va-gl # Do I need this?
 
-    (pkgs.callPackage ./intel-npu-driver.nix {})
+    # TODO: NOTE: added these for debugging test-sycl.cpp
+    # pkgs.fork.khronos-ocl-icd-loader
+    # pkgs.fork.opencl-clhpp
+    # pkgs.fork.opencl-headers
+
+    # (pkgs.callPackage ./intel-npu-driver.nix {}) # TODO: This was in there, commented out for NPU driver bug
   ];
 
   hardware.cpu.intel.updateMicrocode = true;
@@ -78,20 +83,20 @@
   # NOTE: This adds to latest npu driver to my Lunar Lake processor until we have intel-npu-driver in nixpkgs:
   hardware.firmware = [
     # NOTE: Does this actually work? Try removing it and check the dmesg | grep vpu
-    (
-      let
-        model = "40xx";
-        version = "1";
-
-        firmware = pkgs.fetchurl {
-          url = "https://github.com/intel/linux-npu-driver/raw/v1.19.0/firmware/bin/vpu_${model}_v${version}.bin";
-          hash = "sha256-KPQxenmwvliOFLiYP5l5D4aSdia13JQIzounj9qs+UY=";
-        };
-      in
-      pkgs.runCommand "intel-vpu-firmware-${model}-${version}" { } ''
-        mkdir -p "$out/lib/firmware/intel/vpu"
-        cp '${firmware}' "$out/lib/firmware/intel/vpu/vpu_${model}_v${version}.bin"
-      ''
-    )
+    # (
+    #   let
+    #     model = "40xx";
+    #     version = "1";
+    #
+    #     firmware = pkgs.fetchurl {
+    #       url = "https://github.com/intel/linux-npu-driver/raw/v1.19.0/firmware/bin/vpu_${model}_v${version}.bin";
+    #       hash = "sha256-KPQxenmwvliOFLiYP5l5D4aSdia13JQIzounj9qs+UY=";
+    #     };
+    #   in
+    #   pkgs.runCommand "intel-vpu-firmware-${model}-${version}" { } ''
+    #     mkdir -p "$out/lib/firmware/intel/vpu"
+    #     cp '${firmware}' "$out/lib/firmware/intel/vpu/vpu_${model}_v${version}.bin"
+    #   ''
+    # )
   ];
 }

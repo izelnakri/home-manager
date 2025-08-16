@@ -6,6 +6,12 @@
     ./services.nix
   ];
 
+  # age = {
+  #   identityPaths = [ "~/.ssh/id_ed25519" ];
+  #   secrets = {
+  #   };
+  # };
+
   # TODO: Try and maybe remove these:
   security.soteria.enable = true;
   # security.polkit.extraConfig = ''
@@ -34,6 +40,11 @@
   # networking.wireless.enable = true; # Enables wireless support via wpa_supplicant. 
   networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
   networking.hostName = "omnibook";
+  # NOTE: This is needed for k3s traefik proxying
+  networking.extraHosts = ''
+    127.0.0.1 backend.localhost backend.local
+  '';
+
   # Configure network proxy if necessary networking.proxy.default = "http://user:password@proxy:port/"; networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   systemd.services.NetworkManager-wait-online.enable = false; # Workaround for an update problem
@@ -64,6 +75,8 @@
 
   environment.variables = {
     EDITOR = "nvim";
+    CONTAINER_RUNTIME_ENDPOINT = "unix:///run/user/1000/k3s/containerd/containerd.sock";
+    KUBECONFIG = "$HOME/.kube/k3s.yaml";
   };
 
   environment.systemPackages = with pkgs; [
@@ -72,7 +85,7 @@
 
     linuxKernel.packages.linux_6_15.iio-utils # is it needded for the sensor info?
 
-    # unstable.ocl-icd # OpenCL ICD Loader for opencl-headers-2024.10.24
+    unstable.ocl-icd # OpenCL ICD Loader for opencl-headers-2024.10.24
     # unstable.opencl-headers # opencl-headers-2024.10.24
 
     intel-gpu-tools # provides lsgpu
@@ -101,6 +114,8 @@
     #   exec ${pkgs.python3}/bin/python "$@"
     # '')
   ];
+  environment.etc."OpenCL/vendors/intel-neo.icd".source =
+    "${pkgs.intel-compute-runtime}/etc/OpenCL/vendors/intel-neo.icd";
 
   # Open ports in the firewall. 
   # networking.firewall.allowedTCPPorts = [ ... ]; 
@@ -220,4 +235,24 @@
   #     ports = [ "127.0.0.1:1234:1234" ];
   #   };
   # };
+
+
+  # NOTE: K3S configuration: Read up on Kubelet and Flannel
+  systemd.extraConfig = ''
+    DefaultControllers=cpuset cpu io memory pids
+  '';
+  systemd.services."user@".serviceConfig.Delegate = "cpuset cpu io memory pids";
+
+  boot.kernel.sysctl = {
+    "net.ipv4.ip_unprivileged_port_start" = 0;  # Allow all ports
+    "net.ipv4.ip_forward" = 1;
+  };
+
+  networking.firewall.allowedTCPPorts = [ 80 ]; 
+  networking.firewall.extraCommands = ''
+    iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3333
+    iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 3333
+    iptables -t nat -A OUTPUT -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port 3333
+    iptables -t nat -A OUTPUT -p tcp -d 127.0.0.1 --dport 443 -j REDIRECT --to-port 3334
+  '';
 }

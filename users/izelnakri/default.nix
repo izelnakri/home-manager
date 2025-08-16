@@ -100,6 +100,14 @@ in rec {
         # features = [];
       }; # NOTE: Try to move this below
     }
+    inputs.ragenix.homeManagerModules.default
+    {
+      age = {
+        identityPaths = [ "/home/izelnakri/.ssh/nix-secrets" ];
+        # All secrets are stored in "/run/user/1000/agenix/*:
+        secrets."sample-secret".file = ../../secrets/sample-secret.age; # export SOME_VAR=${config.age.secrets."sample-secret".path}
+      };
+    }
     inputs.stylix.homeManagerModules.stylix
     inputs.nix-flatpak.homeManagerModules.nix-flatpak
     # hyprland.homeManagerModules.default
@@ -365,6 +373,7 @@ in rec {
     # python.pkgs.pip
     qrtool
     rage
+    ragenix
     # rofi - dmenu replacement, window switcher
     unstable.ripdrag
     ripgrep
@@ -434,8 +443,6 @@ in rec {
     zeal
     # (wrapNixGL unstable.zed-editor)
     unstable.zenith # like htop but better charts, has network stats, GPU stats
-
-    # inputs.agenix.packages.x86_64-linux.default
 
     # # It is sometimes useful to fine-tune packages, for example, by applying
     # # overrides. You can do that directly here, just don't forget the
