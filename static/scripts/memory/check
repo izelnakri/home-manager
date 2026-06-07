@@ -1,29 +1,28 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Memory used% [used/total GB] for the tmux status bar.
+# Universal: Linux (/proc/meminfo) + macOS (vm_stat). Plain ASCII, POSIX-sh.
+# Output: "MEM 7.2% [2.2/30 GB]"
 
-# Function to get memory percentage
-get_memory_percent() {
-    memory_percent=$(free | awk '/Mem:/ {print ($3/$2)*100}')
-    printf "%.1f" "$memory_percent"
-}
+if [ "$(uname -s)" = "Darwin" ]; then
+	page=$(sysctl -n hw.pagesize)
+	total=$(sysctl -n hw.memsize)
+	stats=$(vm_stat)
+	get_pages() { echo "$stats" | awk -v k="$1" 'index($0, k) { gsub(/\./, ""); print $NF }'; }
+	active=$(get_pages "Pages active")
+	wired=$(get_pages "wired down")
+	compressed=$(get_pages "occupied by compressor")
+	used=$(( ( ${active:-0} + ${wired:-0} + ${compressed:-0} ) * page ))
+else
+	# Linux: MemAvailable is the accurate "free" figure (excludes reclaimable
+	# cache/buffers), so used = total - available.
+	total_kb=$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo)
+	avail_kb=$(awk '/^MemAvailable:/ { print $2 }' /proc/meminfo)
+	total=$(( total_kb * 1024 ))
+	used=$(( (total_kb - avail_kb) * 1024 ))
+fi
 
-# Function to get memory used in GB
-get_memory_used() {
-    memory_used=$(free -h | awk '/Mem:/ {print $3}' | cut -d 'G' -f 1)
-    printf "%.2f" "$memory_used"
-}
+percent=$(awk -v u="$used" -v t="$total" 'BEGIN { printf "%.1f", (u / t) * 100 }')
+used_gb=$(awk -v b="$used" 'BEGIN { printf "%.1f", b / 1073741824 }')
+total_gb=$(awk -v b="$total" 'BEGIN { printf "%.0f", b / 1073741824 }')
 
-# Function to get total memory in GB
-get_memory_total() {
-    memory_total=$(free -h | awk '/Mem:/ {print $2}' | cut -d 'G' -f 1)
-    printf "%.2f" "$memory_total"
-}
-
-main() {
-    memory_percent=$(get_memory_percent)
-    memory_used=$(get_memory_used)
-    memory_total=$(get_memory_total)
-
-    echo "📟 $memory_percent% [$memory_used GB / $memory_total GB]"
-}
-
-main
+echo "MEM $percent% [$used_gb/$total_gb GB]"

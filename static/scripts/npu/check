@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# NPU utilization % for the tmux status bar — printed only if an NPU exists.
+# Universal best-effort, ASCII, POSIX-sh. Output: "NPU 12%"  (nothing if absent)
+#
+#   Linux : accel devices (Intel VPU, AMD XDNA, ...) via runtime-PM accounting.
+#           util = active / (active + suspended) over a short window. Root-free.
+#   macOS : Apple Neural Engine exposes no root-free metric -> silent.
+#
+# runtime_active_time advances while the NPU is RPM-resumed (in use) and
+# runtime_suspended_time while autosuspended, so their delta ratio tracks use.
+
+files=
+for f in /sys/class/accel/accel*/device/power/runtime_active_time; do
+	[ -r "$f" ] && [ -r "$(dirname "$f")/runtime_suspended_time" ] && files="$files $f"
+done
+[ -n "$files" ] || exit 0   # no NPU on this machine
+
+read_sum() { # $1=basename -> summed value across all accel devices
+	total=0
+	for af in $files; do
+		total=$(( total + $(cat "$(dirname "$af")/$1" 2>/dev/null | tr -dc '0-9') ))
+	done
+	echo "$total"
+}
+
+act1=$(read_sum runtime_active_time)
+sus1=$(read_sum runtime_suspended_time)
+sleep 0.3
+act2=$(read_sum runtime_active_time)
+sus2=$(read_sum runtime_suspended_time)
+
+dact=$(( act2 - act1 ))
+dtot=$(( (act2 - act1) + (sus2 - sus1) ))
+# Output carries its own 2-space separator so the whole segment has ZERO width
+# (and zero gap) on machines without an NPU, where the script printed nothing
+# above. See tmux theme.conf: $tm_cpu$tm_npu are placed adjacent.
+[ "$dtot" -gt 0 ] || { echo "  NPU 0%"; exit 0; }
+
+echo "  NPU $(awk -v a="$dact" -v t="$dtot" 'BEGIN {
+	p = a * 100 / t; if (p < 0) p = 0; if (p > 100) p = 100; printf "%.0f", p
+}')%"

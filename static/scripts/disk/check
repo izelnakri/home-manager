@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Aggregate storage usage across ALL mounted real (block-device) filesystems —
+# i.e. every connected/mounted disk, not just root. Universal (POSIX `df -P`).
+# Output: "💾 88% [681/771 GB]"   (💾 = floppy-disk storage icon)
+#
+# Each device is counted once: df can list one filesystem under several
+# mountpoints (e.g. btrfs subvolumes /, /nix, /home all on /dev/mapper/nixos).
+# NOTE: on macOS, APFS volumes sharing a single container can inflate the
+# total a little, since each volume reports the whole container size.
+
+df -P -k 2>/dev/null | awk '
+	NR == 1 { next }                       # skip header
+	$1 ~ /^\/dev\// && !seen[$1]++ {        # real devices, once each
+		total += $2
+		used  += $3
+	}
+	END {
+		if (total > 0)
+			printf "💾 %.0f%% [%.0f/%.0f GB]\n", \
+				used * 100 / total, used / 1048576, total / 1048576
+	}
+'

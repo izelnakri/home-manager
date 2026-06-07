@@ -1,89 +1,79 @@
 #!/usr/bin/env bash
-
-# NOTE: Dependency: acpi
-# label = " {{5000:cat /sys/class/power_supply/BAT0/capacity}}% [{{5000:cat /sys/class/power_supply/BAT0/status}}]"
+# Universal battery indicator for the tmux status bar (POSIX-sh compatible;
+# invoked as `sh ~/scripts/battery/check`).
+#
+#   Linux : reads /sys/class/power_supply/BAT0, optional `acpi` for time-left.
+#   macOS : parses `pmset -g batt`.
+#
+# Plain ASCII so it renders on servers/SSH without any special fonts.
+# Output: "BAT 82% [12h 00m]"  (charging shows "+": "BAT +82% [1h 30m]").
+# Silent on machines without a battery (desktops/servers).
 
 shorten_time_format() {
-	local time_format=$1
-	local hours=$(echo $time_format | awk -F':' '{print $1}')
-	local minutes=$(echo $time_format | awk -F':' '{print $2}')
-	local seconds=$(echo $time_format | awk -F':' '{print $3}')
-
-	# Shorten the format:
-	if [ "$hours" != "00" ]; then
-		echo "${hours}h ${minutes}m"
-	elif [ "$minutes" != "00" ]; then
-		echo "${minutes}m ${seconds}s"
+	t=$1
+	h=$(echo "$t" | awk -F: '{ print $1 }')
+	m=$(echo "$t" | awk -F: '{ print $2 }')
+	s=$(echo "$t" | awk -F: '{ print $3 }')
+	if [ -n "$h" ] && [ "$h" != "00" ] && [ "$h" != "0" ]; then
+		echo "${h}h ${m}m"
+	elif [ -n "$m" ] && [ "$m" != "00" ] && [ "$m" != "0" ]; then
+		if [ -n "$s" ]; then echo "${m}m ${s}s"; else echo "${m}m"; fi
+	elif [ -n "$s" ]; then
+		echo "${s}s"
 	else
-		echo "${seconds}s"
+		echo "${m}m"
 	fi
 }
 
-get_battery_status() {
-	battery_percent=$(acpi -b | grep -P -o '[0-9]+(?=%)')
-	battery_status=$(acpi -b | grep -o "Charging\|Discharging")
+percent=
+status=
+time_left=
 
-	get_battery_icon() {
-		if [ $battery_percent -gt 90 ]; then
-			echo ""
-		elif [ $battery_percent -gt 70 ]; then
-			echo ""
-		elif [ $battery_percent -gt 50 ]; then
-			echo ""
-		elif [ $battery_percent -gt 30 ]; then
-			echo ""
-		else
-			echo ""
+case "$(uname -s)" in
+	Linux)
+		bat=/sys/class/power_supply/BAT0
+		[ -d "$bat" ] || exit 0
+		percent=$(cat "$bat/capacity")
+		status=$(cat "$bat/status") # Charging / Discharging / Full / ...
+		# Time estimate from acpi if available, scoped to the real battery
+		# ("Battery 0") so a HID-device battery ("Battery 1") is ignored.
+		if command -v acpi >/dev/null 2>&1; then
+			time_left=$(acpi -b 2>/dev/null | grep -m1 'Battery 0:' \
+				| grep -oE '[0-9]+:[0-9]+:[0-9]+|[0-9]+:[0-9]+' | head -1)
 		fi
-	}
+		;;
+	Darwin)
+		batt=$(pmset -g batt 2>/dev/null)
+		[ -n "$batt" ] || exit 0
+		percent=$(echo "$batt" | grep -oE '[0-9]+%' | head -1 | tr -d '%')
+		[ -n "$percent" ] || exit 0
+		case "$(echo "$batt" | tr 'A-Z' 'a-z')" in
+			*discharging*) status=Discharging ;;
+			*charging*|*"finishing charge"*) status=Charging ;;
+			*charged*) status=Full ;;
+			*) status=Unknown ;;
+		esac
+		time_left=$(echo "$batt" | grep -oE '[0-9]+:[0-9]+' | head -1)
+		;;
+	*)
+		exit 0 ;;
+esac
 
-	if [ "$battery_status" == "Charging" ]; then
-		if [ "$battery_percent" -eq 100 ]; then
-			echo "$(get_battery_icon) $battery_percent%"
-			return
-		fi
-		time_to_full=$(acpi -b | grep -o -P '(\d+:\d+:\d+|\d+:\d+|\d+\s(?:minute|min|hour|h))' | head -1)
-		if [ -z "$time_to_full" ]; then
-			echo "z$(get_battery_icon) $battery_percent% [Calculating]"
-		else
-			time_to_full_short=$(shorten_time_format "$time_to_full")
-			echo "$(get_battery_icon) $battery_percent% [$time_to_full_short]"
-		fi
-	else
-		time_to_empty=$(acpi -b | grep -o -P '(\d+:\d+:\d+|\d+:\d+|\d+\s(?:minute|min|hour|h))' | head -1)
-		if [ -z "$time_to_empty" ]; then
-			echo "$(get_battery_icon) $battery_percent% [Calculating]"
-		else
-			time_to_empty_short=$(shorten_time_format "$time_to_empty")
-			echo "$(get_battery_icon) $battery_percent% [$time_to_empty_short]"
-		fi
+[ -n "$percent" ] || exit 0
 
-	fi
-}
+prefix=
+[ "$status" = "Charging" ] && prefix="+"
 
-get_battery_status
+suffix=
+if [ -n "$time_left" ] && [ "$time_left" != "0:00" ] && [ "$status" != "Full" ]; then
+	suffix=" [$(shorten_time_format "$time_left")]"
+fi
 
+echo "BAT ${prefix}${percent}%${suffix}"
 
-
-
-
-
-
-
-
-
-
-
-
-
-# battery_level=`acpi -b | grep -P -o '[0-9]+(?=%)'`
-# if [ $battery_level -le 10 ]
-# then
-#     notify-send "Battery low" "Battery level is ${battery_level}%!"
-# fi
-
+# --- reference / notes -------------------------------------------------------
 # notify-send hints: https://unix.stackexchange.com/questions/251243/what-do-a-notify-send-notification-category-hint-and-version-parameters-mean
-
+#
 # while true; do
 #     export DISPLAY=:0.0
 #
