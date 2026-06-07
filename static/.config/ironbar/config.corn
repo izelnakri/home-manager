@@ -56,7 +56,7 @@
       name = "network"
       interval = 2500
       cmd = "sh ~/.config/ironbar/scripts/network.sh"
-      on_click_left = "tmux kill-session -t wifi || alacritty -e tmux new-session -s wifi \"sudo wifi-menu\""
+      on_click_left = "tmux kill-session -t wifi || alacritty -e tmux new-session -s wifi \"nmtui\""
     }
     {
       type = "script"

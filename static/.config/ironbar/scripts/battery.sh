@@ -2,8 +2,12 @@
 
 source ~/.config/ironbar/scripts/variables.sh
 
-# NOTE: Dependency: acpi
-# label = " {{5000:cat /sys/class/power_supply/BAT0/capacity}}% [{{5000:cat /sys/class/power_supply/BAT0/status}}]"
+# NOTE: Dependency: acpi (only used for the time-remaining estimate).
+# Percent/status are read straight from sysfs BAT0 so that HID-device
+# batteries (touchscreen/stylus, e.g. "Battery 1" in `acpi -b`) can't
+# corrupt the parsing.
+
+BAT=/sys/class/power_supply/BAT0
 
 shorten_time_format() {
 	local time_format=$1
@@ -22,50 +26,57 @@ shorten_time_format() {
 }
 
 get_battery_status() {
-	battery_percent=$(acpi -b | grep -P -o '[0-9]+(?=%)')
-	battery_status=$(acpi -b | grep -o "Charging\|Discharging")
+	# If there is no laptop battery, render nothing.
+	[ -d "$BAT" ] || return
+
+	battery_percent=$(cat "$BAT/capacity")
+	battery_status=$(cat "$BAT/status")
+
+	bolt_icon=$'' # nf-fa-bolt, shown while charging
 
 	get_battery_icon() {
-		if [ $battery_percent -gt 90 ]; then
+		if [ "$battery_percent" -gt 90 ]; then
 			echo ""
-		elif [ $battery_percent -gt 70 ]; then
+		elif [ "$battery_percent" -gt 70 ]; then
 			echo ""
-		elif [ $battery_percent -gt 50 ]; then
+		elif [ "$battery_percent" -gt 50 ]; then
 			echo ""
-		elif [ $battery_percent -gt 30 ]; then
+		elif [ "$battery_percent" -gt 30 ]; then
 			echo "<span color='$orange_color'></span>"
 		else
 			echo "<span color='$red_color'></span>"
 		fi
 	}
 
+	# Time estimate from acpi, scoped to the real battery line ("Battery 0")
+	# so the HID battery's "Battery 1" line is ignored.
+	battery_time=$(acpi -b 2>/dev/null | grep -m1 'Battery 0:' | grep -o -P '(\d+:\d+:\d+|\d+:\d+|\d+\s(?:minute|min|hour|h))' | head -1)
+
 	if [ "$battery_status" == "Charging" ]; then
 		if [ "$battery_percent" -eq 100 ]; then
 			echo "$(get_battery_icon) $battery_percent%"
 			return
 		fi
-		time_to_full=$(acpi -b | grep -o -P '(\d+:\d+:\d+|\d+:\d+|\d+\s(?:minute|min|hour|h))' | head -1)
-		if [ -z "$time_to_full" ]; then
-			echo "<span bgcolor='$green_background_color'>z$(get_battery_icon) $battery_percent% [Calculating]</span>"
+		if [ -z "$battery_time" ]; then
+			echo "<span bgcolor='$green_background_color'>$bolt_icon $(get_battery_icon) $battery_percent% [Calculating]</span>"
 		else
-			time_to_full_short=$(shorten_time_format "$time_to_full")
-			echo "<span bgcolor='$green_background_color'>$(get_battery_icon) $battery_percent% [$time_to_full_short]</span>"
+			echo "<span bgcolor='$green_background_color'>$bolt_icon $(get_battery_icon) $battery_percent% [$(shorten_time_format "$battery_time") to full]</span>"
 		fi
-	else
-		if [ $battery_percent -lt 15 ]; then
+	elif [ "$battery_status" == "Discharging" ]; then
+		if [ "$battery_percent" -lt 15 ]; then
 			last_battery_notification_id=$(makoctl list | jq '.data[][] | select(.summary.data == "Battery Low")' | jq '.id.data')
 			[[ -n ${last_battery_notification_id} ]] || last_battery_notification_id=1
 			notify-send -r $last_battery_notification_id "Battery Low" "Battery level is ${battery_percent}%\!" -t 45000
 		fi
 
-		time_to_empty=$(acpi -b | grep -o -P '(\d+:\d+:\d+|\d+:\d+|\d+\s(?:minute|min|hour|h))' | head -1)
-		if [ -z "$time_to_empty" ]; then
+		if [ -z "$battery_time" ]; then
 			echo "$(get_battery_icon) $battery_percent% [Calculating]"
 		else
-			time_to_empty_short=$(shorten_time_format "$time_to_empty")
-			echo "$(get_battery_icon) $battery_percent% [$time_to_empty_short]"
+			echo "$(get_battery_icon) $battery_percent% [$(shorten_time_format "$battery_time") left]"
 		fi
-
+	else
+		# Full / Not charging / Unknown: show level without a time estimate.
+		echo "$(get_battery_icon) $battery_percent%"
 	fi
 }
 

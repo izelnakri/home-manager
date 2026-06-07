@@ -1,3 +1,62 @@
+- Make it so k3s runs on podman
+- Make it so k3s token list works, then test that this works on a scaleway NixOS box, use the box as server and this as one node/agent
+- Remove later maybe one line from omnibook cgroup setting
+
+
+
+export CONTAINER_RUNTIME_ENDPOINT="unix:///run/user/$(id -u)/k3s/containerd/containerd.sock"
+
+k3s server \
+  --rootless \
+  --write-kubeconfig-mode "0644" \
+  --cluster-init
+  --service-node-port-range 0-32767 \
+  --node-name izel-node \
+  --v=4 \
+  --token=bananalol 
+  --log ~/tmp/izel-node.log
+
+# Store is on rm -rf /var/lib/rancher /etc/rancher ~/.rancher # last one, very important
+
+# TODO: --log and --token creates problems
+
+
+
+
+
+
+
+- MAKE IT ROOTLESS AND WORKING ALWAYS: https://k3d.io/v5.4.1/usage/advanced/podman/
+- k3d requires podman sock forwarding?
+- How does k3d restart works?!
+- Then run `argo server`?!
+- does services.jupyter enables multi directory browsing? Build an example annual report with jupyter notebook
+
+
+
+- Make it so I can create desktop entry which is a bash script. In that I boot up waydroid
+- Make gyroscope sensor work with the new DBus knowledge
+
+
+
+
+In the last 3-4 years I've been totally mentally occupied with learning/researching nix, NixOS, gained in-depth 
+understanding & capabilities of powerful system-level programming & administration techniques. Today, I can convert my 
+voice into unix commands, I can probably build a freedom respecting and open-source way to install this tool on a 
+consumer grade hardware(support matrix currently is intel ultra series chips and up). I'm seeking to use or will have 
+to build cursor-like authoring workflows inside neovim text editor in the next few months.
+
+
+
+add nixidy k8s and maybe nixhelm for kubernetes
+
+
+Add :Given neovim func for file 
+:GivenProject x
+:GivenLine
+
+go to pkg/path file pkg
+
 --> Run on the phone ssh, nix, docker, systemd(?) | -> do I need proot and even qemu?
 
 --> Services(termux-services):

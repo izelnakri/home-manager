@@ -98,7 +98,7 @@ nix eval --file ./entry.nix
 Print an expression:
 
 ```bash
-builtins.trace me "return value";
+builtins.trace me "return value"; # console logs me
 ```
 
 Run a file with an inner module:
@@ -301,6 +301,8 @@ gpg --show-keys ./private.pgp
 # Import it to gpg:
 gpg --import ./private.pgp
 ```
+
+
 
 #### Miscellanous
 

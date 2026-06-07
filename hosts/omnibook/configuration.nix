@@ -7,8 +7,9 @@
   ];
 
   # age = {
-  #   identityPaths = [ "~/.ssh/id_ed25519" ];
+  #   identityPaths = [ "/home/izelnakri/.ssh/nix-secrets" ];
   #   secrets = {
+  #     secrets."sample-secret".file = ../../secrets/sample-secret.age; # export SOME_VAR=${config.age.secrets."sample-secret".path}
   #   };
   # };
 
@@ -83,7 +84,7 @@
     android-studio
     uv
 
-    linuxKernel.packages.linux_6_15.iio-utils # is it needded for the sensor info?
+    # linuxKernel.packages.linux_6_17.iio-utils # is it needded for the sensor info?
 
     unstable.ocl-icd # OpenCL ICD Loader for opencl-headers-2024.10.24
     # unstable.opencl-headers # opencl-headers-2024.10.24
@@ -113,6 +114,10 @@
     #   export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
     #   exec ${pkgs.python3}/bin/python "$@"
     # '')
+
+    # TODO: Maybe add these later
+    # (pkgs.callPackage ./intel-npu-driver.nix {})
+    # pkgs.unstable.level-zero
   ];
   environment.etc."OpenCL/vendors/intel-neo.icd".source =
     "${pkgs.intel-compute-runtime}/etc/OpenCL/vendors/intel-neo.icd";
@@ -138,6 +143,7 @@
     enableSSHSupport = true;
   };
   programs.firefox.enable = true;
+  # programs.firefox.package = unstable.firefox; # TODO: upgrade firefox to enable debugging properly!!
   programs.git.lfs.enable = true;
   programs.java.enable = true;
   programs.mdevctl.enable = true;
@@ -169,7 +175,7 @@
 
   services.xserver = {
     enable = true;
-    displayManager.lightdm.enable = true;
+    displayManager.gdm.enable = true; # GDM supports Wayland; LightDM held DRM for its X greeter and made Hyprland abort with "Could not take device" on Lunar Lake.
     desktopManager.gnome.enable = true;
     videoDrivers = [ "modesetting" ]; # NOTE: should this be "intel-neo" instead?
   };
@@ -197,16 +203,17 @@
   };
 
   systemd.services = {
-    tailscale-serve = {
-      description = "Tailscale serve webserver";
-      after = [ "network-online.target" ];
-      serviceConfig = {
-        ExecStart = "${pkgs.unstable.tailscale}/bin/tailscale funnel 9999";
-        Restart = "always";
-        RestartSec = "10";
-      };
-      wantedBy = [ "default.target" "webserver.service" ];
-    };
+    # TODO: Enable in the future tailscale
+    # tailscale-serve = {
+    #   description = "Tailscale serve webserver";
+    #   after = [ "network-online.target" ];
+    #   serviceConfig = {
+    #     ExecStart = "${pkgs.unstable.tailscale}/bin/tailscale funnel 9999";
+    #     Restart = "always";
+    #     RestartSec = "10";
+    #   };
+    #   wantedBy = [ "default.target" "webserver.service" ];
+    # };
   };
 
   # systemd.sockets = {
@@ -236,11 +243,6 @@
   #   };
   # };
 
-
-  # NOTE: K3S configuration: Read up on Kubelet and Flannel
-  systemd.extraConfig = ''
-    DefaultControllers=cpuset cpu io memory pids
-  '';
   systemd.services."user@".serviceConfig.Delegate = "cpuset cpu io memory pids";
 
   boot.kernel.sysctl = {

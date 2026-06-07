@@ -81,12 +81,13 @@
       user = "izelnakri";
     };
 
-    systemd.extraConfig = ''
-      DefaultCPUAccounting=yes
-      DefaultIOAccounting=yes
-      DefaultIPAccounting=yes
-      DefaultMemoryAccounting=yes
-      DefaultTasksAccounting=yes
-    '';
+    systemd.settings.Manager = {
+      DefaultCPUAccounting = true;
+      DefaultIOAccounting = true;
+      DefaultIPAccounting = true;
+      DefaultMemoryAccounting = true;
+      DefaultTasksAccounting = true;
+      DefaultControllers = "cpuset cpu io memory pids";
+    }; # Controller was for K3S configuration: Read up on Kubelet and Flannel
   };
 }

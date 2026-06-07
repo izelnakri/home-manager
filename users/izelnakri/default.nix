@@ -1,4 +1,7 @@
+# Model my personal homepage after this: https://omar.yt/posts/wayland-set-the-linux-desktop-back-by-10-years
+# servo debugging only via Firefox v133 for now(downloaded on ~/Downloads/firefox: $ steam-run ./firefox | about:debugging)
 # safetensors_explorer => cargo install safetensors_explorer
+# Find cal.diy alternative(maybe) nice for servers
 
 # https://github.com/danth/stylix?tab=readme-ov-file
 # android opened bin(xdg-open | snapd-xdg-open), 
@@ -7,8 +10,6 @@
 # ~/.config/openxr/1/active_runtime.json.
 # so path: /nix/store/yf6z5bgff90kixmnp3l67vr9cd3dr8aa-home-manager-path/share/openxr/1/openxr_monado.so
 # ~/.nix-profile/share/openxr/1/openxr_monado.json
-
-# add to flatpak Steam(for SteamVR)
 
 # syncall -> gcal, gtasks <> taskwarrior synchonization cli in python
 
@@ -84,7 +85,7 @@ let
       config.allowUnfree = true;
     };
   };
-  wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs; };
+  wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs lib; };
   replaceColorReferences =
     import ../../modules/functions/replace-color-references.nix;
 in rec {
@@ -108,7 +109,7 @@ in rec {
         secrets."sample-secret".file = ../../secrets/sample-secret.age; # export SOME_VAR=${config.age.secrets."sample-secret".path}
       };
     }
-    inputs.stylix.homeManagerModules.stylix
+    inputs.stylix.homeModules.stylix
     inputs.nix-flatpak.homeManagerModules.nix-flatpak
     # hyprland.homeManagerModules.default
     inputs.nix-colors.homeManagerModules.default
@@ -151,14 +152,18 @@ in rec {
     #   # checkPhase = false;
     # })
 
+
     cargo-binstall
     cowsay
     unstable.arion
+    atac
 
+    doxx # Microsoft Word Viewer TUI
+    unstable.xleak # Microsoft Excel TUI
     (wrapNixGL droidcam) # NOTE: maybe use scrcpy instead
     # libsForQt5.kdeconnect-kde
-    unstable.rustdesk # Build failed on unstable
-    unstable.rustdesk-server # Build failed on unstable
+    rustdesk # Build failed on unstable
+    rustdesk-server # Build failed on unstable
 
     flatpak
 
@@ -192,7 +197,7 @@ in rec {
 
     obs-studio
     libva 
-    vaapiVdpau 
+    libva-vdpau-driver 
     libvdpau-va-gl
     # === end immersed
 
@@ -243,23 +248,26 @@ in rec {
     unstable.caddy
     # unstable.code-cursor # uncommented out since compilation times are massive
     # cosmic-files | causes atuin crash
+    cyme
     podman
     podman-compose
     podman-tui
+    caligula # Disk imaging tool
     cmake
     cbfmt
     # devdocs-desktop
-    unstable.dprint
+    # unstable.dprint NOTE: Requires deno?
     # eww - Widget library for unix
     # flameshot # screenshot util, doesnt run yet on hyprland
     # chromium # THis increases master branch build, so ommitted
     comma
-    unstable.deno 
+    # deno # Re-enable it when I reclaim space
     dufs # HTTP File server
     unstable.elixir_1_18
     # helix
     (wrapNixGL hyprlock)
     hypridle
+    evcxr
     fd
     ffsend
 
@@ -279,7 +287,7 @@ in rec {
     gimp3
     unstable.git-cliff
     unstable.gitui
-    unstable.gleam
+    # unstable.gleam # NOTE: Requires deno
     gnumake
     gpsd
     grim
@@ -317,12 +325,12 @@ in rec {
     (wrapNixGL libreoffice-fresh)
     # unstable.lmstudio
     localsend
-    unstable.local-ai
+    # unstable.local-ai # NOTE: marked as broken once, thats why commented out
     lsd
     lsof
     # lxc
     # lxcfs
-    lxd-lts
+    # lxd-lts # NOTE: Tells me to migrate to Incus: https://linuxcontainers.org/incus/docs/main/howto/server_migrate_lxd
     lua
     unstable.luajitPackages.luarocks
     # lutris # play all games on linux
@@ -334,6 +342,7 @@ in rec {
     # TODO: This is probably buggy:
     # (nerdfonts.override { fonts = [ "Noto" ]; }) # maybe add Meslo, this upgraded into:
     pkgs.nerd-fonts.noto
+    netscanner
     networkmanagerapplet
     # nfs-utils
     # ninja
@@ -346,10 +355,11 @@ in rec {
     unstable.nh # amazing nh nix helper, search, diff, switch etc, nom shell/nom develop
     nodejs
     noto-fonts
-    noto-fonts-emoji
+    noto-fonts-color-emoji
     mako
     unstable.manix
     # mpd
+    monolith # Save entire web page as one html
 
     # TODO: change this to normal ollama if nothing works
     # https://github.com/nix-community/nix-ld?tab=readme-ov-file#my-pythonnodejsrubyinterpreter-libraries-do-not-find-the-libraries-configured-by-nix-ld
@@ -369,7 +379,7 @@ in rec {
     # unstable.pulumi-bin
     process-compose
     pspg
-    python3Full
+    # python3Full
     # python.pkgs.pip
     qrtool
     rage
@@ -380,7 +390,7 @@ in rec {
     rsync
     # w3m
     rpiplay
-    ruby
+    ruby_4_0
     rustup
     # sc
     unstable.scooter # Find & Replace UI for neovim etc
@@ -403,6 +413,7 @@ in rec {
     nerd-fonts.terminess-ttf # replaces terminus-nerdfont
     timewarrior
     tree
+    treemd # Markdown reader TUI
     # timeshift
     tmux
     tomb
@@ -418,7 +429,7 @@ in rec {
     # variety
     unstable.ueberzugpp # Enables drawing images etc on terminal
     unzip
-    unixtools.nettools
+    # unixtools.nettools # This package is removed on 25.11
     # upower
     # unstable.xan # CSV chartmaker add this after nix flake update!
     xh # http tool
@@ -568,7 +579,7 @@ in rec {
     TERM = "xterm-256color";
     TERMINAL = "alacritty";
     BIN_PATHS =
-      "$HOME/.local/share/nvim/mason/bin:$HOME/.volta/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin";
+      "$HOME/.npm-global/bin:$HOME/.local/share/nvim/mason/bin:$HOME/.volta/bin:$HOME/.cargo/bin:$HOME/.deno/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin";
     PATH = "${config.home.sessionVariables.BIN_PATHS}:$PATH";
     POSTGRES_USER = "postgres";
     POSTGRES_PASSWORD = "postgres";

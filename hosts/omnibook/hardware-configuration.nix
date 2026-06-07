@@ -6,10 +6,12 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
+  hardware.cpu.intel.npu.enable = true;
+
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" ];
   boot.initrd.kernelModules = [ "xe" ];
   boot.kernelModules = [ "kvm-intel" ];
-  boot.kernelPackages = pkgs.unstable.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
@@ -70,7 +72,9 @@
     # pkgs.fork.opencl-clhpp
     # pkgs.fork.opencl-headers
 
-    # (pkgs.callPackage ./intel-npu-driver.nix {}) # TODO: This was in there, commented out for NPU driver bug
+    # (pkgs.callPackage ./intel-npu-driver.nix {
+    #   level-zero = pkgs.unstable.level-zero;
+    # }) # TODO: This was in there, commented out for NPU driver bug
   ];
 
   hardware.cpu.intel.updateMicrocode = true;
@@ -83,6 +87,9 @@
   # NOTE: This adds to latest npu driver to my Lunar Lake processor until we have intel-npu-driver in nixpkgs:
   hardware.firmware = [
     # NOTE: Does this actually work? Try removing it and check the dmesg | grep vpu
+    # (pkgs.callPackage ./intel-npu-driver.nix {
+    #   level-zero = pkgs.unstable.level-zero;
+    # }).firmware
     # (
     #   let
     #     model = "40xx";

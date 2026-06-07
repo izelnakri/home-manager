@@ -14,11 +14,11 @@ gui:
   nerdFontsVersion: "3" # nerd fonts version to use ("2" or "3"); empty means don't show nerd font icons
   border: "single" # one of 'single' | 'double' | 'rounded' | 'hidden'
 git:
-  paging:
-    # useConfig: true # maybe this can finish it
-    colorArg: always
-    # useConfig: true
-    pager: delta --dark --paging=never
+  pagers:
+    - # useConfig: true # maybe this can finish it
+      colorArg: always
+      # useConfig: true
+      pager: delta --dark --paging=never
   parseEmoji: true
 refresher:
   refreshInterval: 6 # File/submodule refresh interval in seconds. Auto-refresh can be disabled via option 'git.autoRefresh'.

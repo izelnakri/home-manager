@@ -1,4 +1,4 @@
-{ pkgs }:
+{ pkgs, lib }:
 # Should I in the feature return a set of { default, nixGLDefault, nixGLNvidia, nixGLNvidiaBumblebee, nixGLIntel, nixVulkanNvidia, nixVulkanIntel }?
 # How to debug pkgs.nixgl in an overlay(?) in nix repl
 # NOTE: maybe in future { wrapNixGLNvidia, wrapNixGLNvidiaBumblebee, wrapNixGLVulkanNvidia }
@@ -10,7 +10,7 @@ in pkgs.buildEnv {
   paths =
     [ pkg ] ++
     (map
-      (bin: pkgs.hiPrio (
+      (bin: lib.hiPrio (
         pkgs.writeShellScriptBin bin ''
           exec -a "$0" "${pkgs.nixgl.auto.nixGLDefault}/bin/nixGL" "${bins}/${bin}" "$@"
         ''

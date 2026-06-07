@@ -8,6 +8,7 @@ end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
+  -- NOTE: add vim-pencil for hard/soft wrapping maybe, also goyo and limelight
   -- NOTE: opts ={} trrigger setup() call
   {
     dir = "~/Github/parrots-of-paradise",

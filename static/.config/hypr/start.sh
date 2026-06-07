@@ -11,14 +11,13 @@ nm-applet --indicator &
 
 systemctl --user restart ironbar.service
 
-dunst # replace with mako
+mako & # Wayland-native notification daemon (reads ~/.config/mako/config)
 
 # grim -l 0 -g "$(slurp)" - | wl-copy
 
 # pkgs.grim, slupr, wl-copy
 
-alacritty
-
+#alacritty
 # udiskie &
 
 # /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
