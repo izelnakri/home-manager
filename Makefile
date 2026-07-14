@@ -10,19 +10,34 @@ ifndef HOSTNAME
  $(error Hostname unknown)
 endif
 
+# The config now evaluates PURELY (no --impure). Impure bits removed: nixGL.auto's
+# builtins.currentTime (modules/functions/wrap-nix-gl.nix) and xremap's absolute-path
+# readFile (users/izelnakri). Two payoffs:
+#   1. nixGL.auto's currentTime changed the nixGL wrapper derivations on EVERY invocation,
+#      so all ~13 wrapNixGL'd packages rebuilt on every `switch`. Gone now -> real per-switch
+#      time saved on the build side.
+#   2. Pure eval = reproducible, and a prerequisite for remote/distributed builds & CI.
+# Note: pure eval does NOT shortcut the ~28s toplevel evaluation itself — Nix's flake eval
+# cache doesn't cache the NixOS module fixpoint (measured). That 28s is inherent to the size
+# of this config (~30M values). Re-add --impure below if you reintroduce impurity.
+
 # sudo make -C ~/.config/home-manager switch:
 switch:
-	nixos-rebuild switch --flake .#${HOSTNAME} -L --impure
+	nixos-rebuild switch --flake .#${HOSTNAME} -L
+	# nixos-rebuild switch --flake .#${HOSTNAME} -L --impure
 
 module-dev:
-	nixos-rebuild switch --override-input nixpkgs ~/Github/nixpkgs --flake .#${HOSTNAME} -L --impure
+	nixos-rebuild switch --override-input nixpkgs ~/Github/nixpkgs --flake .#${HOSTNAME} -L
+	# nixos-rebuild switch --override-input nixpkgs ~/Github/nixpkgs --flake .#${HOSTNAME} -L --impure
 
 
 boot:
-	nixos-rebuild boot --use-remote-sudo --flake .#${HOSTNAME} -L --impure
+	nixos-rebuild boot --use-remote-sudo --flake .#${HOSTNAME} -L
+	# nixos-rebuild boot --use-remote-sudo --flake .#${HOSTNAME} -L --impure
 
 test:
-	nixos-rebuild test --use-remote-sudo --flake .#${HOSTNAME} -L --impure
+	nixos-rebuild test --use-remote-sudo --flake .#${HOSTNAME} -L
+	# nixos-rebuild test --use-remote-sudo --flake .#${HOSTNAME} -L --impure
 
 update:
 	nix flake update
@@ -30,9 +45,10 @@ update:
 upgrade:
 	make update && make home-switch
 
-# nixGL.auto requires --impure due to builtins.currentTime
+# Was --impure for nixGL.auto's builtins.currentTime; now pure (nixGL neutralized on NixOS).
 home-switch:
-	home-manager --impure switch --flake .
+	home-manager switch --flake .
+	# home-manager --impure switch --flake .
 
 new-rage-identity:
 	@echo "Generating new SSH key for Nix secrets..."

@@ -23,7 +23,11 @@
     };
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
-    nixpkgs-fork.url = "path:/home/izelnakri/Github/nixpkgs";
+    # Disabled: a `path:` input copies the whole ~/Github/nixpkgs working tree into the
+    # store on every lock/eval (slow) and it was only consumed by the dead `fork` overlay
+    # below. For hacking on packages/modules use `make module-dev` instead, which does
+    # `nixos-rebuild --override-input nixpkgs ~/Github/nixpkgs`.
+    # nixpkgs-fork.url = "path:/home/izelnakri/Github/nixpkgs";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     ragenix.url = "github:yaxitech/ragenix";
     stylix.url = "github:danth/stylix/release-26.05";
@@ -33,7 +37,7 @@
 
   # TODO: make mako & alacritty configured with base16 https://www.youtube.com/watch?v=jO2o0IN0LPE
   outputs = inputs@{ 
-    self, nixinate, nixpkgs, nixpkgs-unstable, nixpkgs-fork, nixos-hardware, nix-flatpak, home-manager, nixGL, ragenix,
+    self, nixinate, nixpkgs, nixpkgs-unstable, nixos-hardware, nix-flatpak, home-manager, ragenix,
     stylix, ...
   }:
     let
@@ -45,14 +49,18 @@
         pkgs = import nixpkgs { inherit system; };
       });
       overlay-unstable = final: prev: {
+        # Use the consuming host's own platform so this overlay is correct on aarch64
+        # (pi4) too, instead of the hardcoded x86_64-linux `system` above.
         unstable = import nixpkgs-unstable {
-          inherit system;
+          system = prev.stdenv.hostPlatform.system;
           config.allowUnfree = true;
         };
-        fork = import nixpkgs-fork {
-          inherit system;
-          config.allowUnfree = true;
-        };
+        # Disabled together with the nixpkgs-fork input above (was unused — only referenced
+        # in commented-out `pkgs.fork.*` lines). Re-enable both to use a local nixpkgs fork.
+        # fork = import nixpkgs-fork {
+        #   system = prev.stdenv.hostPlatform.system;
+        #   config.allowUnfree = true;
+        # };
       };
       x86Pkgs = nixpkgs.legacyPackages.x86_64-linux;
       armPkgs = nixpkgs.legacyPackages.aarch64-linux;
@@ -124,7 +132,13 @@
           system = "x86_64-linux";
           modules = [
             ({ config, pkgs, ... }: {
-              nixpkgs.overlays = [ overlay-unstable nixGL.overlay ];
+              # nixGL.overlay dropped: redundant on NixOS (hardware.graphics provides GL
+              # from the store) and its `auto` variant pulled in builtins.currentTime,
+              # forcing --impure and defeating the flake eval cache. wrapNixGL is now a
+              # no-op passthrough (see modules/functions/wrap-nix-gl.nix). Re-add
+              # `nixGL.overlay` here (and restore the input + real wrapper) for a
+              # generic-Linux / non-NixOS host.
+              nixpkgs.overlays = [ overlay-unstable ]; # [ overlay-unstable nixGL.overlay ];
             })
             # nix-flatpak.nixosModules.nix-flatpak
             home-manager.nixosModules.home-manager
@@ -139,7 +153,13 @@
           system = "aarch64-linux";
           modules = [
             ({ config, pkgs, ... }: {
-              nixpkgs.overlays = [ overlay-unstable nixGL.overlay ];
+              # nixGL.overlay dropped: redundant on NixOS (hardware.graphics provides GL
+              # from the store) and its `auto` variant pulled in builtins.currentTime,
+              # forcing --impure and defeating the flake eval cache. wrapNixGL is now a
+              # no-op passthrough (see modules/functions/wrap-nix-gl.nix). Re-add
+              # `nixGL.overlay` here (and restore the input + real wrapper) for a
+              # generic-Linux / non-NixOS host.
+              nixpkgs.overlays = [ overlay-unstable ]; # [ overlay-unstable nixGL.overlay ];
             })
             nixos-hardware.nixosModules.raspberry-pi-4
             # nix-flatpak.nixosModules.nix-flatpak
@@ -165,7 +185,13 @@
           pkgs = x86Pkgs;
           modules = [
             {
-              nixpkgs.overlays = [ overlay-unstable nixGL.overlay ];
+              # nixGL.overlay dropped: redundant on NixOS (hardware.graphics provides GL
+              # from the store) and its `auto` variant pulled in builtins.currentTime,
+              # forcing --impure and defeating the flake eval cache. wrapNixGL is now a
+              # no-op passthrough (see modules/functions/wrap-nix-gl.nix). Re-add
+              # `nixGL.overlay` here (and restore the input + real wrapper) for a
+              # generic-Linux / non-NixOS host.
+              nixpkgs.overlays = [ overlay-unstable ]; # [ overlay-unstable nixGL.overlay ];
             }
             ./users/izelnakri
           ];

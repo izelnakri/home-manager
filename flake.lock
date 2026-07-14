@@ -923,18 +923,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-fork": {
-      "locked": {
-        "lastModified": 1761168573,
-        "narHash": "sha256-DIPAsWTkNt5Uj2kK5K5pTegbfV/bwWWycKN8UHd/Aoc=",
-        "path": "/home/izelnakri/Github/nixpkgs",
-        "type": "path"
-      },
-      "original": {
-        "path": "/home/izelnakri/Github/nixpkgs",
-        "type": "path"
-      }
-    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1697935651,
@@ -1251,7 +1239,6 @@
         "nixinate": "nixinate",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_6",
-        "nixpkgs-fork": "nixpkgs-fork",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "ragenix": "ragenix",
         "stylix": "stylix",

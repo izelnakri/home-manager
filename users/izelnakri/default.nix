@@ -79,12 +79,15 @@
 let
   system = "x86_64-linux"; # move to self.system or smt
   HOSTNAME = "omnibook"; # TODO: This has to be dynamically generated
-  overlay-unstable = final: prev: {
-    unstable = import inputs.nixpkgs-unstable {
-      inherit system;
-      config.allowUnfree = true;
-    };
-  };
+  # Dead code: never applied (no `nixpkgs.overlays = [ overlay-unstable ]` here), and
+  # with home-manager.useGlobalPkgs the HM-level nixpkgs.overlays is ignored anyway.
+  # `unstable` already comes from the system-level overlay in flake.nix via `with pkgs;`.
+  # overlay-unstable = final: prev: {
+  #   unstable = import inputs.nixpkgs-unstable {
+  #     inherit system;
+  #     config.allowUnfree = true;
+  #   };
+  # };
   wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs lib; };
   replaceColorReferences =
     import ../../modules/functions/replace-color-references.nix;
@@ -97,6 +100,11 @@ in rec {
         # systemd = true; # probably remove
         config = "";
         # style = "";
+        # Set explicitly (non-deprecated `stdenv.hostPlatform.system`) so the module's
+        # default value — `self.packages.${pkgs.hostPlatform.system}.default` in
+        # ironbar/flake.nix:147 — is never evaluated; that default reads the deprecated
+        # `pkgs.hostPlatform` alias and prints an evaluation warning on every rebuild.
+        package = inputs.ironbar.packages.${pkgs.stdenv.hostPlatform.system}.default;
         # package = inputs.ironbar; # NOTE: does this point to master branch(?)
         # features = [];
       }; # NOTE: Try to move this below
@@ -122,6 +130,12 @@ in rec {
 
   # TODO: add stylix | https://stylix.danth.me/configuration.html
   # stylix.base16Scheme = "../../static/parrots-of-paradise.yaml"
+
+  # Stylix's overlay sets `nixpkgs.overlays`, which home-manager.useGlobalPkgs forbids
+  # (warns: "You have set nixpkgs.overlays while using useGlobalPkgs"). Under useGlobalPkgs
+  # the overlay is a no-op anyway (HM uses the system pkgs), so disabling it only silences
+  # the warning. Re-enable (drop this line) if you stop using useGlobalPkgs.
+  stylix.overlays.enable = false;
 
   targets.genericLinux.enable = true;
 
@@ -1127,7 +1141,11 @@ in rec {
       # mouse = true;
       withWlroots = true;
       # debug = true; # Logs everything
-      yamlConfig = (builtins.readFile (builtins.toPath "${config.home.homeDirectory}/.config/home-manager/static/.config/xremap/${HOSTNAME}/config.yml"));
+      # Flake-relative path so it's copied into the store at eval time (pure). The old
+      # form read an absolute "${config.home.homeDirectory}/.config/home-manager/..." path,
+      # which is forbidden in pure evaluation and forced --impure on the whole build.
+      yamlConfig = builtins.readFile (../../static/.config/xremap + "/${HOSTNAME}/config.yml");
+      # yamlConfig = (builtins.readFile (builtins.toPath "${config.home.homeDirectory}/.config/home-manager/static/.config/xremap/${HOSTNAME}/config.yml"));
 
       # yamlConfig = builtins.readFile (builtins.toString ../../static/.config/xremap + "/" + (builtins.readFile "/proc/sys/kernel/hostname") + "/config.yml");
     };
