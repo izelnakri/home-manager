@@ -175,10 +175,10 @@
 
   services.xserver = {
     enable = true;
-    displayManager.gdm.enable = true; # GDM supports Wayland; LightDM held DRM for its X greeter and made Hyprland abort with "Could not take device" on Lunar Lake.
-    desktopManager.gnome.enable = true;
     videoDrivers = [ "modesetting" ]; # NOTE: should this be "intel-neo" instead?
   };
+  services.displayManager.gdm.enable = true; # GDM supports Wayland; LightDM held DRM for its X greeter and made Hyprland abort with "Could not take device" on Lunar Lake.
+  services.desktopManager.gnome.enable = true;
   services.displayManager.autoLogin.user = "izelnakri";
   services.displayManager.defaultSession = "hyprland";
   services.displayManager.hiddenUsers = [ "root" ];

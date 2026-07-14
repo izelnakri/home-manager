@@ -162,8 +162,8 @@ in rec {
     unstable.xleak # Microsoft Excel TUI
     (wrapNixGL droidcam) # NOTE: maybe use scrcpy instead
     # libsForQt5.kdeconnect-kde
-    rustdesk # Build failed on unstable
-    rustdesk-server # Build failed on unstable
+    rustdesk # from nixpkgs (stable); builds from source (~long) as it's not cached
+    rustdesk-server # from nixpkgs (stable)
 
     flatpak
 
@@ -263,7 +263,7 @@ in rec {
     comma
     # deno # Re-enable it when I reclaim space
     dufs # HTTP File server
-    unstable.elixir_1_18
+    unstable.beamPackages.elixir_1_18
     # helix
     (wrapNixGL hyprlock)
     hypridle
@@ -337,7 +337,7 @@ in rec {
     # (wrapNixGL unstable.monado) # NOTE: Slow compilation, takes ages
     magic-wormhole
     mpv # Default media player
-    neofetch
+    fastfetch
 
     # TODO: This is probably buggy:
     # (nerdfonts.override { fonts = [ "Noto" ]; }) # maybe add Meslo, this upgraded into:
@@ -353,6 +353,7 @@ in rec {
     nix-template
     ngrok
     unstable.nh # amazing nh nix helper, search, diff, switch etc, nom shell/nom develop
+    neovim # config managed out-of-store via xdg.configFile."nvim"; NOT programs.neovim
     nodejs
     noto-fonts
     noto-fonts-color-emoji
@@ -403,7 +404,7 @@ in rec {
     statix
     swappy
     swaylock
-    swww # wallpaper: maybe use programs.wpaperd instead(?)
+    awww # wallpaper (formerly swww): maybe use programs.wpaperd instead(?)
     syncthing
     unstable.tailscale
     # taskchampion-sync-server
@@ -641,38 +642,42 @@ in rec {
       settings.git_protocol = "ssh";
     };
 
+    delta = {
+      enable = true;
+      enableGitIntegration = true;
+      options = {
+        features = "decorations line-numbers";
+        decorations = {
+          hunk-header-style = "omit";
+          line-numbers-left-format = "";
+          line-numbers-right-format = "{np:^4}";
+          file-style = "#EFAA32 #0d372d bold";
+          file-decoration-style = "";
+          hunk-header-decoration-style = "";
+          navigate = true;
+          hyperlinks = true;
+          paging = "always";
+          pager = "bat";
+          # maybe add pager
+          # tabs [maybe, default: 8]
+        };
+      };
+    };
+
     git = {
       enable = true;
 
-      delta = {
-        enable = true;
-        options = {
-          features = "decorations line-numbers";
-          decorations = {
-            hunk-header-style = "omit";
-            line-numbers-left-format = "";
-            line-numbers-right-format = "{np:^4}";
-            file-style = "#EFAA32 #0d372d bold";
-            file-decoration-style = "";
-            hunk-header-decoration-style = "";
-            navigate = true;
-            hyperlinks = true;
-            paging = "always";
-            pager = "bat";
-            # maybe add pager
-            # tabs [maybe, default: 8]
-          };
-        };
-      };
       attributes = [ "*.sqlite diff=sqlite3" ];
-      userName = "Izel Nakri";
-      userEmail = "contact@izelnakri.com";
-      aliases = {
-        pu = "push";
-        co = "checkout";
-        cm = "commit";
-      };
-      extraConfig = {
+      settings = {
+        user = {
+          name = "Izel Nakri";
+          email = "contact@izelnakri.com";
+        };
+        alias = {
+          pu = "push";
+          co = "checkout";
+          cm = "commit";
+        };
         diff = {
           colorMoved = "default";
           sqlite3 = {
@@ -751,18 +756,14 @@ in rec {
     mpv = { enable = true; };
     ncspot.enable = true;
     # neomutt.enable = true; # notmuchh build failed so commented out
-    neovim = { # TODO: BIG CONFIG DO it here from nixcfg
-      enable = true;
-      # package = pkgs.neovim; # TODO: make this unstable.neovim-unwrapped;
-      # coc.enable = true;
-      # coc.settings , suggest.enablePreview, languageserver
-      defaultEditor = true;
-      # extraLuaPackages
-      # plugins
-      viAlias = true;
-      vimAlias = true;
-      withNodeJs = true;
-    };
+    # neovim is intentionally NOT managed by programs.neovim. The whole ~/.config/nvim
+    # dir is symlinked out-of-store (see xdg.configFile."nvim") so lazy.nvim can write
+    # lazy-lock.json back into the repo. The module ALWAYS writes ~/.config/nvim/init.lua
+    # when enabled (host_progs, or loaded_*_provider=0 when providers are off), which
+    # collides with that symlink -> home-manager fails with
+    # "Error installing file '.config/nvim/init.lua' outside $HOME".
+    # neovim itself is installed via home.packages; vi/vim aliases live in zsh
+    # shellAliases and EDITOR=nvim is set, so nothing from the module is lost.
     noti.enable = true; # also configure
     # obs-stuudio
     pandoc.enable = true;
@@ -848,6 +849,7 @@ in rec {
 
     zsh = {
       enable = true;
+      dotDir = config.home.homeDirectory;
       autosuggestion = { enable = true; };
       enableCompletion = true;
       defaultKeymap = "viins";
@@ -1084,8 +1086,12 @@ in rec {
 
     # $ syncthing cli --
     syncthing = {
-      enable = true;
-      # TODO: options for gui user, gui authentication, api key, folders(contacts, tasks, Photos, 
+      # Daemon runs at the NixOS system level (hosts/omnibook/services.nix), which
+      # holds the declarative devices/folders. Running it here too made two syncthing
+      # processes fight over ~/.config/syncthing -> "Failed to acquire lock" (enforced
+      # since syncthing 2.x). Keep only the tray, which just attaches to the GUI on :8384.
+      enable = false;
+      # TODO: options for gui user, gui authentication, api key, folders(contacts, tasks, Photos,
       # Videos, GIFs, Documents, emails, password-store, gpg keys, emails)
       # per device folder sharing config(?)
       # extraOptions = [ ]; # ["--gui-apikey=apiKey"]
@@ -1273,7 +1279,15 @@ in rec {
       #   config.colorScheme.palette);
       "hypr" = {
         source = ../../static/.config/hypr;
-        onChange = "~/.nix-profile/bin/hyprctl reload";
+        # Only reload when we're actually inside a running Hyprland session. During
+        # `sudo nixos-rebuild switch` the HM activation runs as a root system service
+        # with no HYPRLAND_INSTANCE_SIGNATURE, so an unconditional `hyprctl reload`
+        # exits 1 and fails home-manager-izelnakri.service.
+        onChange = ''
+          if [ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+            ~/.nix-profile/bin/hyprctl reload || true
+          fi
+        '';
       };
       "ironbar".source = ../../static/.config/ironbar;
       "lazygit".source = config.lib.file.mkOutOfStoreSymlink

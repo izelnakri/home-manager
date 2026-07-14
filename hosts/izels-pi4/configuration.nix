@@ -67,7 +67,7 @@
     bat
     home-manager
     htop
-    neofetch
+    fastfetch
     zsh
   ];
 

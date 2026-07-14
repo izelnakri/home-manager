@@ -4,7 +4,7 @@
   inputs = {
     disko.url = "github:nix-community/disko";
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -22,11 +22,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-hardware.url = "github:nixos/nixos-hardware";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-fork.url = "path:/home/izelnakri/Github/nixpkgs";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     ragenix.url = "github:yaxitech/ragenix";
-    stylix.url = "github:danth/stylix/release-25.11";
+    stylix.url = "github:danth/stylix/release-26.05";
     xremap-flake.url = "github:xremap/nix-flake/1924f2dc1a7c219b5323050a7fb27920e3a225d4";
     intel-npu-driver.url = "github:intel/linux-npu-driver/v1.24.0"; # NOTE: v1.28 doesnt work
   };

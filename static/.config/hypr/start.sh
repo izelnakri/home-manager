@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # initializing wallpaper deamon
-swww-daemon &
-swww img ~/Wallpapers/arch-monk.jpg &
+awww-daemon &
+awww img ~/Wallpapers/arch-monk.jpg &
 
 # pkgs.networkmanagerapplet
 nm-applet --indicator &
