@@ -60,7 +60,7 @@
     # maybe add also what doc suggests and check npu toggle
     # pkgs.intel-ocl # I found it on nixpkgs
     pkgs.unstable.intel-compute-runtime # This exposes intel graphic drivers to clinfo, check the build recipe
-    pkgs.unstable.intel-compute-runtime.drivers # NOTE: Probably absolutely necessary
+    # pkgs.unstable.intel-compute-runtime.drivers # NOTE: Removed upstream; drivers (ICD, libze_intel_gpu, libigdrcl) now ship in the main output
     pkgs.unstable.intel-media-driver # Needed from nixos-hardware lunar-lake, check the build recipe
     pkgs.unstable.vpl-gpu-rt # Needed from nixos-hardware lunar-lake, check the build recipe
     pkgs.intel-graphics-compiler # ChatGPT recommends: # Required by intel-compute-runtime

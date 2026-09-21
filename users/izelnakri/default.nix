@@ -1,3 +1,9 @@
+# rustunnel: https://github.com/joaoh82/rustunnel
+# Kap screenrecorder: https://github.com/wulkano/Kap
+# oracle(rust doc viewer): https://github.com/yashksaini-coder/Rustlens
+# Calendar TUI: https://github.com/blackopsrepl/solverforge-calendar
+# sabiql: Postgres TUI(psql upgrade) with vim commands
+
 # Model my personal homepage after this: https://omar.yt/posts/wayland-set-the-linux-desktop-back-by-10-years
 # servo debugging only via Firefox v133 for now(downloaded on ~/Downloads/firefox: $ steam-run ./firefox | about:debugging)
 # safetensors_explorer => cargo install safetensors_explorer
@@ -115,6 +121,7 @@ in rec {
         identityPaths = [ "/home/izelnakri/.ssh/nix-secrets" ];
         # All secrets are stored in "/run/user/1000/agenix/*:
         secrets."sample-secret".file = ../../secrets/sample-secret.age; # export SOME_VAR=${config.age.secrets."sample-secret".path}
+        secrets."gh-token".file = ../../secrets/gh-token.age;
       };
     }
     inputs.stylix.homeModules.stylix
@@ -176,7 +183,11 @@ in rec {
     unstable.xleak # Microsoft Excel TUI
     (wrapNixGL droidcam) # NOTE: maybe use scrcpy instead
     # libsForQt5.kdeconnect-kde
-    rustdesk # from nixpkgs (stable); builds from source (~long) as it's not cached
+    # rustdesk # from nixpkgs (stable); builds from source (~long) as it's not cached
+    # NOTE: switched to rustdesk-flutter: legacy `rustdesk` depends on the unfree libsciter,
+    # so Hydra never builds it (never on cache.nixos.org) and it recompiles on every flake
+    # update. rustdesk-flutter is free-licensed, upstream's current client, and cached.
+    rustdesk-flutter # from nixpkgs (stable)
     rustdesk-server # from nixpkgs (stable)
 
     flatpak
@@ -207,7 +218,7 @@ in rec {
     xdg-desktop-portal-gtk
     xdg-desktop-portal-hyprland
 
-    unstable.krita # paint application
+    krita # paint application
 
     obs-studio
     libva 
@@ -867,6 +878,13 @@ in rec {
       autosuggestion = { enable = true; };
       enableCompletion = true;
       defaultKeymap = "viins";
+      # .zshenv, so non-interactive shells get it too (scripts, editors, tool runners). gh prefers
+      # GH_TOKEN over the login keyring, which autologin leaves locked.
+      envExtra = ''
+        if [ -r "${config.age.secrets."gh-token".path}" ]; then
+          export GH_TOKEN="$(< "${config.age.secrets."gh-token".path}")"
+        fi
+      '';
       # historySubstringSearch = {
       # enable = true;
       # searchDownKey = [ "^J" "^[[B" ]; # Ctrl-J, TODO: during insert up/down doesnt work(?) fix it
@@ -979,6 +997,33 @@ in rec {
         edit() {
           nvim <($@ 2>&1)
         }
+
+        repl() {
+          local src="$1"
+          # Remote / scheme specifier → exports only (no source on disk to instrument)
+          if [[ "$src" == *://* || "$src" == jsr:* || "$src" == npm:* || "$src" == data:* ]]; then
+            deno repl -A --eval="const \$ = await import('$src'); Object.assign(globalThis, \$);"
+            return
+          fi
+          # Local file → exports ($) + locals()
+          local abs dir base names tmp
+          abs="$(cd "$(dirname "$src")" && pwd)/$(basename "$src")"
+          dir="$(dirname "$abs")"; base="$(basename "$abs")"; tmp="$dir/.repl-$base.tmp.ts"
+          names=$(grep -oE '^(export[[:space:]]+)?(async[[:space:]]+)?(const|let|var|function|class)[[:space:]]+[A-Za-z0-9_$]+' "$abs" \
+                  | sed -E 's/.*[[:space:]]([A-Za-z0-9_$]+)$/\1/' | sort -u | paste -sd, -)
+          { cat "$abs"; printf '\nglobalThis.locals = () => ({ %s });\n' "$names"; } > "$tmp"
+          trap 'rm -f "$tmp"' EXIT INT
+          ( cd "$dir" && deno repl -A \
+              --eval="const \$ = await import('file://$abs'); Object.assign(globalThis, \$);" \
+              --eval-file="$(basename "$tmp")" )
+          rm -f "$tmp"; trap - EXIT INT
+        }
+        # Now all of these work:
+        # repl izel.ts                              # exports + locals()
+        # repl lib/result/index.ts                  # exports
+        # repl https://esm.sh/lodash-es             # exports (as $)
+        # repl jsr:@std/semver                      # exports
+        # repl npm:zod                              # exports
 
         youtube() {
           local filename=''${2:-"last-video"}
