@@ -198,6 +198,10 @@ in rec {
     bluetui # `bt`: BlueZ manager (scan/pair/trust/connect, battery %), replaces bluetoothctl
     unstable.systemctl-tui # `sct`: systemd units + live journal. unstable = 0.8.x (26.05 ships 0.5.2)
     (callPackage ../../pkgs/wifui.nix { }) # `wifi`: NetworkManager Wi-Fi TUI, not in nixpkgs yet
+    # herdr: tmux successor built for coding agents (Rust). 0.9.3 overrides unstable's 0.9.0, see pkgs/herdr.nix.
+    # Config: static/.config/herdr/config.toml | Runs inside Ghostty (images); alacritty keeps running tmux.
+    (callPackage ../../pkgs/herdr.nix { })
+    (wrapNixGL ghostty) # Kitty-graphics terminal for herdr, config: static/.config/ghostty/config
     # calcurse (maybe use rust version) (daemon sends notifications)
     # Check: yt-dlp # maybe not needed due to ffmpeg feature
     (import ../../scripts/my-cowsay.nix { inherit pkgs; })
@@ -1336,6 +1340,13 @@ in rec {
       "alacritty/alacritty.toml".text = (replaceColorReferences
         (builtins.readFile ../../static/.config/alacritty/alacritty.toml)
         config.colorScheme.palette);
+      "ghostty/config".text = (replaceColorReferences
+        (builtins.readFile ../../static/.config/ghostty/config)
+        config.colorScheme.palette);
+      # Only the file, not the dir: herdr keeps its logs & session state next to it in ~/.config/herdr/.
+      # Out-of-store so herdr's Settings UI can write to it (changes show up in `git diff`):
+      "herdr/config.toml".source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/.config/home-manager/static/.config/herdr/config.toml";
       "gitui".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/gitui";
       # NOTE: Theming GTK:

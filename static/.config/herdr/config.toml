@@ -1,0 +1,109 @@
+# herdr config: https://herdr.dev/docs/configuration/ | every key: `herdr --default-config` or prefix+?
+# NOTE: This file is an out-of-store symlink (see xdg.configFile."herdr/config.toml"), so herdr's own Settings UI
+# and `herdr config reset-keys` write straight into this repo file. Review `git diff` after changing settings in the UI.
+# Reload a running server after editing: prefix+R (shift+r) or `herdr server reload-config`.
+#
+# Philosophy: mirror my tmux.conf (prefix C-a, |/- splits, hjkl, vi copy mode) + my alacritty Alt-shortcuts, BUT keep
+# herdr's own defaults wherever tmux habits would hide a herdr feature (prefix+w/g navigators, prefix+r resize mode,
+# prefix+shift+hjkl swap, prefix+q detach, prefix+p previous tab).
+
+onboarding = false # Integrations are installed explicitly instead: `herdr integration install claude`
+
+[theme]
+# Follow the host terminal's ANSI palette (alacritty/ghostty both render my Parrots of Paradise base16 colors),
+# instead of catppuccin, so herdr's chrome matches nvim, tmux, mako & ironbar with zero duplicated hex codes:
+name = "terminal"
+
+[terminal]
+new_cwd = "follow" # New panes/tabs start in the focused pane's directory, like tmux's -c '#{pane_current_path}'
+
+[update]
+version_check = false # Managed by nix (pkgs/herdr.nix); `herdr update` can't replace a /nix/store binary
+
+[ui]
+tab_bar_position = "bottom" # Where my eyes expect the tmux status line
+tab_bar_right = [
+  { type = "zoom" },
+  { type = "datetime", format = "%a %d %b %H:%M" },
+]
+tab_bar_right_separator = " · "
+prompt_new_tab_name = false # tmux's new-window doesn't ask for a name either; rename later with prefix+comma
+status_indicators = "symbols" # Distinguish blocked/working/done/idle agents by shape, not only color
+
+[ui.toast]
+delivery = "system" # Agent finished / needs input -> desktop notification through mako, even from another workspace
+
+[keys]
+prefix = "ctrl+a" # Press it twice to send a literal ctrl+a to the pane (readline/nvim), like tmux's `bind C-a send-prefix`
+
+# Splits, identical to tmux.conf. herdr's own `prefix+v` stays as an alias. `prefix+ctrl+backslash` covers ctrl still
+# being held from the prefix, where Shift+\ arrives as ctrl+\ (the same bug fixed in tmux.conf in this PR):
+split_vertical = ["prefix+|", "prefix+backslash", "prefix+ctrl+backslash", "prefix+v"]
+split_horizontal = "prefix+minus"
+
+# Pane focus: tmux prefix+hjkl (herdr default) + alacritty's direct Alt+hjkl (Hyprland binds nothing on Alt):
+focus_pane_left = ["prefix+h", "alt+h"]
+focus_pane_down = ["prefix+j", "alt+j"]
+focus_pane_up = ["prefix+k", "alt+k"]
+focus_pane_right = ["prefix+l", "alt+l"]
+last_pane = "prefix+semicolon" # tmux's `prefix+;`
+
+# Panes: alacritty's Alt+z (zoom) & Alt+p (kill-pane) stay direct.
+zoom = ["prefix+z", "alt+z"]
+close_pane = ["prefix+x", "alt+p"]
+copy_mode = ["prefix+[", "alt+e"] # alacritty's Alt+e sent `C-a [` to tmux for exactly this
+
+# Tabs == tmux windows. base-index 1 in tmux == herdr's 1-based tabs, so numbers line up.
+new_tab = ["prefix+c", "alt+t"]
+close_tab = ["prefix+shift+x", "alt+c"]
+switch_tab = ["prefix+1..9", "alt+1..9"]
+previous_tab = ["prefix+p", "alt+["]
+next_tab = ["prefix+n", "alt+]"]
+rename_tab = ["prefix+shift+t", "prefix+comma"] # tmux's `prefix+,`
+
+# Workspaces == tmux sessions (one per project). prefix+w and prefix+g are herdr's navigators, kept as-is.
+rename_workspace = ["prefix+shift+w", "prefix+$"] # tmux's `prefix+$`
+previous_workspace = "prefix+("                    # tmux's `prefix+(` / `prefix+)` session switching
+next_workspace = "prefix+)"
+detach = ["prefix+q", "prefix+d"] # herdr standard is q, tmux muscle memory is d
+
+# Popups: run a TUI on top of the layout without disturbing splits. Exit the program to close the popup.
+[[keys.command]]
+key = "prefix+t"
+type = "popup"
+command = "exec \"${SHELL:-sh}\""
+description = "scratch shell"
+width = "80%"
+height = "80%"
+
+[[keys.command]]
+key = "prefix+alt+g"
+type = "popup"
+command = "lazygit"
+description = "lazygit"
+width = "90%"
+height = "90%"
+
+[[keys.command]]
+key = "prefix+alt+s"
+type = "popup"
+command = "systemctl-tui"
+description = "systemd units & journal"
+width = "90%"
+height = "90%"
+
+[[keys.command]]
+key = "prefix+alt+b"
+type = "popup"
+command = "bluetui"
+description = "bluetooth"
+width = "80%"
+height = "80%"
+
+[[keys.command]]
+key = "prefix+alt+w"
+type = "popup"
+command = "wifui"
+description = "wi-fi"
+width = "80%"
+height = "80%"
