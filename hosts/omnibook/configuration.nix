@@ -189,6 +189,16 @@
   services.pipewire = {
     enable = true; 
     pulse.enable = true;
+    wireplumber.extraConfig."10-bluetooth" = {
+      "monitor.bluez.properties" = {
+        "bluez5.enable-sbc-xq" = true; # Higher bitrate SBC for headphones without AAC/LDAC support
+        "bluez5.enable-msbc" = true; # Wideband (16kHz) mic audio in calls instead of 8kHz CVSD
+        "bluez5.enable-hw-volume" = true; # Volume keys drive the headphones' own volume
+      };
+      # WirePlumber switches headphones to the call (HSP/HFP) profile whenever any app opens a mic.
+      # That gives mono, low quality audio until reconnect. Keep A2DP; switch manually with `wpctl`/pavucontrol:
+      "wireplumber.settings"."bluetooth.autoswitch-to-headset-profile" = false;
+    };
   };
 
   services.libinput.enable = true; # Enable touchpad support (enabled default in most desktopManager).
