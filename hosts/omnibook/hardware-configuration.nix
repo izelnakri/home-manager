@@ -80,6 +80,15 @@
   hardware.cpu.intel.updateMicrocode = true;
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = true; # powers up the default Bluetooth controller on boot
+  hardware.bluetooth.settings.General = {
+    # Exposes BlueZ's Battery1 D-Bus API for headsets, so bluetui/ironbar can show headphone battery %.
+    # It's also a prerequisite for LE Audio (BAP) headsets:
+    Experimental = true;
+    FastConnectable = true; # Faster reconnects to already paired headphones (slightly more idle power)
+    # Re-pair "Just Works" devices (most headphones) without removing them first. Otherwise, pairing
+    # again after the headset was paired to a phone fails silently until you run `bluetoothctl remove`:
+    JustWorksRepairing = "always";
+  };
   hardware.sane.enable = true;
 
   hardware.sensor.iio.enable = true; # Trying out gyroscope sensor for screen rotation on the covertible laptop

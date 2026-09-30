@@ -194,7 +194,10 @@ in rec {
 
     # NOTE: Check pop-shell
     # (wrapNixGL unstable.gnome-online-accounts-gtk)
-    unstable.systemctl-tui
+    # NOTE: System management TUIs (all Rust + ratatui, all talk D-Bus directly instead of scraping CLIs):
+    bluetui # `bt`: BlueZ manager (scan/pair/trust/connect, battery %), replaces bluetoothctl
+    unstable.systemctl-tui # `sct`: systemd units + live journal. unstable = 0.8.x (26.05 ships 0.5.2)
+    (callPackage ../../pkgs/wifui.nix { }) # `wifi`: NetworkManager Wi-Fi TUI, not in nixpkgs yet
     # calcurse (maybe use rust version) (daemon sends notifications)
     # Check: yt-dlp # maybe not needed due to ffmpeg feature
     (import ../../scripts/my-cowsay.nix { inherit pkgs; })
@@ -1099,6 +1102,9 @@ in rec {
         scitutor = "sc /usr/share/doc/sc/tutorial.sc";
         server = "mix phoenix.server";
         SS = "sudo systemctl";
+        sct = "systemctl-tui";
+        bt = "bluetui";
+        wifi = "wifui";
         speedtest =
           "curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -";
         screenshot =

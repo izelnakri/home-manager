@@ -56,14 +56,16 @@
       name = "network"
       interval = 2500
       cmd = "sh ~/.config/ironbar/scripts/network.sh"
-      on_click_left = "tmux kill-session -t wifi || alacritty -e tmux new-session -s wifi \"nmtui\""
+      // on_click_left = "tmux kill-session -t wifi || alacritty -e tmux new-session -s wifi \"nmtui\""
+      on_click_left = "tmux kill-session -t wifi || alacritty -e tmux new-session -s wifi \"wifui\""
     }
     {
       type = "script"
       name = "bluetooth"
       interval = 2500
       cmd = "sh ~/.config/ironbar/scripts/bluetooth.sh"
-      on_click_left = "alacritty -e 'bluetoothctl'"
+      // on_click_left = "alacritty -e 'bluetoothctl'"
+      on_click_left = "tmux kill-session -t bluetooth || alacritty -e tmux new-session -s bluetooth \"bluetui\""
     }
     {
       type = "tray"
