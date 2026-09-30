@@ -1,0 +1,94 @@
+# Ghostty: the terminal I run herdr in. herdr is built on Ghostty's own VT core (libghostty-vt) and only fast-paths
+# Kitty graphics (images) to a local Ghostty, which alacritty can't render at all. Alacritty keeps running tmux.
+# {{baseXX}} references are replaced with my Parrots of Paradise palette at build time (replaceColorReferences),
+# same as alacritty.toml. Reload: ctrl+shift+, | All options: `ghostty +show-config --default --docs`
+
+command = herdr
+# herdr keeps panes alive in its server after the window closes, so closing the window never loses work:
+confirm-close-surface = false
+# Hyprland draws no decorations for alacritty either
+window-decoration = none
+# `ghostty` opens new windows in the running process: instant startup
+gtk-single-instance = true
+term = xterm-ghostty
+
+# Font: same as alacritty.toml
+font-family = Noto Sans Mono
+font-style = Medium
+font-style-bold = ExtraBold
+font-size = 10.2
+
+# Colors: same mapping as alacritty.toml [colors.*]
+background = #{{base00}}
+foreground = #{{base05}}
+cursor-color = #993F0B
+cursor-text = #{{base05}}
+bold-is-bright = false
+palette = 0=#{{base04}}
+palette = 1=#{{base08}}
+palette = 2=#{{base0B}}
+palette = 3=#{{base0A}}
+palette = 4=#{{base0D}}
+palette = 5=#{{base0E}}
+palette = 6=#{{base0C}}
+palette = 7=#{{base06}}
+palette = 8=#666666
+palette = 9=#FF5A5F
+palette = 10=#00A94F
+palette = 11=#FFA41B
+palette = 12=#0075CA
+palette = 13=#964FC6
+palette = 14=#4DABAA
+palette = 15=#F5F9F5
+
+# alacritty: selection.save_to_clipboard = true
+copy-on-select = clipboard
+
+# Keybindings. Multiplexer keys (Alt+hjkl, Alt+1..9, Alt+[ ], Alt+t/c/p/z/e) live in herdr's config.toml, so Ghostty
+# must pass them through. Its defaults would steal Alt+1..9 (goto_tab) and ctrl+0 (reset_font_size):
+keybind = alt+1=unbind
+keybind = alt+2=unbind
+keybind = alt+3=unbind
+keybind = alt+4=unbind
+keybind = alt+5=unbind
+keybind = alt+6=unbind
+keybind = alt+7=unbind
+keybind = alt+8=unbind
+keybind = alt+9=unbind
+keybind = alt+digit_1=unbind
+keybind = alt+digit_2=unbind
+keybind = alt+digit_3=unbind
+keybind = alt+digit_4=unbind
+keybind = alt+digit_5=unbind
+keybind = alt+digit_6=unbind
+keybind = alt+digit_7=unbind
+keybind = alt+digit_8=unbind
+# Tabs & splits belong to herdr, not the outer terminal: free these for pane apps (nvim, claude):
+keybind = ctrl+shift+t=unbind
+keybind = ctrl+shift+o=unbind
+keybind = ctrl+shift+e=unbind
+keybind = ctrl+shift+enter=unbind
+keybind = ctrl+tab=unbind
+keybind = ctrl+shift+tab=unbind
+keybind = ctrl+enter=unbind
+
+# alacritty: Control+V = Paste
+keybind = ctrl+v=paste_from_clipboard
+# alacritty: Alt+N spawns a new terminal window
+keybind = alt+n=new_window
+
+# alacritty: PageUp/PageDown send Left/Right (SS3) sequences
+keybind = page_up=text:\x1bOD
+keybind = page_down=text:\x1bOC
+
+# alacritty: <C-Num> is sent as <C-FNum> so nvim can map them (F-keys themselves are taken by xremap)
+keybind = ctrl+1=text:\x1b[1;5P
+keybind = ctrl+2=text:\x1b[1;5Q
+keybind = ctrl+3=text:\x1b[1;5R
+keybind = ctrl+4=text:\x1b[1;5S
+keybind = ctrl+5=text:\x1b[15;5~
+keybind = ctrl+6=text:\x1b[17;5~
+keybind = ctrl+7=text:\x1b[18;5~
+keybind = ctrl+8=text:\x1b[19;5~
+keybind = ctrl+9=text:\x1b[20;5~
+keybind = ctrl+0=text:\x1b[21;5~
