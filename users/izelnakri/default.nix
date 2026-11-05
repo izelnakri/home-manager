@@ -1,3 +1,4 @@
+# Install edamame, markdown editor/viewer: https://github.com/mijowi/edamame
 # rustunnel: https://github.com/joaoh82/rustunnel
 # Kap screenrecorder: https://github.com/wulkano/Kap
 # oracle(rust doc viewer): https://github.com/yashksaini-coder/Rustlens
@@ -389,6 +390,7 @@ in rec {
     nodejs
     noto-fonts
     noto-fonts-color-emoji
+    inputs.omnidiff.packages.${system}.default # content-aware diffs: `git review` below
     mako
     unstable.manix
     # mpd
@@ -709,6 +711,12 @@ in rec {
           pu = "push";
           co = "checkout";
           cm = "commit";
+          # git review <target> [base] (base...target, base defaults to origin/main), or git review A..B
+          review = ''!f() { git fetch -q origin; case "$1" in *..*) r="$1" ;; *) r="''${2:-origin/main}...''${1:-HEAD}" ;; esac; git difftool -y --tool=omnidiff "$r"; }; f'';
+        };
+        difftool = {
+          prompt = false;
+          omnidiff.cmd = ''omnidiff "$LOCAL" "$REMOTE"'';
         };
         diff = {
           colorMoved = "default";
