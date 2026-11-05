@@ -98,6 +98,8 @@ let
   wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs lib; };
   replaceColorReferences =
     import ../../modules/functions/replace-color-references.nix;
+  # tuicr 0.28 (unstable has 0.26), shared by home.packages, `cr` and the Claude Code skill below:
+  tuicr = pkgs.callPackage ../../pkgs/tuicr.nix { };
 in rec {
   imports = [
     inputs.ironbar.homeManagerModules.default
@@ -202,6 +204,10 @@ in rec {
     # herdr: tmux successor built for coding agents (Rust). 0.9.3 overrides unstable's 0.9.0, see pkgs/herdr.nix.
     # Config: static/.config/herdr/config.toml | Runs inside Ghostty (images); alacritty keeps running tmux.
     (callPackage ../../pkgs/herdr.nix { })
+    # Code review for agent-written changes: GitHub-style diff + PR comments in the terminal, see pkgs/tuicr.nix.
+    # `tuicr pr <n>` / `:submit` posts real GitHub reviews (via gh). Config: static/.config/tuicr/
+    tuicr
+    (callPackage ../../pkgs/cr { inherit tuicr; }) # `cr`: tuicr review, then `y` sends it to the repo's Claude Code pane
     (wrapNixGL ghostty) # Kitty-graphics terminal for herdr, config: static/.config/ghostty/config
     # calcurse (maybe use rust version) (daemon sends notifications)
     # Check: yt-dlp # maybe not needed due to ffmpeg feature
@@ -570,6 +576,9 @@ in rec {
     ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
     "scripts".source = config.lib.file.mkOutOfStoreSymlink
       "${config.home.homeDirectory}/.config/home-manager/static/scripts";
+    # tuicr's own Claude Code skill, pinned to the installed version: lets any Claude session open tuicr in a
+    # tmux/herdr split for you and read your comments live (`tuicr review comments`) instead of waiting for `y`.
+    ".claude/skills/tuicr".source = "${tuicr.src}/skills/tuicr";
 
     # "vimwiki".source = config.lib.file.mkOutOfStoreSymlink ../../static/vimwiki;
 
@@ -1378,6 +1387,12 @@ in rec {
         '';
       };
       "ironbar".source = ../../static/.config/ironbar;
+      # Out-of-store so `:theme`/edits are live; only the palette-templated theme is generated:
+      "tuicr/config.toml".source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/.config/home-manager/static/.config/tuicr/config.toml";
+      "tuicr/themes/parrots-of-paradise.toml".text = (replaceColorReferences
+        (builtins.readFile ../../static/.config/tuicr/themes/parrots-of-paradise.toml)
+        config.colorScheme.palette);
       "lazygit".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/lazygit";
       "mako/config".text = (replaceColorReferences

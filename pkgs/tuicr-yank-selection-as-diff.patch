@@ -1,0 +1,227 @@
+diff --git a/docs/KEYBINDINGS.md b/docs/KEYBINDINGS.md
+index 736867b..e2f7f1a 100644
+--- a/docs/KEYBINDINGS.md
++++ b/docs/KEYBINDINGS.md
+@@ -189,6 +189,8 @@ from the checkout, never copied.
+ |-----|--------|
+ | `j` / `k` | Extend selection down / up |
+ | `c` / `Enter` | Create comment for selected range |
++| `y` | Copy the selected code (one side) |
++| `Y` | Copy the selection as diff text, removed lines included, under a `path:lines` header |
+ | `Esc` / `v` / `V` | Cancel selection |
+ 
+ ## Comment mode
+diff --git a/src/app/yank.rs b/src/app/yank.rs
+index ea9fb1b..6221702 100644
+--- a/src/app/yank.rs
++++ b/src/app/yank.rs
+@@ -78,6 +78,91 @@ impl App {
+     }
+ }
+ 
++impl App {
++    /// Visual `Y`: copy the selected rows as diff text (removed lines too, from either side-by-side
++    /// column) under a `path:lines` header, unlike visual `y`, which copies one side's code only.
++    pub fn copy_visual_selection_as_diff(&mut self) {
++        let Some(sel) = self.visual_selection else {
++            return;
++        };
++        let (start, end) = sel.ordered();
++        let mut rows = Vec::new();
++        for idx in start.annotation_idx..=end.annotation_idx {
++            match self.line_annotations.get(idx) {
++                Some(AnnotatedLine::DiffLine { file_idx, hunk_idx, line_idx, .. }) => {
++                    rows.push((*file_idx, *hunk_idx, *line_idx));
++                }
++                Some(AnnotatedLine::SideBySideLine {
++                    file_idx, hunk_idx, del_line_idx, add_line_idx, ..
++                }) => {
++                    rows.extend(del_line_idx.iter().map(|line| (*file_idx, *hunk_idx, *line)));
++                    rows.extend(add_line_idx.iter().map(|line| (*file_idx, *hunk_idx, *line)));
++                }
++                _ => {}
++            }
++        }
++        let Some((text, summary)) = selection_diff(&self.diff_files, &rows) else {
++            return self.set_message("Nothing to copy: select diff lines");
++        };
++        self.copy_to_clipboard_with_message(&text, summary);
++    }
++}
++
++/// Diff text for selected `(file, hunk, line)` rows: per hunk, every line from the first to the last
++/// selected one (so context in between keeps the snippet readable), in the hunk's own unified order.
++/// Returns the text and a one-line summary of what it holds.
++pub(crate) fn selection_diff(files: &[DiffFile], rows: &[(usize, usize, usize)]) -> Option<(String, String)> {
++    let mut groups: Vec<(usize, usize, usize, usize)> = Vec::new(); // file, hunk, first line, last line
++    for &(file_idx, hunk_idx, line_idx) in rows {
++        match groups.iter_mut().find(|g| g.0 == file_idx && g.1 == hunk_idx) {
++            Some(group) => {
++                group.2 = group.2.min(line_idx);
++                group.3 = group.3.max(line_idx);
++            }
++            None => groups.push((file_idx, hunk_idx, line_idx, line_idx)),
++        }
++    }
++    let mut blocks = Vec::new();
++    let mut total = 0;
++    for (file_idx, hunk_idx, first, last) in groups {
++        let file = files.get(file_idx)?;
++        let lines = file.hunks.get(hunk_idx)?.lines.get(first..=last)?;
++        let span = |numbers: Vec<u32>| match (numbers.iter().min(), numbers.iter().max()) {
++            (Some(lo), Some(hi)) if lo == hi => Some(lo.to_string()),
++            (Some(lo), Some(hi)) => Some(format!("{lo}-{hi}")),
++            _ => None,
++        };
++        let new = span(lines.iter().filter_map(|l| l.new_lineno).collect());
++        let old = span(lines.iter().filter_map(|l| l.old_lineno).collect());
++        let path = file.display_path().display();
++        let mut block = match (&new, &old) {
++            (Some(new), Some(old)) if new == old => format!("{path}:{new}\n"),
++            (Some(new), Some(old)) => format!("{path}:{new} (old {old})\n"),
++            (Some(new), None) => format!("{path}:{new}\n"),
++            (None, Some(old)) => format!("{path} (old {old})\n"),
++            (None, None) => format!("{path}\n"),
++        };
++        for line in lines {
++            block.push(match line.origin {
++                LineOrigin::Context => ' ',
++                LineOrigin::Addition => '+',
++                LineOrigin::Deletion => '-',
++            });
++            block.push_str(line.content.trim_end_matches(['\n', '\r']));
++            block.push('\n');
++        }
++        total += lines.len();
++        blocks.push(block);
++    }
++    let first_header = blocks.first()?.lines().next()?.to_string();
++    let summary = if blocks.len() == 1 {
++        format!("{total} diff lines from {first_header}")
++    } else {
++        format!("{total} diff lines from {} places, starting {first_header}", blocks.len())
++    };
++    Some((blocks.join("\n"), summary))
++}
++
+ /// One hunk as unified diff text: its `@@` header, then each line with its ` `/`+`/`-` marker.
+ pub(crate) fn hunk_patch(hunk: &DiffHunk) -> String {
+     let mut out = String::new();
+@@ -171,6 +256,51 @@ mod tests {
+         assert_eq!(patch.matches("@@ -1,3 +1,3 @@").count(), 2);
+     }
+ 
++    fn numbered(origin: LineOrigin, content: &str, old: Option<u32>, new: Option<u32>) -> DiffLine {
++        DiffLine { old_lineno: old, new_lineno: new, ..line(origin, content) }
++    }
++
++    fn numbered_file() -> DiffFile {
++        let mut file = file(FileStatus::Modified, Some("src/a.rs"), Some("src/a.rs"));
++        file.hunks = vec![DiffHunk {
++            lines: vec![
++                numbered(LineOrigin::Context, "fn main() {", Some(10), Some(10)),
++                numbered(LineOrigin::Deletion, "    old();", Some(11), None),
++                numbered(LineOrigin::Addition, "    new();", None, Some(11)),
++                numbered(LineOrigin::Addition, "    more();", None, Some(12)),
++                numbered(LineOrigin::Context, "}", Some(12), Some(13)),
++            ],
++            ..hunk()
++        }];
++        file
++    }
++
++    #[test]
++    fn should_copy_removed_and_added_lines_with_a_path_and_line_header() {
++        // A side-by-side row pairs a deletion (line 1) with an addition (line 2); line 3 is added only.
++        let (text, summary) = selection_diff(&[numbered_file()], &[(0, 0, 1), (0, 0, 2), (0, 0, 3)]).unwrap();
++        assert_eq!(text, "src/a.rs:11-12 (old 11)\n-    old();\n+    new();\n+    more();\n");
++        assert_eq!(summary, "3 diff lines from src/a.rs:11-12 (old 11)");
++    }
++
++    #[test]
++    fn should_keep_context_between_the_first_and_last_selected_lines() {
++        let (text, _) = selection_diff(&[numbered_file()], &[(0, 0, 4), (0, 0, 0)]).unwrap();
++        assert_eq!(text.lines().count(), 6, "header + all five hunk lines");
++        assert!(text.starts_with("src/a.rs:10-13 (old 10-12)\n fn main() {\n-    old();"));
++    }
++
++    #[test]
++    fn should_label_deletion_only_selections_with_old_line_numbers() {
++        let (text, _) = selection_diff(&[numbered_file()], &[(0, 0, 1)]).unwrap();
++        assert_eq!(text, "src/a.rs (old 11)\n-    old();\n");
++    }
++
++    #[test]
++    fn should_have_nothing_to_copy_without_diff_lines() {
++        assert!(selection_diff(&[numbered_file()], &[]).is_none());
++    }
++
+     #[test]
+     fn should_use_dev_null_for_added_and_deleted_files() {
+         assert!(file_patch(&file(FileStatus::Added, None, Some("new.rs"))).starts_with("--- /dev/null\n+++ b/new.rs\n"));
+diff --git a/src/handler.rs b/src/handler.rs
+index 9df732e..2070152 100644
+--- a/src/handler.rs
++++ b/src/handler.rs
+@@ -1527,6 +1527,10 @@ pub fn handle_visual_action(app: &mut App, action: Action) {
+             }
+             app.exit_visual_mode();
+         }
++        Action::CopySelectionAsDiff => {
++            app.copy_visual_selection_as_diff();
++            app.exit_visual_mode();
++        }
+         Action::ExitMode => app.exit_visual_mode(),
+         Action::Quit => app.should_quit = true,
+         Action::QuitHint => app.set_message(QUIT_HINT_MESSAGE),
+diff --git a/src/input/keybindings.rs b/src/input/keybindings.rs
+index 2ca65f8..08f78f3 100644
+--- a/src/input/keybindings.rs
++++ b/src/input/keybindings.rs
+@@ -60,6 +60,7 @@ pub enum Action {
+     /// the `q` removal has had time to land.
+     QuitHint,
+     ExportToClipboard,
++    CopySelectionAsDiff,
+     /// Copy just the comment under the cursor (`Y`), not the whole review.
+     CopyCommentAtCursor,
+ 
+@@ -643,6 +644,7 @@ fn map_visual_mode_with_q_quits(key: KeyEvent, q_quits: bool) -> Action {
+         (KeyCode::Char('c'), KeyModifiers::NONE) => Action::AddRangeComment,
+         (KeyCode::Enter, KeyModifiers::NONE) => Action::AddRangeComment,
+         (KeyCode::Char('y'), KeyModifiers::NONE) => Action::ExportToClipboard,
++        (KeyCode::Char('Y'), _) => Action::CopySelectionAsDiff,
+         (KeyCode::Esc, KeyModifiers::NONE) => Action::ExitMode,
+         (KeyCode::Char('v') | KeyCode::Char('V'), _) => Action::ExitMode,
+         (KeyCode::Char('q'), KeyModifiers::NONE) => q_action(q_quits),
+diff --git a/src/ui/help_popup.rs b/src/ui/help_popup.rs
+index 4d944bf..ed7ad4b 100644
+--- a/src/ui/help_popup.rs
++++ b/src/ui/help_popup.rs
+@@ -652,6 +652,13 @@ pub fn render_help(frame: &mut Frame, app: &mut App) {
+             ),
+             Span::raw("Create comment for selected range"),
+         ]),
++        Line::from(vec![
++            Span::styled(
++                "  y / Y     ",
++                Style::default().add_modifier(Modifier::BOLD),
++            ),
++            Span::raw("Copy the selected code / as diff (removed lines too) under a path:lines header"),
++        ]),
+         Line::from(vec![
+             Span::styled(
+                 "  Esc/v/V   ",
+diff --git a/src/ui/status_bar.rs b/src/ui/status_bar.rs
+index 8931f18..73b099a 100644
+--- a/src/ui/status_bar.rs
++++ b/src/ui/status_bar.rs
+@@ -381,7 +381,7 @@ pub fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
+                     "   j/k navigate \u{00b7} space select \u{00b7} \u{21b5} confirm \u{00b7} esc back",
+                 ),
+                 InputMode::VisualSelect => Cow::Borrowed(
+-                    "   j/k extend \u{00b7} c/\u{21b5} comment \u{00b7} y yank \u{00b7} esc/V cancel",
++                    "   j/k extend \u{00b7} c/\u{21b5} comment \u{00b7} y yank \u{00b7} Y yank diff \u{00b7} esc/V cancel",
+                 ),
+                 InputMode::SubmitResolver => Cow::Borrowed(
+                     "   j/k move \u{00b7} \u{21b5} toggle \u{00b7} s submit \u{00b7} esc cancel",

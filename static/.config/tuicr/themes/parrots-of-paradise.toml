@@ -1,0 +1,55 @@
+# tuicr UI theme generated from static/parrots-of-paradise.yaml via replaceColorReferences (users/izelnakri/default.nix).
+# Keys are tuicr's required local-theme palette (see tuicr examples/tuicr-teal.toml). No syntax_theme: tuicr then
+# picks its bundled dark syntax theme, which reads fine on this background.
+panel_bg = "#{{base01}}"
+bg_highlight = "#{{base02}}"
+fg_primary = "#{{base05}}"
+fg_secondary = "#{{base0C}}"
+fg_dim = "#{{base03}}"
+selection_marker = "#{{base09}}"
+
+diff_add = "#{{base0B}}"
+diff_del = "#{{base08}}"
+# NOTE: Tinted backgrounds aren't palette entries; these are base0B/base08 blended into base01 (GitHub-dark style).
+diff_add_bg = "#14402a"
+diff_del_bg = "#46201a"
+syntax_add_bg = "#14402a"
+syntax_del_bg = "#46201a"
+diff_context = "#{{base05}}"
+diff_hunk_header = "#{{base0D}}"
+expanded_context_fg = "#{{base03}}"
+
+# Same colors nvim (parrots-of-paradise), neo-tree & gitsigns use for git states:
+file_added = "#{{base0B}}"
+file_modified = "#{{base09}}"
+file_deleted = "#{{base08}}"
+file_renamed = "#{{base0E}}"
+
+reviewed = "#{{base0B}}"
+pending = "#{{base0A}}"
+
+comment_note = "#{{base0D}}"
+comment_suggestion = "#{{base0C}}"
+comment_issue = "#{{base08}}"
+comment_praise = "#{{base0B}}"
+
+# Orange focus accent matches delta's file headers (file-style = "#EFAA32 ...") in git diff/log:
+border_focused = "#{{base09}}"
+border_unfocused = "#{{base02}}"
+status_bar_bg = "#{{base02}}"
+cursor_color = "#{{base0A}}"
+cursor_line_bg = "#{{base02}}"
+branch_name = "#{{base0E}}"
+help_indicator = "#{{base03}}"
+
+message_info_fg = "#{{base00}}"
+message_info_bg = "#{{base0D}}"
+message_warning_fg = "#{{base00}}"
+message_warning_bg = "#{{base0A}}"
+message_error_fg = "#{{base00}}"
+message_error_bg = "#{{base08}}"
+update_badge_fg = "#{{base00}}"
+update_badge_bg = "#{{base0A}}"
+
+mode_fg = "#{{base00}}"
+mode_bg = "#{{base09}}"
