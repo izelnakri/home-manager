@@ -111,6 +111,33 @@ require("lazy").setup({
     },
   },
   -- change_detection = { notify = false }
+}, {
+  -- `neogit` / `gg` from a shell (pkgs/neogit.nix) only needs the git UI: skip the other ~45 plugins
+  -- (LSP, DAP, completion, AI, ...) so it opens fast. A normal nvim loads everything as before.
+  defaults = {
+    cond = function(plugin)
+      if vim.g.neogit_standalone ~= 1 then
+        return true
+      end
+      return vim.tbl_contains({
+        "lazy.nvim",
+        "parrots-of-paradise",
+        "mini.nvim", -- mini.base16 for the theme
+        "async.nvim",
+        "neogit",
+        "plenary.nvim",
+        "diffview.nvim",
+        "telescope.nvim",
+        "telescope-fzf-native.nvim",
+        "nvim-web-devicons",
+        "gitsigns.nvim",
+        "nvim-treesitter", -- syntax colors inside diffs
+        "which-key.nvim",
+        "nvim-notify",
+        "dressing.nvim",
+      }, plugin.name)
+    end,
+  },
 })
 
 -- https://github.com/moyiz/git-dev.nvim
