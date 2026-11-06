@@ -208,6 +208,7 @@ in rec {
     # `tuicr pr <n>` / `:submit` posts real GitHub reviews (via gh). Config: static/.config/tuicr/
     tuicr
     (callPackage ../../pkgs/cr { inherit tuicr; }) # `cr`: tuicr review, then `y` sends it to the repo's Claude Code pane
+    (callPackage ../../pkgs/neogit.nix { }) # `neogit [dir]` / `gg`: git UI like `lazygit`, nvim straight into neogit
     (wrapNixGL ghostty) # Kitty-graphics terminal for herdr, config: static/.config/ghostty/config
     # calcurse (maybe use rust version) (daemon sends notifications)
     # Check: yt-dlp # maybe not needed due to ffmpeg feature
@@ -1107,6 +1108,7 @@ in rec {
         e = "edit";
         find-devices = "avahi-browse"; # TODO: Make this work
         g = "yy";
+        gg = "neogit"; # pkgs/neogit.nix, same as <leader>gg in nvim
         grep = "grep --color=auto";
         k = "kubectl";
         kube = "kubectl";

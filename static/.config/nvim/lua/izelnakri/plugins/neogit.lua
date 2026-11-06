@@ -37,6 +37,34 @@ return {
     "sindrets/diffview.nvim", -- `d` diff popup & side-by-side commit diffs
     "nvim-telescope/telescope.nvim", -- fuzzy branch/commit/file pickers
   },
+  init = function()
+    -- `neogit` / `gg` in a shell (pkgs/neogit.nix) open nvim straight into the status screen; there `q`
+    -- quits nvim like lazygit instead of leaving an empty editor behind. Scheduled so it wins over
+    -- neogit's own buffer-local `q`.
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "NeogitStatus",
+      callback = function(event)
+        if vim.g.neogit_standalone ~= 1 then
+          return
+        end
+        vim.schedule(function()
+          vim.keymap.set("n", "q", "<cmd>confirm qa<cr>", { buffer = event.buf, desc = "Quit neogit" })
+          -- No bufferline row with the empty start buffer, just the git UI. bufferline loads on VeryLazy
+          -- and turns the tabline back on, so hide it again after that too.
+          vim.o.showtabline = 0
+          vim.api.nvim_create_autocmd("User", {
+            pattern = "VeryLazy",
+            once = true,
+            callback = function()
+              vim.schedule(function()
+                vim.o.showtabline = 0
+              end)
+            end,
+          })
+        end)
+      end,
+    })
+  end,
   keys = {
     { "<leader>gg", "<cmd>Neogit<cr>", desc = "Neo[g]it status" },
     { "<leader>gc", "<cmd>Neogit commit<cr>", desc = "[C]ommit" },
