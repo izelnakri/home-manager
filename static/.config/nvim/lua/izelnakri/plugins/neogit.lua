@@ -1,5 +1,7 @@
 -- Neogit: magit-style git UI (stage hunks/lines, commit, branch, push, rebase) — the in-editor lazygit.
--- <leader>gg status (or `gg` / `neogit` in a shell), then press `?` for every popup; `=` toggles the diff preview. Magit keys: s/u stage/unstage (works on files, hunks or
+-- <leader>gg status (or `gg` / `neogit` in a shell), then press `?` for every popup. lazygit-style extras:
+-- a diff preview on the right (| style, = hide, + wider, ^d/^u scroll), <cr> expands a file's hunks, e edits,
+-- a stages/unstages all, and in `gg` <space> stages/unstages like lazygit. Magit keys: s/u stage/unstage (works on files, hunks or
 -- a visual line selection), x discard, c commit, b branch, P push, p pull, f fetch, r rebase, Z stash, l log,
 -- d diff (opens diffview), <tab> fold, {/} hunks, <c-r> refresh, q close.
 -- Review tools (tuicr/diffview) are in diffview.lua under the same <leader>g prefix.
@@ -44,8 +46,10 @@ return {
     vim.api.nvim_create_autocmd("FileType", {
       pattern = "NeogitStatus",
       callback = function(event)
-        -- lazygit-style diff preview on the right of the status list (izelnakri/neogit_preview.lua).
+        -- lazygit-style diff preview on the right of the status list and lazygit's staging keys
+        -- (izelnakri/neogit_preview.lua, izelnakri/neogit_keys.lua).
         require("izelnakri.neogit_preview").attach(event.buf)
+        require("izelnakri.neogit_keys").attach(event.buf)
         if vim.g.neogit_standalone ~= 1 then
           return
         end
@@ -116,6 +120,7 @@ return {
         ["<c-j>"] = false,
         ["<m-k>"] = "PeekUp",
         ["<m-j>"] = "PeekDown",
+        ["e"] = "GoToFile", -- lazygit's `e`; <cr> on a file expands its hunks (izelnakri/neogit_keys.lua)
       },
     },
   },
