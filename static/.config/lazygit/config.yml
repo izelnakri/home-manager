@@ -35,16 +35,17 @@ git:
   # (file headers, line numbers, word-level highlights). No --width: lazygit runs the pager in a pty
   # the size of the panel, so delta fits it ({{columnWidth}} is ydiff's half-width, too narrow).
   pagers:
-    # 1. side-by-side (GitHub "split" view): long lines wrap inside each column, so line numbers stay
-    #    aligned. Roomier with the side panel collapsed (+ / _). Line numbers are links to $EDITOR.
-    - colorArg: always
-      pager: >-
-        delta --dark --paging=never --side-by-side --line-numbers
-        --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
-    # 2. unified, for narrow terminals (lazygit itself wraps long lines here, without line numbers)
+    # 1. unified (default): one column, old and new lines interleaved. lazygit itself wraps long lines
+    #    here, without line numbers. Line numbers are links to $EDITOR.
     - colorArg: always
       pager: >-
         delta --dark --paging=never --line-numbers
+        --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+    # 2. side-by-side (GitHub "split" view): long lines wrap inside each column, so line numbers stay
+    #    aligned. Roomier with the side panel collapsed (+ / _).
+    - colorArg: always
+      pager: >-
+        delta --dark --paging=never --side-by-side --line-numbers
         --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
     # 3. difftastic: syntax-aware diff, ignores reformatting and shows what actually changed
     - externalDiffCommand: difft --color=always
