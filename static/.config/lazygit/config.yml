@@ -14,11 +14,29 @@ gui:
   nerdFontsVersion: "3" # nerd fonts version to use ("2" or "3"); empty means don't show nerd font icons
   border: "single" # one of 'single' | 'double' | 'rounded' | 'hidden'
 git:
+  # `|` cycles these in the diff view. The delta pagers keep the [delta] look from git config
+  # (file headers, line numbers, word-level highlights). No --width: lazygit runs the pager in a pty
+  # the size of the panel, so delta fits it ({{columnWidth}} is ydiff's half-width, too narrow).
   pagers:
-    - # useConfig: true # maybe this can finish it
-      colorArg: always
-      # useConfig: true
-      pager: delta --dark --paging=never
+    # 1. side-by-side (GitHub "split" view): long lines wrap inside each column, so line numbers stay
+    #    aligned. Roomier with the side panel collapsed (+ / _). Line numbers are links to $EDITOR.
+    - colorArg: always
+      pager: >-
+        delta --dark --paging=never --side-by-side --line-numbers
+        --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+    # 2. unified, for narrow terminals (lazygit itself wraps long lines here, without line numbers)
+    - colorArg: always
+      pager: >-
+        delta --dark --paging=never --line-numbers
+        --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+    # 3. difftastic: syntax-aware diff, ignores reformatting and shows what actually changed
+    - externalDiffCommand: difft --color=always
+  # NOTE: previous single pager:
+  # pagers:
+  #   - # useConfig: true # maybe this can finish it
+  #     colorArg: always
+  #     # useConfig: true
+  #     pager: delta --dark --paging=never
   parseEmoji: true
 refresher:
   refreshInterval: 6 # File/submodule refresh interval in seconds. Auto-refresh can be disabled via option 'git.autoRefresh'.

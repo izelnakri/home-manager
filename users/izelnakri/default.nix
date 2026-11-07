@@ -280,6 +280,7 @@ in rec {
     atuin
     # avahi (network discovery & connection)
     bat
+    difftastic # `difft`: syntax-aware diffs, lazygit's 3rd pager (cycle pagers with `|`)
     # unstable.batman
     unstable.brave # previous reference: inputs.nixpkgs.legacyPackages.x86_64-linux.brave-browser
     broot
