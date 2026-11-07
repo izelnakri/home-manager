@@ -1,3 +1,4 @@
+# Install edamame, markdown editor/viewer: https://github.com/mijowi/edamame
 # rustunnel: https://github.com/joaoh82/rustunnel
 # Kap screenrecorder: https://github.com/wulkano/Kap
 # oracle(rust doc viewer): https://github.com/yashksaini-coder/Rustlens
@@ -97,6 +98,8 @@ let
   wrapNixGL = import ../../modules/functions/wrap-nix-gl.nix { inherit pkgs lib; };
   replaceColorReferences =
     import ../../modules/functions/replace-color-references.nix;
+  # tuicr 0.28 (unstable has 0.26), shared by home.packages, `cr` and the Claude Code skill below:
+  tuicr = pkgs.callPackage ../../pkgs/tuicr.nix { };
 in rec {
   imports = [
     inputs.ironbar.homeManagerModules.default
@@ -201,6 +204,11 @@ in rec {
     # herdr: tmux successor built for coding agents (Rust). 0.9.3 overrides unstable's 0.9.0, see pkgs/herdr.nix.
     # Config: static/.config/herdr/config.toml | Runs inside Ghostty (images); alacritty keeps running tmux.
     (callPackage ../../pkgs/herdr.nix { })
+    # Code review for agent-written changes: GitHub-style diff + PR comments in the terminal, see pkgs/tuicr.nix.
+    # `tuicr pr <n>` / `:submit` posts real GitHub reviews (via gh). Config: static/.config/tuicr/
+    tuicr
+    (callPackage ../../pkgs/cr { inherit tuicr; }) # `cr`: tuicr review, then `y` sends it to the repo's Claude Code pane
+    (callPackage ../../pkgs/neogit.nix { }) # `neogit [dir]` / `gg`: git UI like `lazygit`, nvim straight into neogit
     (wrapNixGL ghostty) # Kitty-graphics terminal for herdr, config: static/.config/ghostty/config
     # calcurse (maybe use rust version) (daemon sends notifications)
     # Check: yt-dlp # maybe not needed due to ffmpeg feature
@@ -272,6 +280,7 @@ in rec {
     atuin
     # avahi (network discovery & connection)
     bat
+    difftastic # `difft`: syntax-aware diffs, lazygit's 3rd pager (cycle pagers with `|`)
     # unstable.batman
     unstable.brave # previous reference: inputs.nixpkgs.legacyPackages.x86_64-linux.brave-browser
     broot
@@ -389,6 +398,7 @@ in rec {
     nodejs
     noto-fonts
     noto-fonts-color-emoji
+    inputs.omnidiff.packages.${system}.default # content-aware diffs: `git review` below
     mako
     unstable.manix
     # mpd
@@ -568,6 +578,9 @@ in rec {
     ".tmux.conf".source = ../../static/.config/tmux/tmux.conf;
     "scripts".source = config.lib.file.mkOutOfStoreSymlink
       "${config.home.homeDirectory}/.config/home-manager/static/scripts";
+    # tuicr's own Claude Code skill, pinned to the installed version: lets any Claude session open tuicr in a
+    # tmux/herdr split for you and read your comments live (`tuicr review comments`) instead of waiting for `y`.
+    ".claude/skills/tuicr".source = "${tuicr.src}/skills/tuicr";
 
     # "vimwiki".source = config.lib.file.mkOutOfStoreSymlink ../../static/vimwiki;
 
@@ -709,6 +722,12 @@ in rec {
           pu = "push";
           co = "checkout";
           cm = "commit";
+          # git review <target> [base] (base...target, base defaults to origin/main), or git review A..B
+          review = ''!f() { git fetch -q origin; case "$1" in *..*) r="$1" ;; *) r="''${2:-origin/main}...''${1:-HEAD}" ;; esac; git difftool -y --tool=omnidiff "$r"; }; f'';
+        };
+        difftool = {
+          prompt = false;
+          omnidiff.cmd = ''omnidiff "$LOCAL" "$REMOTE"'';
         };
         diff = {
           colorMoved = "default";
@@ -1090,6 +1109,7 @@ in rec {
         e = "edit";
         find-devices = "avahi-browse"; # TODO: Make this work
         g = "yy";
+        gg = "neogit"; # pkgs/neogit.nix, same as <leader>gg in nvim
         grep = "grep --color=auto";
         k = "kubectl";
         kube = "kubectl";
@@ -1370,6 +1390,12 @@ in rec {
         '';
       };
       "ironbar".source = ../../static/.config/ironbar;
+      # Out-of-store so `:theme`/edits are live; only the palette-templated theme is generated:
+      "tuicr/config.toml".source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/.config/home-manager/static/.config/tuicr/config.toml";
+      "tuicr/themes/parrots-of-paradise.toml".text = (replaceColorReferences
+        (builtins.readFile ../../static/.config/tuicr/themes/parrots-of-paradise.toml)
+        config.colorScheme.palette);
       "lazygit".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/.config/home-manager/static/.config/lazygit";
       "mako/config".text = (replaceColorReferences

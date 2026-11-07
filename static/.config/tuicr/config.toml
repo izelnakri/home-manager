@@ -1,0 +1,57 @@
+# tuicr: GitHub-style review of agent-written diffs. Full option list: https://github.com/agavra/tuicr/blob/main/docs/CONFIG.md
+# Symlinked out-of-store (users/izelnakri/default.nix) so edits are live; the theme file next to it is generated.
+# Entry points: `cr` (review → send to a Claude Code pane), `tuicr pr <n>` (GitHub PR), <leader>gr / <leader>gR in nvim.
+
+theme = "parrots-of-paradise" # ~/.config/tuicr/themes/parrots-of-paradise.toml, `:theme` previews bundled ones
+transparent_background = true # terminal bg (same palette) shows through
+
+diff_view = "side-by-side" # GitHub "Split" view; `:diff` toggles unified for narrow panes/floats
+ignore_whitespace = "auto" # hide whitespace-only churn in js/ts/json/rs (agents reformat a lot); `:e` after editing
+wrap = false
+scroll_offset = 10 # same as nvim's scrolloff
+relative_line_numbers = false
+cursor_line = true
+search_highlight = true
+mouse = true
+compact_folders = true # app/src/main/ as one tree row
+show_file_list = true
+show_commits = true
+show_reviewed = true
+
+# PRs: show CI status & unresolved GitHub threads inline, so a PR review here matches the web UI:
+show_pr_checks = true
+show_pr_comments = true
+pr_comments_visibility = "unresolved" # `:comments all` shows resolved/outdated ones too
+
+# Re-read the working tree every second: the diff updates live while an agent is still editing.
+diff_watch_interval_ms = 1000
+review_watch_interval_ms = 1000 # pick up comments added via `tuicr review add` (e.g. by Claude)
+
+editor = "nvim" # `e`: in nvim's <leader>gr float jumps that nvim to the line (pkgs/cr/nvim-shim.sh), else opens nvim there
+comment_vim = true # modal editing in the comment box: Enter twice / :w saves, Esc twice / :q cancels, `:novim` to disable
+comment_tab_width = 2
+q_quits = true # lazygit muscle memory; still warns on unsaved comments
+# leader = ";" # default; <leader>e file tree, <leader>c review-level comment, <leader>h/l panes
+username = "izelnakri"
+no_update_check = true # nix owns the binary (pkgs/tuicr.nix), `tuicr update` can't replace it
+
+# ids match what the tuicr Claude skill (~/.claude/skills/tuicr) understands: issue > suggestion > note > praise.
+# Tab cycles them while writing a comment; the first one is the default.
+comment_types = [
+  { id = "issue", definition = "must be fixed before merge", color = "red" },
+  { id = "suggestion", definition = "should change; implement it or explain why not", color = "cyan" },
+  { id = "note", label = "question", definition = "answer or clarify, change code only if the answer demands it", color = "blue" },
+  { id = "nit", label = "nitpick", definition = "small optional polish", color = "yellow" },
+  { id = "praise", definition = "good as is, keep this approach", color = "green" },
+]
+
+[forge]
+comment_type_prefix = true # GitHub comments read "[ISSUE] ...", like the export
+
+[export]
+# What `y` hands to Claude Code (via `cr`) or copies to the clipboard (plain `tuicr`):
+intro = "I reviewed your changes in tuicr. Address every ISSUE first, then each SUGGESTION (implement it or say why not), answer each QUESTION; NITPICKs are optional. When done, reply with a short summary keyed by comment number."
+scope_line = true
+pr_metadata = true
+legend = true
+session_header = false

@@ -23,6 +23,8 @@
     };
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+    # Content-aware diff viewer; `git review` (users/izelnakri) opens branch diffs in it.
+    omnidiff.url = "github:ivankovic/omnidiff";
     # Disabled: a `path:` input copies the whole ~/Github/nixpkgs working tree into the
     # store on every lock/eval (slow) and it was only consumed by the dead `fork` overlay
     # below. For hacking on packages/modules use `make module-dev` instead, which does

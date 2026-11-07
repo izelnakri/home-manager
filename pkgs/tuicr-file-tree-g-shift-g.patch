@@ -1,0 +1,98 @@
+diff --git a/docs/KEYBINDINGS.md b/docs/KEYBINDINGS.md
+index a5364c4..c5f1cd8 100644
+--- a/docs/KEYBINDINGS.md
++++ b/docs/KEYBINDINGS.md
+@@ -63,6 +63,7 @@ Press `?` to open help.
+ |-----|--------|
+ | `Space` | Toggle expand directory |
+ | `Enter` | Expand directory / jump to file in diff |
++| `g` / `G` | Select the first / last row |
+ | `o` | Expand all directories |
+ | `O` | Collapse all directories |
+ | `i` | Filter to files matching a regex (include) |
+diff --git a/src/app/tests/file_filter_tests.rs b/src/app/tests/file_filter_tests.rs
+index 0449610..5c6a3e5 100644
+--- a/src/app/tests/file_filter_tests.rs
++++ b/src/app/tests/file_filter_tests.rs
+@@ -633,6 +633,25 @@ fn should_burn_down_through_the_file_list_handler_while_hiding() {
+     assert_eq!(selected_path(&app), "b.rs");
+ }
+ 
++#[test]
++fn should_select_first_and_last_tree_rows_with_g_and_shift_g() {
++    let mut app = app_with(&["a.rs", "b.rs", "c.rs"]);
++    app.focused_panel = FocusedPanel::FileList;
++    app.file_list_state.select(1);
++    let diff_cursor = app.diff_state.cursor_line;
++
++    crate::handler::handle_file_list_action(&mut app, Action::GoToBottom);
++    assert_eq!(selected_path(&app), "c.rs");
++
++    crate::handler::handle_file_list_action(&mut app, Action::GoToTop);
++    assert_eq!(app.file_list_state.selected(), 0);
++
++    assert_eq!(
++        app.diff_state.cursor_line, diff_cursor,
++        "g/G in the tree move only the tree selection, like j/k"
++    );
++}
++
+ /// Type `command` at the `:` prompt and submit it, the way a user would.
+ /// Command mode is the only entry point for reviewed-file visibility.
+ fn run_command(app: &mut App, command: &str) {
+diff --git a/src/app/tree.rs b/src/app/tree.rs
+index 96ae708..f932495 100644
+--- a/src/app/tree.rs
++++ b/src/app/tree.rs
+@@ -20,6 +20,19 @@ impl App {
+         self.follow_file_list_in_single_file_view();
+     }
+ 
++    /// `g` in the file tree: select its first row, like `gg` in vim.
++    pub fn file_list_top(&mut self) {
++        self.file_list_state.select(0);
++        self.follow_file_list_in_single_file_view();
++    }
++
++    /// `G` in the file tree: select its last row.
++    pub fn file_list_bottom(&mut self) {
++        let last = self.build_visible_items().len().saturating_sub(1);
++        self.file_list_state.select(last);
++        self.follow_file_list_in_single_file_view();
++    }
++
+     /// In single-file view the diff panel always shows one file at a time,
+     /// so navigating the file list with j/k should reveal the highlighted
+     /// file immediately instead of waiting for Enter. Skips directories
+diff --git a/src/handler.rs b/src/handler.rs
+index 53e28f3..8f93920 100644
+--- a/src/handler.rs
++++ b/src/handler.rs
+@@ -1548,6 +1548,9 @@ pub fn handle_file_list_action(app: &mut App, action: Action) {
+         Action::SearchPrev if app.file_tree_search_active() => app.file_tree_search_prev(),
+         Action::CursorDown(n) => app.file_list_down(n),
+         Action::CursorUp(n) => app.file_list_up(n),
++        // Like j/k, g/G move the tree selection; the diff panel keeps its first-file/last-line jumps.
++        Action::GoToTop => app.file_list_top(),
++        Action::GoToBottom => app.file_list_bottom(),
+         Action::ScrollLeft(n) => app.file_list_state.scroll_left(n),
+         Action::ScrollRight(n) => app.file_list_state.scroll_right(n),
+         Action::MouseScrollDown(n) => app.file_list_viewport_scroll_down(n),
+diff --git a/src/ui/help_popup.rs b/src/ui/help_popup.rs
+index bce05cf..5510394 100644
+--- a/src/ui/help_popup.rs
++++ b/src/ui/help_popup.rs
+@@ -453,6 +453,13 @@ pub fn render_help(frame: &mut Frame, app: &mut App) {
+             ),
+             Span::raw("Expand dir / Jump to file"),
+         ]),
++        Line::from(vec![
++            Span::styled(
++                "  g / G     ",
++                Style::default().add_modifier(Modifier::BOLD),
++            ),
++            Span::raw("First / last row"),
++        ]),
+         Line::from(vec![
+             Span::styled(
+                 "  o         ",
