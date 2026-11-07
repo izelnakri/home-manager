@@ -1,7 +1,7 @@
 # TODO: discard keybinding doest work(d) instead it does a reset(?)
-# Make stage/unstage coloring correct
-# Make staged changes the 2nd Secondary window or add ability to scrollUp/DownSecondaryPanel
-# n-N sometimes doesn't work properly on Staged/unstaged
+# Make stage/unstage coloring correct (unstaged now uses the palette's red, see gui.theme)
+# DONE: Make staged changes the 2nd Secondary window or add ability to scrollUp/DownSecondaryPanel (gui.mainPanelSplitMode: vertical)
+# DONE: n-N sometimes doesn't work properly on Staged/unstaged (n/N were remapped to next/prev panel, see keybinding.universal)
 # Investigate github browse commit/branch and PR, create a PR flow
 # Check dropping lines, drop all changes(incl staged) or drop unstaged changes
 # NOTE: read git-clif and git-flow integration with lazygit
@@ -13,6 +13,23 @@ gui:
   sidePanelWidth: 0.25
   nerdFontsVersion: "3" # nerd fonts version to use ("2" or "3"); empty means don't show nerd font icons
   border: "single" # one of 'single' | 'double' | 'rounded' | 'hidden'
+  # A partly staged file shows its unstaged and staged diffs stacked, each full width (the default
+  # 'flexible' puts them side by side on wide windows, cramped with the side-by-side pager).
+  mainPanelSplitMode: vertical
+  # parrots-of-paradise (static/parrots-of-paradise.yaml), the palette nvim, tuicr and neogit use.
+  theme:
+    activeBorderColor: ["#EFAA32", "bold"] # base09
+    inactiveBorderColor: ["#5E6E5E"] # base03
+    searchingActiveBorderColor: ["#FFD580", "bold"] # base0A
+    optionsTextColor: ["#85B1DD"] # base0D
+    selectedLineBgColor: ["#10302b"] # base02
+    inactiveViewSelectedLineBgColor: ["bold"]
+    cherryPickedCommitFgColor: ["#85B1DD"] # base0D
+    cherryPickedCommitBgColor: ["#10302b"] # base02
+    markedBaseCommitFgColor: ["#FFD580"] # base0A
+    markedBaseCommitBgColor: ["#10302b"] # base02
+    unstagedChangesColor: ["#EF5D32"] # base08
+    defaultFgColor: ["#D6E3C6"] # base05
 git:
   # `|` cycles these in the diff view. The delta pagers keep the [delta] look from git config
   # (file headers, line numbers, word-level highlights). No --width: lazygit runs the pager in a pty
@@ -45,18 +62,23 @@ keybinding:
     quit: "q" # exists the program
     quit-alt1: "<c-c>" # alternative/alias of quit
     return: "<esc>" # exit prompt, also acts as return to previous menu
-    prevPage: "<c-u>" # go to next page in list
-    nextPage: "<c-d>" # go to previous page in list
-    prevBlock: "N" # goto the previous block / panel
-    nextBlock: "n" # goto the next block / panel
+    # <c-d>/<c-u> and J/K are lazygit's defaults for scrolling the diff from the side panels again,
+    # and n/N its search next/previous match (they were next/previous panel, which is why n/N
+    # "sometimes didn't work" in the staged/unstaged views). Panels: <tab>/<backtab>, h, arrows, 1-5.
+    # List paging is lazygit's default , and .
+    # prevPage: "<c-u>" # go to next page in list
+    # nextPage: "<c-d>" # go to previous page in list
+    # prevBlock: "N" # goto the previous block / panel
+    # nextBlock: "n" # goto the next block / panel
     scrollRight: "<c-l>" # scroll right within list view
     gotoTop: "g" # go to top of list
     gotoBottom: "G" # go to bottom of list
     select: "<space>"
     goInto: "l"
     copyToClipboard: "y"
-    rangeSelectUp: "K"
-    rangeSelectDown: "J"
+    # Range select: lazygit's `v` toggle or <s-up>/<s-down> (J/K now scroll the diff).
+    # rangeSelectUp: "K"
+    # rangeSelectDown: "J"
     increaseContextInDiffView: <c-k>
     decreaseContextInDiffView: <c-j>
   files:
@@ -66,10 +88,17 @@ keybinding:
     popStash: "p"
     # stash pop
 customCommands:
-  - key: "<c-z>"
+  # R in the files panel: review the changes in tuicr (`cr`); `y` there sends your comments to the
+  # Claude Code pane for this repo, `:q` comes back. R stays refresh / rename in the other panels.
+  - key: "R"
     context: "files"
-    command: 'echo "IM amazing"'
-    output: popup
+    command: cr
+    output: terminal
+    description: "Review changes in tuicr (y sends comments to Claude)"
+  # - key: "<c-z>"
+  #   context: "files"
+  #   command: 'echo "IM amazing"'
+  #   output: popup
 # Example:
 #
 # Branch name: feature/AB-123
