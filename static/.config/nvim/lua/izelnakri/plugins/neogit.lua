@@ -120,7 +120,9 @@ return {
         ["<c-j>"] = false,
         ["<m-k>"] = "PeekUp",
         ["<m-j>"] = "PeekDown",
-        ["e"] = "GoToFile", -- lazygit's `e`; <cr> on a file expands its hunks (izelnakri/neogit_keys.lua)
+        -- lazygit's `e`; izelnakri/neogit_keys.lua overrides it to edit in a tab that returns here on :q,
+        -- and <cr> on a file expands its hunks.
+        ["e"] = "GoToFile",
       },
     },
   },
