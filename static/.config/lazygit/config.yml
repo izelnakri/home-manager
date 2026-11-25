@@ -34,21 +34,20 @@ git:
   # `|` cycles these in the diff view. The delta pagers keep the [delta] look from git config
   # (file headers, line numbers, word-level highlights). No --width: lazygit runs the pager in a pty
   # the size of the panel, so delta fits it ({{columnWidth}} is ydiff's half-width, too narrow).
-  pagers:
+  diffRenderers:
     # 1. unified (default): one column, old and new lines interleaved. lazygit itself wraps long lines
     #    here, without line numbers. Line numbers are links to $EDITOR.
     - colorArg: always
-      pager: >-
-        delta --dark --paging=never --line-numbers
-        --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+      command: >-
+        delta --dark --paging=never --line-numbers --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
     # 2. side-by-side (GitHub "split" view): long lines wrap inside each column, so line numbers stay
     #    aligned. Roomier with the side panel collapsed (+ / _).
     - colorArg: always
-      pager: >-
-        delta --dark --paging=never --side-by-side --line-numbers
-        --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+      command: >-
+        delta --dark --paging=never --side-by-side --line-numbers --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
     # 3. difftastic: syntax-aware diff, ignores reformatting and shows what actually changed
-    - externalDiffCommand: difft --color=always
+    - command: difft --color=always
+      type: extDiff
   # NOTE: previous single pager:
   # pagers:
   #   - # useConfig: true # maybe this can finish it
@@ -96,10 +95,10 @@ customCommands:
     command: cr
     output: terminal
     description: "Review changes in tuicr (y sends comments to Claude)"
-  # - key: "<c-z>"
-  #   context: "files"
-  #   command: 'echo "IM amazing"'
-  #   output: popup
+    # - key: "<c-z>"
+    #   context: "files"
+    #   command: 'echo "IM amazing"'
+    #   output: popup
 # Example:
 #
 # Branch name: feature/AB-123

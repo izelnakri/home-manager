@@ -337,7 +337,7 @@ in rec {
     # joplin
     heaptrack
     htop
-    (wrapNixGL hyprland) # TODO: Maybe turn this for windowManager.hyprland
+    # (wrapNixGL hyprland) # TODO: Maybe turn this for windowManager.hyprland
     hyprpicker
     # hyperfine # Command-line benchmarking tool
     # unstable.home-assistant # Build test fails 
