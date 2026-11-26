@@ -49,7 +49,9 @@ return {
             return
           end
 
-          if vim.treesitter.language.add(lang) then
+          -- A loadable parser isn't enough: stale parsers (e.g. left in the plugin dir by the old `master` branch)
+          -- load fine but `main` only links queries for languages it installed, so highlighting would be empty.
+          if vim.treesitter.language.add(lang) and #vim.treesitter.query.get_files(lang, "highlights") > 0 then
             return attach(args.buf, lang)
           end
 

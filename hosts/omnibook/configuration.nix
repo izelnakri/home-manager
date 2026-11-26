@@ -1,9 +1,14 @@
 # Maybe I need: pkgs.linux-firmware on hardware.firmware?
-{ config, lib, pkgs, inputs, ... }:
-{ 
-  imports = with inputs.self.nixosModules; [ 
-    ./hardware-configuration.nix 
+{ config, lib, pkgs, inputs, modulesPath, ... }:
+{
+  disabledModules = [
+    "${modulesPath}/hardware/video/displaylink.nix"
+  ];
+
+  imports = with inputs.self.nixosModules; [
+    ./hardware-configuration.nix
     ./services.nix
+    "${inputs.nixpkgs-unstable}/nixos/modules/hardware/video/displaylink.nix"
   ];
 
   # age = {
@@ -17,8 +22,8 @@
   security.soteria.enable = true;
   # security.polkit.extraConfig = ''
   #   polkit.addRule(function(action, subject) {
-  #     if (action.id.indexOf("net.hadess.SensorProxy") == 0) { 
-  #       return polkit.Result.YES; 
+  #     if (action.id.indexOf("net.hadess.SensorProxy") == 0) {
+  #       return polkit.Result.YES;
   #     }
   #   });
   # '';
@@ -26,6 +31,11 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 25;
   boot.loader.efi.canTouchEfiVariables = true;
+
+  # To enable DisplayLink adapters:
+  boot.extraModprobeConfig = ''
+    options evdi initial_device_count=1
+  '';
 
   nix.package = pkgs.nixVersions.latest;
   nix.extraOptions = ''
@@ -38,7 +48,7 @@
   nixpkgs.config.allowUnfree = true;
 
   # Pick only one of the below networking options.
-  # networking.wireless.enable = true; # Enables wireless support via wpa_supplicant. 
+  # networking.wireless.enable = true; # Enables wireless support via wpa_supplicant.
   networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
   networking.hostName = "omnibook";
   # NOTE: This is needed for k3s traefik proxying
@@ -58,10 +68,12 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.groups.input = {};
   users.defaultUserShell = pkgs.zsh;
-  users.users.izelnakri = { 
-   isNormalUser = true; 
-   password = "corazon";
-   extraGroups = [ "kvm" "wheel" "input" "uinput" "render" "video" "scanner" "lp" ]; # NOTE: what if I removed "bitbox"
+  users.users.izelnakri = {
+    isNormalUser = true;
+    # The plaintext password from the supplied file is intentionally not reproduced here.
+    # Keep the existing password in /etc/shadow, or replace this with hashedPasswordFile
+    # backed by an agenix/ragenix secret before managing it declaratively again.
+    extraGroups = [ "kvm" "wheel" "input" "uinput" "render" "video" "scanner" "lp" ]; # NOTE: what if I removed "bitbox"
   };
 
   home-manager = {
@@ -74,57 +86,58 @@
     };
   };
 
+  # environment.systemPackages = with pkgs; [
+  #   android-studio
+  #   uv
+  #
+  #   # linuxKernel.packages.linux_6_17.iio-utils # is it needded for the sensor info?
+  #
+  #   unstable.ocl-icd # OpenCL ICD Loader for opencl-headers-2024.10.24
+  #   # unstable.opencl-headers # opencl-headers-2024.10.24
+  #
+  #   intel-gpu-tools # provides lsgpu
+  #   # maybe vpl-gpu-rt for video processing
+  #   # unstable.llama-cpp
+  #
+  #   # unstable.openvino # has cudaSupport option! , TODO: research this further
+  #   unstable.intel-compute-runtime
+  #   # python312Packages.optimum # trying to see if this converts to intel optimized models via optimum-cli
+  #
+  #   copyq # Temporarily added for VM clipboard share test
+  #   wget 
+  #   curl
+  #   kitty
+  #   git
+  #   home-manager
+  #   brave
+  #   script-directory
+  #   sd-switch
+  #   unstable.iio-sensor-proxy # NOTE: check later if this is needed
+  #   # inputs.iio-hyprland.packages.${pkgs.system}.default # check the version
+  #
+  #   # https://github.com/nix-community/nix-ld?tab=readme-ov-file#my-pythonnodejsrubyinterpreter-libraries-do-not-find-the-libraries-configured-by-nix-ld
+  #   # (pkgs.writeShellScriptBin "python" ''
+  #   #   export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
+  #   #   exec ${pkgs.python3}/bin/python "$@"
+  #   # '')
+  #
+  #   # TODO: Maybe add these later
+  #   # (pkgs.callPackage ./intel-npu-driver.nix {})
+  #   # pkgs.unstable.level-zero
+  # ];
+
   environment.variables = {
     EDITOR = "nvim";
     CONTAINER_RUNTIME_ENDPOINT = "unix:///run/user/1000/k3s/containerd/containerd.sock";
     KUBECONFIG = "$HOME/.kube/k3s.yaml";
   };
 
-  environment.systemPackages = with pkgs; [
-    android-studio
-    uv
-
-    # linuxKernel.packages.linux_6_17.iio-utils # is it needded for the sensor info?
-
-    unstable.ocl-icd # OpenCL ICD Loader for opencl-headers-2024.10.24
-    # unstable.opencl-headers # opencl-headers-2024.10.24
-
-    intel-gpu-tools # provides lsgpu
-    # maybe vpl-gpu-rt for video processing
-    # unstable.llama-cpp
-
-    # unstable.openvino # has cudaSupport option! , TODO: research this further
-    unstable.intel-compute-runtime
-    # python312Packages.optimum # trying to see if this converts to intel optimized models via optimum-cli
-
-    copyq # Temporarily added for VM clipboard share test
-    wget 
-    curl
-    kitty
-    git
-    home-manager
-    brave
-    script-directory
-    sd-switch
-    unstable.iio-sensor-proxy # NOTE: check later if this is needed
-    # inputs.iio-hyprland.packages.${pkgs.system}.default # check the version
-
-    # https://github.com/nix-community/nix-ld?tab=readme-ov-file#my-pythonnodejsrubyinterpreter-libraries-do-not-find-the-libraries-configured-by-nix-ld
-    # (pkgs.writeShellScriptBin "python" ''
-    #   export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
-    #   exec ${pkgs.python3}/bin/python "$@"
-    # '')
-
-    # TODO: Maybe add these later
-    # (pkgs.callPackage ./intel-npu-driver.nix {})
-    # pkgs.unstable.level-zero
-  ];
   environment.etc."OpenCL/vendors/intel-neo.icd".source =
     "${pkgs.intel-compute-runtime}/etc/OpenCL/vendors/intel-neo.icd";
 
-  # Open ports in the firewall. 
-  # networking.firewall.allowedTCPPorts = [ ... ]; 
-  # networking.firewall.allowedUDPPorts = [ ... ]; 
+  # Open ports in the firewall.
+  # networking.firewall.allowedTCPPorts = [ ... ];
+  # networking.firewall.allowedUDPPorts = [ ... ];
   # networking.firewall.enable = false; # Or disable the firewall altogether.
 
   system.stateVersion = "25.05";
@@ -134,7 +147,13 @@
   programs.alvr.enable = true;
   programs.alvr.openFirewall = true;
 
-  programs.hyprland.enable = true;
+  programs.hyprland = {
+    enable = true;
+    # Use the package and its matching portal from the official Hyprland flake.
+    # Its own flake.lock pins Aquamarine and the rest of the Hyprland stack together.
+    package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+    portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+  };
   programs.hyprlock.enable = true;
   programs.iio-hyprland.enable = true;
   programs.zsh.enable = true;
@@ -162,10 +181,10 @@
   #   localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
   # };
 
-  services.btrfs.autoScrub = { 
-    enable = true; 
-    interval = "monthly"; 
-    fileSystems = [ "/" ]; 
+  services.btrfs.autoScrub = {
+    enable = true;
+    interval = "monthly";
+    fileSystems = [ "/" ];
   };
 
   services.udev.extraRules = ''
@@ -175,7 +194,7 @@
 
   services.xserver = {
     enable = true;
-    videoDrivers = [ "modesetting" ]; # NOTE: should this be "intel-neo" instead?
+    videoDrivers = [ "displaylink" "modesetting" ]; # NOTE: should this be "intel-neo" instead?
   };
   services.displayManager.gdm.enable = true; # GDM supports Wayland; LightDM held DRM for its X greeter and made Hyprland abort with "Could not take device" on Lunar Lake.
   services.desktopManager.gnome.enable = true;
@@ -185,9 +204,9 @@
 
   services.printing.enable = true;
 
-  # Enable sound. hardware.pulseaudio.enable = true; OR 
+  # Enable sound. hardware.pulseaudio.enable = true; OR
   services.pipewire = {
-    enable = true; 
+    enable = true;
     pulse.enable = true;
     wireplumber.extraConfig."10-bluetooth" = {
       "monitor.bluez.properties" = {
@@ -205,7 +224,6 @@
 
   services = {
     # openssh.enable = true; # To enable openssh
-
     postgresql.enable = true;
     tailscale.enable = true;
     # taskchampion-sync-server.enable = true; # fails only on master branch
@@ -213,6 +231,8 @@
   };
 
   systemd.services = {
+    dlm.wantedBy = [ "multi-user.target" ];
+
     # TODO: Enable in the future tailscale
     # tailscale-serve = {
     #   description = "Tailscale serve webserver";
@@ -256,11 +276,11 @@
   systemd.services."user@".serviceConfig.Delegate = "cpuset cpu io memory pids";
 
   boot.kernel.sysctl = {
-    "net.ipv4.ip_unprivileged_port_start" = 0;  # Allow all ports
+    "net.ipv4.ip_unprivileged_port_start" = 0; # Allow all ports
     "net.ipv4.ip_forward" = 1;
   };
 
-  networking.firewall.allowedTCPPorts = [ 80 ]; 
+  networking.firewall.allowedTCPPorts = [ 80 ];
   networking.firewall.extraCommands = ''
     iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3333
     iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 3333

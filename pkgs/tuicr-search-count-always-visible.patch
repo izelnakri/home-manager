@@ -1,0 +1,27 @@
+diff --git a/src/ui/status_bar.rs b/src/ui/status_bar.rs
+index 0e2e204..8931f18 100644
+--- a/src/ui/status_bar.rs
++++ b/src/ui/status_bar.rs
+@@ -399,16 +399,18 @@ pub fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
+         };
+         let hints_span = Span::styled(hints, Style::default().fg(theme.fg_secondary));
+ 
+-        let mut spans = vec![mode_span, hints_span];
++        // The match counter goes right after the mode chip and stays up while a message shows,
++        // so wrap-around notices ("search hit BOTTOM ...") and narrow panes don't hide it.
++        let mut spans = vec![mode_span];
+         if app.input_mode == InputMode::Normal
+-            && app.message.is_none()
+             && let Some((current, total)) = app.search_match_position()
+         {
+             spans.push(Span::styled(
+-                format!("   [{current}/{total}]"),
+-                Style::default().fg(theme.fg_secondary),
++                format!(" [{current}/{total}]"),
++                Style::default().fg(theme.fg_primary),
+             ));
+         }
++        spans.push(hints_span);
+         spans
+     };
+ 

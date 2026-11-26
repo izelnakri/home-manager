@@ -16,6 +16,7 @@ return {
         { "<leader>w", group = "[W]orkspace" },
         { "<leader>t", group = "[T]oggle" },
         { "<leader>h", group = "Git [H]unk", mode = { "n", "v" } }, -- NOTE: Check if this is working
+        { "<leader>g", group = "[G]it & review", mode = { "n", "v" } }, -- neogit.lua, diffview.lua (tuicr)
       })
     end,
   },

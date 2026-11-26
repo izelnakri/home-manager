@@ -10,6 +10,7 @@
 
     # iio-hyprland.url = "github:JeanSchoeller/iio-hyprland";
     ironbar.url = "github:JakeStanger/ironbar?ref=v0.16.1";
+    hyprland.url = "github:hyprwm/Hyprland?ref=v0.57.2";
 
     nix-colors.url = "github:misterio77/nix-colors";
     nix-flatpak.url = "github:gmodena/nix-flatpak?ref=v0.6.0"; # unstable branch. Use github:gmodena/nix-flatpak/?ref=<tag> to pin releases.
@@ -23,6 +24,8 @@
     };
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+    # Content-aware diff viewer; `git review` (users/izelnakri) opens branch diffs in it.
+    omnidiff.url = "github:ivankovic/omnidiff";
     # Disabled: a `path:` input copies the whole ~/Github/nixpkgs working tree into the
     # store on every lock/eval (slow) and it was only consumed by the dead `fork` overlay
     # below. For hacking on packages/modules use `make module-dev` instead, which does
@@ -36,9 +39,9 @@
   };
 
   # TODO: make mako & alacritty configured with base16 https://www.youtube.com/watch?v=jO2o0IN0LPE
-  outputs = inputs@{ 
+  outputs = inputs@{
     self, nixinate, nixpkgs, nixpkgs-unstable, nixos-hardware, nix-flatpak, home-manager, ragenix,
-    stylix, ...
+    hyprland, stylix, ...
   }:
     let
       allSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
@@ -55,6 +58,10 @@
           system = prev.stdenv.hostPlatform.system;
           config.allowUnfree = true;
         };
+
+        # DisplayLink 6.3 from nixpkgs-unstable.
+        displaylink = final.unstable.displaylink;
+
         # Disabled together with the nixpkgs-fork input above (was unused — only referenced
         # in commented-out `pkgs.fork.*` lines). Re-enable both to use a local nixpkgs fork.
         # fork = import nixpkgs-fork {
@@ -89,7 +96,7 @@
             # ]))
             # pkgs.python3Packages.virtualenv
             pkgs.openvino
-            pkgs.zlib 
+            pkgs.zlib
             pkgs.stdenv.cc.cc.lib
           ];
 
@@ -115,7 +122,7 @@
       #     # Package definition
       #   };
       # });
-    
+
       images = {
         pi4-nas = (self.nixosConfigurations.pi4-nas.extendModules {
           modules = [
