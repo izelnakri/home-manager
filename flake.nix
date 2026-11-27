@@ -55,7 +55,12 @@
         # Use the consuming host's own platform so this overlay is correct on aarch64
         # (pi4) too, instead of the hardcoded x86_64-linux `system` above.
         unstable = import nixpkgs-unstable {
-          system = prev.stdenv.hostPlatform.system;
+          localSystem = {
+            system = prev.stdenv.buildPlatform.system;
+          };
+          crossSystem = {
+            config = prev.stdenv.hostPlatform.config;
+          };
           config.allowUnfree = true;
         };
 
@@ -124,6 +129,7 @@
       # });
 
       images = {
+        # Existing Raspberry Pi image target is intentionally retained unchanged.
         pi4-nas = (self.nixosConfigurations.pi4-nas.extendModules {
           modules = [
             ./modules/build-raspberry-pi-image.nix
@@ -166,19 +172,20 @@
               # no-op passthrough (see modules/functions/wrap-nix-gl.nix). Re-add
               # `nixGL.overlay` here (and restore the input + real wrapper) for a
               # generic-Linux / non-NixOS host.
+              nixpkgs.hostPlatform = "aarch64-linux";
+              nixpkgs.buildPlatform = "x86_64-linux";
               nixpkgs.overlays = [ overlay-unstable ]; # [ overlay-unstable nixGL.overlay ];
             })
             nixos-hardware.nixosModules.raspberry-pi-4
             # nix-flatpak.nixosModules.nix-flatpak
             ./hosts/izels-pi4/configuration.nix
-            home-manager.nixosModules.home-manager
+            # home-manager.nixosModules.home-manager # commented out due to image build error from x86
             {
               _module.args.nixinate = {
                 host = "pi4-nas.lan";
                 sshUser = "izelnakri";
                 buildOn = "remote";
-                substituteOnTarget =
-                  true; # if buildOn is "local" then it will substitute on the target, "-s"
+                substituteOnTarget = true; # if buildOn is "local" then it will substitute on the target, "-s"
                 hermetic = false;
               };
             }
@@ -187,7 +194,20 @@
         };
       };
 
-      homeConfigurations = {
+        # Fairphone 6 / 6+ AArch64 NixOS userspace scaffold.
+        # This is NOT yet a flashable device image: device kernel, DTBs, firmware,
+        # boot image integration and installer are tracked in hosts/fairphone-6-plus/.
+        fairphone-6-plus = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+          modules = [
+            ({ config, pkgs, ... }: {
+              nixpkgs.overlays = [ overlay-unstable ];
+            })
+            ./hosts/fairphone-6-plus/configuration.nix
+          ];
+          specialArgs = { inherit inputs; };
+        };
+        homeConfigurations = {
         izelnakri = home-manager.lib.homeManagerConfiguration {
           pkgs = x86Pkgs;
           modules = [

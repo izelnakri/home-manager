@@ -5,7 +5,11 @@
   # only information from the installer image that we need to keep persistent
   fileSystems."/" = {
     device = "/dev/disk/by-label/NIXOS_SD";
-    fsType = "ext4"; # lib.mkForce "btrfs" doesnt work for now?
+    fsType = lib.mkForce "btrfs";
+    options = [
+      "compress=zstd"
+      "noatime"
+    ];
   };
   # swapDevices = [
   #   {
@@ -17,12 +21,20 @@
   boot = {
     kernelPackages = lib.mkForce pkgs.linuxPackages_latest;
     loader = {
-      generic-extlinux-compatible.enable = lib.mkDefault true;
+      # generic-extlinux-compatible.enable = lib.mkDefault true;
       grub.enable = lib.mkDefault false;
     };
   };
 
-  sdImage.compressImage = false;
+  sdImage = {
+    compressImage = false;
+
+    rootFilesystemCreator =
+      "${pkgs.path}/nixos/lib/make-btrfs-fs.nix";
+
+    # The stock expansion service calls resize2fs, which is ext4-specific.
+    expandOnBoot = false;
+  };
 
   nix.settings = {
     experimental-features = lib.mkDefault "nix-command flakes repl-flake";
@@ -32,9 +44,6 @@
   };
 
   nixpkgs = {
-    hostPlatform.system = "aarch64-linux";
-    buildPlatform.system = "x86_64-linux";
-
     overlays = [
       (final: super: {
         p11-kit = super.p11-kit.overrideAttrs(_: {
@@ -43,6 +52,43 @@
         });
       })
     ];
+  };
+
+  systemd.services.expand-root-partition = {
+    description = "Expand Raspberry Pi Btrfs root partition";
+
+    unitConfig = {
+      DefaultDependencies = false;
+      ConditionPathExists = "/nix-path-registration";
+    };
+
+    wantedBy = [ "sysinit.target" ];
+    before = [
+      "sysinit.target"
+      "shutdown.target"
+      "register-nix-paths.service"
+    ];
+    after = [ "local-fs.target" ];
+    conflicts = [ "shutdown.target" ];
+    restartIfChanged = false;
+
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+
+    script = ''
+      rootPart="$(${lib.getExe' pkgs.util-linux "findmnt"} -n -o SOURCE /)"
+      bootDevice="$(${lib.getExe' pkgs.util-linux "lsblk"} -npo PKNAME "$rootPart")"
+      partNum="$(${lib.getExe' pkgs.util-linux "lsblk"} -npo PARTN "$rootPart")"
+
+      echo ",+," | ${lib.getExe' pkgs.util-linux "sfdisk"} \
+        -N"$partNum" --no-reread "$bootDevice"
+
+      ${lib.getExe' pkgs.parted "partprobe"} "$bootDevice"
+
+      ${lib.getExe' pkgs.btrfs-progs "btrfs"} filesystem resize max /
+    '';
   };
 }
 
