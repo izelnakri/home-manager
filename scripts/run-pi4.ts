@@ -190,7 +190,8 @@ function makeVmDtb(dtb: string): string[] {
 }
 
 // ------------------------------------------------------------------ serial console driver
-const ANSI = /\x1b\[[0-9;:?]*[A-Za-z]|\r/g;
+// CSI (colors, cursor) + OSC (e.g. systemd 260's "\e]3008;start=..." shell-context markers) + CR
+const ANSI = /\x1b\[[0-9;:?!<=>]*[A-Za-z]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[78=>]|\r/g;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 class Console {
@@ -335,7 +336,7 @@ async function rootShellReady(vm: Vm): Promise<boolean> {
     if (await r.expect(/#\s*$/, 5)) break;
   }
   await r.send("export PATH=/run/current-system/sw/bin:$PATH SYSTEMD_COLORS=0 SYSTEMD_PAGER= PAGER=cat TERM=dumb; " +
-               "stty -echo cols 400 2>/dev/null; PS1='ROOT# '\n");
+               "stty -echo cols 400 2>/dev/null; set +o emacs +o vi; PS1='ROOT# '\n");
   const ok = !!(await r.expect("ROOT# ", 60));
   report(ok, `[${vm.tag}] root debug shell on hvc0 (VM-only diagnostics channel)`);
   return ok;
@@ -572,38 +573,55 @@ async function vmWifiChecks(t: Target) {
     }
     if (!usable.test(wifi)) await sleep(5000);
   }
-  report(usable.test(wifi), `${tag} NetworkManager manages Wi-Fi (nmtui can select it)`, wifi);
+  const why = usable.test(wifi) ? "" : (await t.sh("lsmod | grep -c mac80211_hwsim; ip -br link | grep -c wlan", 30))[1].replace(/\n/g, "/");
+  report(usable.test(wifi), `${tag} NetworkManager manages Wi-Fi (nmtui can select it)`, wifi || `no wifi devices (hwsim loaded/wlan links: ${why})`);
   const [c] = await t.sh("nmcli dev wifi rescan 2>/dev/null; sleep 3; nmcli -t dev wifi list >/dev/null", 90);
   report(c === 0, `${tag} Wi-Fi scan runs`);
 }
 
 /** Bluetooth daemon. (A real controller only exists on hardware: see --ssh.) */
 async function vmBluetoothChecks(t: Target) {
-  report((await waitActive(t, ["bluetooth"], 900)) === "active", `[${t.tag}] bluetoothd running`);
+  // bluetooth.service needs /sys/class/bluetooth (ConditionPathIsDirectory); the VM has no
+  // adapter, so create a virtual one (held open in the background) and start the daemon.
+  await waitActive(t, ["NetworkManager"], 900);
+  await t.sh("modprobe hci_vhci; (exec 3<>/dev/vhci; sleep 600) >/dev/null 2>&1 & sleep 3; systemctl restart bluetooth", 90);
+  const st = await waitActive(t, ["bluetooth"], 120);
+  const [, ctl] = await t.sh("timeout 10 bluetoothctl list", 30);
+  report(st === "active", `[${t.tag}] bluetoothd running`, `${st}; ${ctl.split("\n")[0] || "no virtual controller"}`);
 }
 
 /** The boot-diagnostics unit must succeed and write its report to the FAT partition. */
 async function vmDiagnosticsChecks(t: Target) {
   await waitActive(t, ["NetworkManager"], 900);
-  const [, o] = await t.sh("systemctl start pi4-diagnostics 2>&1; systemctl is-failed pi4-diagnostics; " +
-                           "test -s /boot/pi4-diagnostics.txt && echo written", 240);
-  report(o.includes("written") && !o.includes("failed"), `[${t.tag}] pi4-diagnostics writes /boot/pi4-diagnostics.txt`,
-         o.replace(/\n/g, " | ").slice(0, 100));
+  await t.sh("systemctl start --no-block pi4-diagnostics", 30);
+  let o = "";
+  for (let i = 0; i < 24 && !o.includes("written"); i++) { // bounded: ~4 min
+    await sleep(10000);
+    o = (await t.sh("systemctl is-active pi4-diagnostics; test -s /boot/pi4-diagnostics.txt && echo written", 30))[1];
+  }
+  const [, state] = await t.sh("systemctl is-failed pi4-diagnostics", 30);
+  report(o.includes("written") && state.trim() !== "failed", `[${t.tag}] pi4-diagnostics writes /boot/pi4-diagnostics.txt`,
+         `${o.replace(/\n/g, " ")} unit=${state.trim()}`);
 }
 
 /** Desktop: log in on tty1 with the virtual keyboard; the zsh login autostarts Hyprland. */
 async function vmDesktopChecks(vm: Vm, t: Target, wd: string) {
   const tag = `[${vm.tag}]`;
   report((await waitActive(t, ["getty@tty1"], 900)) === "active", `${tag} getty on tty1`);
-  await sleep(3000);
-  await vm.mon!.type("izelnakri\n");
-  await sleep(5000);
-  await vm.mon!.type(`${PASSWORD}\n`);
+  // agetty flushes input when it (re)opens the tty, so keys typed too early are lost: wait for
+  // the rest of the boot (sshd/NM), then type; retry the login if Hyprland doesn't appear.
+  await waitActive(t, ["sshd", "NetworkManager"], 900);
   let ps = "";
-  for (let i = 0; i < 36 && !ps.includes("foot"); i++) { // bounded: ~6 min (software rendering)
-    await sleep(10000);
-    ps = (await t.sh("pgrep -u izelnakri -f 'Hyprland --config' >/dev/null && echo hyprland; " +
-                     "pgrep -u izelnakri -x foot >/dev/null && echo foot", 30))[1];
+  for (let attempt = 1; attempt <= 3 && !ps.includes("hyprland"); attempt++) {
+    await sleep(15000);
+    await vm.mon!.type("\nizelnakri\n");
+    await sleep(6000);
+    await vm.mon!.type(`${PASSWORD}\n`);
+    for (let i = 0; i < 12 && !ps.includes("foot"); i++) { // ~2 min per attempt (software rendering)
+      await sleep(10000);
+      ps = (await t.sh("pgrep -u izelnakri -f 'Hyprland --config' >/dev/null && echo hyprland; " +
+                       "pgrep -u izelnakri -x foot >/dev/null && echo foot", 30))[1];
+    }
   }
   const shot = path.join(wd, "hyprland.ppm");
   await vm.mon!.cmd(`screendump ${shot}`);

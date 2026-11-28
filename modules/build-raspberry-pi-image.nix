@@ -52,6 +52,9 @@
   # Root has a password (host config) for the emergency shell.
   services.getty.autologinUser = lib.mkForce null;
   users.users.nixos.hashedPassword = lib.mkForce "!"; # locked; not a NAS account
+  # The installer's console banner claimed "nixos and root have empty passwords" (no longer
+  # true) and pointed at ~nixos/.ssh. Plain login prompt instead.
+  services.getty.helpLine = lib.mkForce "";
 
   nix.settings = {
     experimental-features = lib.mkDefault "nix-command flakes repl-flake";
