@@ -119,9 +119,34 @@
       };
     };
 
-    configtxt.deviceTreeOverlays.all = lib.mkForce [
-      { vc4-kms-v3d.noaudio = true; }
-    ];
+    # U-Boot hands Linux the *mainline* DTB (FDTDIR, see boot.loader below), so
+    # firmware-applied overlays never reach the kernel. vc4-kms-v3d was also written
+    # for the downstream DT/rpi kernel; with mainline 7.x it was the likely cause of
+    # HDMI going black once vc4 took over from the firmware framebuffer. Mainline's
+    # bcm2711-rpi-4-b.dtb already enables vc4/hdmi/v3d.
+    configtxt.deviceTreeOverlays.all = lib.mkForce [ ];
+    # configtxt.deviceTreeOverlays.all = lib.mkForce [
+    #   { vc4-kms-v3d.noaudio = true; }
+    # ];
+  };
+
+  boot = {
+    # Mainline kernel (already cross-built in the store). Set here instead of the
+    # image module so the image and nixinate deploys run the same kernel; without
+    # it nixos-hardware would mkDefault the rpi vendor kernel on first deploy.
+    kernelPackages = lib.mkForce pkgs.linuxPackages_latest; # mkForce: sd-image *-new-kernel also sets it
+
+    loader = {
+      grub.enable = false;
+      generic-extlinux-compatible = {
+        enable = true;
+        # true => extlinux.conf gets FDTDIR, U-Boot loads the kernel's own (mainline)
+        # bcm2711-rpi-4-b.dtb: kernel and DT always match. (firmware.nix defaults it
+        # to false to keep config.txt overlays, which only suits the vendor kernel.)
+        useGenerationDeviceTree = true;
+        configurationLimit = 10; # FAT partition is 512M; ~45M per generation
+      };
+    };
   };
 
   environment.systemPackages = with pkgs; [
@@ -155,19 +180,30 @@
 
   # boot.loader.systemd-boot.enable = true;
   # boot.loader.systemd-boot.configurationLimit = 25;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # No EFI on this U-Boot/extlinux setup:
+  # boot.loader.efi.canTouchEfiVariables = true;
 
   # boot.binfmt.emulatedSystems = [ "x86_64-linux" ];
   # boot.kernelParams = [
   #   "console=tty0"
   # ];
+  # The *last* console= becomes /dev/console (where systemd prints its status), so
+  # the HDMI tty must come last. "serial0" only exists when the Pi firmware rewrites
+  # cmdline.txt, which never happens under U-Boot, so it was a dead entry.
+  # loglevel=7 already comes from sd-image-aarch64.nix (boot.consoleLogLevel).
   boot.kernelParams = [
-    "console=tty0"
-    "console=serial0,115200"
-    "earlycon"
-    "ignore_loglevel"
-    "loglevel=7"
+    "console=ttyS1,115200" # mini-UART on GPIO14/15 (enable_uart=1) for a USB-TTL cable
+    "console=tty1"
+    # If the monitor still blanks when vc4 takes over, force a mode it surely supports:
+    # "video=HDMI-A-1:1920x1080@60"
   ];
+  # boot.kernelParams = [
+  #   "console=tty0"
+  #   "console=serial0,115200"
+  #   "earlycon"
+  #   "ignore_loglevel"
+  #   "loglevel=7"
+  # ];
 
   boot.initrd.verbose = true;
 
