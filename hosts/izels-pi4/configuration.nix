@@ -35,7 +35,6 @@
     options = [ "umask=0077" ];
   };
 
-  hardware.raspberry-pi.firmware.path = "/boot";
   boot.initrd.supportedFilesystems = [ "btrfs" ];
   boot.supportedFilesystems = [ "btrfs" ];
 
@@ -97,20 +96,22 @@
   hardware.raspberry-pi = {
     firmware = {
       enable = true;
+      path = "/boot";
+
       uboot = {
         enable = true;
-
         package = pkgs.ubootRaspberryPiAarch64.override {
           extraConfig = ''
+            CONFIG_BOOTSTD=y
             CONFIG_BOOTSTD_FULL=y
             CONFIG_BOOTSTD_DEFAULTS=y
+            CONFIG_BOOTSTD_BOOTCOMMAND=y
             CONFIG_BOOTMETH_EXTLINUX=y
-
             CONFIG_CMD_BOOTDEV=y
+            CONFIG_CMD_BOOTFLOW=y
             CONFIG_CMD_BOOTFLOW_FULL=y
             CONFIG_CMD_BOOTMETH=y
             CONFIG_CMD_BOOTSTD=y
-
             # CONFIG_BOOTMETH_EFI_BOOTMGR is not set
             # CONFIG_BOOTMETH_EFILOADER is not set
           '';
@@ -119,9 +120,7 @@
     };
 
     configtxt.deviceTreeOverlays.all = lib.mkForce [
-      {
-        vc4-kms-v3d.noaudio = true;
-      }
+      { vc4-kms-v3d.noaudio = true; }
     ];
   };
 

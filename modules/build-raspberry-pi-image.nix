@@ -20,9 +20,14 @@
 
   boot = {
     kernelPackages = lib.mkForce pkgs.linuxPackages_latest;
+
     loader = {
-      # generic-extlinux-compatible.enable = lib.mkDefault true;
-      grub.enable = lib.mkDefault false;
+      grub.enable = lib.mkForce false;
+
+      generic-extlinux-compatible = {
+        enable = lib.mkForce true;
+        useGenerationDeviceTree = lib.mkForce false;
+      };
     };
   };
 
