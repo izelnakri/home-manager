@@ -146,6 +146,16 @@
             "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel-no-zfs-installer.nix"
           ];
         }).config.system.build.sdImage;
+
+        # + DisplayLink (evdi needs a one-time kernel + cross-rustc rebuild; see
+        # modules/raspberry-pi/displaylink.nix).
+        pi4-nas-btrfs-displaylink = (self.nixosConfigurations.pi4-nas.extendModules {
+          modules = [
+            { pi4.rootFs = "btrfs"; pi4.displaylink.enable = true; }
+            ./modules/build-raspberry-pi-image.nix
+            "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel-no-zfs-installer.nix"
+          ];
+        }).config.system.build.sdImage;
       };
 
       # `nix run .#run-pi4 [-- --ssh pi4-nas.local | --reboot | --tier uboot | --run CMD ...]`:

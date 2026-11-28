@@ -843,12 +843,17 @@ async function main() {
   await copyRange(img, fat, p1.start * 512, p1.size * 512);
   const { ext, dtb } = await staticChecks(img, fat);
   const top = /init=(\S+)\/init/.exec(ext.append)?.[1];
+  // Feature checks follow what the image actually contains (pi4.displaylink.enable etc.).
+  const hasDisplayLink = !!top && await exists(path.join(top, "etc/systemd/system/dlm.service"));
   if (top && await exists(top)) { // the image's system closure is in the local store after a build
     await btAutopairUnitTest(top);
     const dlm = path.join(top, "sw/bin/.DisplayLinkManager-wrapped");
     const bin = (await exists(dlm)) ? dlm : path.join(top, "sw/bin/DisplayLinkManager");
     const elf = (await exists(bin)) ? (await fsp.readFile(await fsp.realpath(bin))).subarray(0, 20) : null;
-    report(elf ? elf.readUInt16LE(18) === 183 : null, "DisplayLinkManager is an aarch64 binary in the image", elf ? `e_machine=${elf.readUInt16LE(18)}` : "not in sw/bin");
+    if (hasDisplayLink) {
+      report(elf ? elf.readUInt16LE(18) === 183 : false, "DisplayLinkManager is an aarch64 binary in the image",
+             elf ? `e_machine=${elf.readUInt16LE(18)}` : "missing");
+    }
   }
   /** Extract a FAT file into the workdir; returns its path. */
   const extract = async (name: string, fatPath: string) => {
@@ -939,7 +944,7 @@ async function main() {
         vmWifiChecks(rootT),
         vmBluetoothChecks(rootT),
         vmDiagnosticsChecks(rootT),
-        vmDisplayLinkChecks(rootT),
+        hasDisplayLink ? vmDisplayLinkChecks(rootT) : Promise.resolve(report(null, "[system] DisplayLink", "not enabled in this image")),
         vmDesktopChecks(vm, rootT, wd),
         (async () => { if (await milestones(vm, t0.t, getty)) await login(vm); })(),
       ]);

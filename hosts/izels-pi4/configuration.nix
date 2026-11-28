@@ -4,25 +4,7 @@
     ../../modules/raspberry-pi/firmware.nix
     ../../modules/raspberry-pi/rootfs.nix # fileSystems."/": pi4.rootFs = "ext4" | "btrfs"
     ../../modules/raspberry-pi/bt-autopair.nix # pi4.bluetooth.autoPair
-    # mkAfter: must come after the flake-wide overlay-unstable, which maps displaylink to unstable.
-    { nixpkgs.overlays = lib.mkAfter [
-        # DisplayLink: the flake-wide overlay maps displaylink to nixpkgs-unstable (6.3). On the Pi
-        # that would cross-build a second (unstable) toolchain. Instead: the stable 26.05 package
-        # definition (shares this config's cross toolchain; it supports aarch64-linux) fed the same
-        # 6.3 driver zip the omnibook uses (already in the store; requireFile can't download it).
-        (final: prev: {
-          # evdi: placeholder like all-packages.nix; the NixOS module overrides it with the Pi kernel's.
-          displaylink = (prev.callPackage "${inputs.nixpkgs}/pkgs/os-specific/linux/displaylink" { inherit (final.linuxPackages) evdi; }).overrideAttrs (_: {
-            version = "6.3.0-48";
-            src = prev.requireFile {
-              name = "displaylink-630.zip";
-              hash = "sha256-cmmFbHUnBgxRMhXOG1o2/vB02Oicq4m8qxPfNCrM4Jg=";
-              url = "https://www.synaptics.com/products/displaylink-usb-graphics-software-ubuntu";
-            };
-          });
-        })
-      ];
-    }
+    ../../modules/raspberry-pi/displaylink.nix # pi4.displaylink.enable
   ];
 
   disabledModules = [
@@ -107,11 +89,9 @@
 
   hardware.graphics.enable = true;
 
-  # DisplayLink USB docks/adapters (extra screens besides HDMI). nixos/modules/hardware/video/
-  # displaylink.nix keys off videoDrivers: evdi kernel module + DisplayLinkManager (dlm.service).
-  # No X server is enabled by this; Hyprland drives the evdi DRM card directly.
-  services.xserver.videoDrivers = [ "displaylink" "modesetting" ];
-  # (evdi initial_device_count=1 is in boot.extraModprobeConfig below.)
+  # DisplayLink (modules/raspberry-pi/displaylink.nix). Off in the default images: enabling it
+  # costs a one-time kernel + cross-rustc rebuild. Built separately as images.pi4-nas-btrfs-displaylink.
+  pi4.displaylink.enable = lib.mkDefault false;
 
   programs.hyprland = {
     enable = true;
@@ -333,12 +313,7 @@
     managed = 1;
   };
   hardware.wirelessRegulatoryDatabase = true;
-  boot.extraModprobeConfig = ''
-    options cfg80211 ieee80211_regdom=ES
-    # One evdi (DisplayLink) card exists from boot, so Hyprland, started at login, already
-    # includes it; the adapter attaches to it when plugged in. Same as the omnibook.
-    options evdi initial_device_count=1
-  '';
+  boot.extraModprobeConfig = "options cfg80211 ieee80211_regdom=ES";
 
   # Bluetooth (BCM4345C0 on the PL011 UART; the mainline DTB already describes it and the
   # firmware ships in raspberrypi-wireless-firmware). Use `bluetoothctl`.
