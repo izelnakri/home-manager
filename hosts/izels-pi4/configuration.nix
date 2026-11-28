@@ -2,6 +2,7 @@
 {
   imports = [
     ../../modules/raspberry-pi/firmware.nix
+    ../../modules/raspberry-pi/rootfs.nix # fileSystems."/": pi4.rootFs = "ext4" | "btrfs"
   ];
 
   disabledModules = [
@@ -20,14 +21,25 @@
     allowUnfree = true;
   };
 
-  fileSystems."/" = {
-    device = "/dev/disk/by-label/NIXOS_SD";
-    fsType = "btrfs";
-    options = [
-      "compress=zstd"
-      "noatime"
-    ];
-  };
+  # ext4, not btrfs: nixpkgs builds btrfs images with mkfs.btrfs, which reads file owners
+  # past fakeroot, so the image's /, /var and /nix/store were owned by uid 1000. systemd and
+  # NetworkManager reject that (no tmpfiles, no Wi-Fi plugin, broken logins/Hyprland). The
+  # ext4 builder (standard NixOS SD image path) produces root-owned files.
+  # (fileSystems."/" now comes from modules/raspberry-pi/rootfs.nix; ext4 by default.
+  #  btrfs works again via a fixed builder: images.pi4-nas-btrfs / pi4.rootFs = "btrfs".)
+  # fileSystems."/" = {
+  #   device = "/dev/disk/by-label/NIXOS_SD";
+  #   fsType = "ext4";
+  #   options = [ "noatime" ];
+  # };
+  # fileSystems."/" = {
+  #   device = "/dev/disk/by-label/NIXOS_SD";
+  #   fsType = "btrfs";
+  #   options = [
+  #     "compress=zstd"
+  #     "noatime"
+  #   ];
+  # };
 
   fileSystems."/boot" = {
     device = "/dev/disk/by-label/FIRMWARE";
@@ -35,11 +47,15 @@
     options = [ "umask=0077" ];
   };
 
-  hardware.raspberry-pi.firmware.path = "/boot";
-  boot.initrd.supportedFilesystems = [ "btrfs" ];
-  boot.supportedFilesystems = [ "btrfs" ];
+  # boot.initrd.supportedFilesystems = [ "btrfs" ];
+  # boot.supportedFilesystems = [ "btrfs" ];
 
   nixpkgs.overlays = [
+    # Was only in modules/build-raspberry-pi-image.nix; here so nixinate deploys share the
+    # image's (cross-built, already in the store) closure instead of rebuilding from p11-kit up.
+    (final: super: {
+      p11-kit = super.p11-kit.overrideAttrs (_: { doCheck = false; doInstallCheck = false; });
+    })
     inputs.hyprland.overlays.hyprland-packages
     inputs.hyprland.overlays.hyprland-extras
 
@@ -85,32 +101,69 @@
     ];
   };
 
+  # Log in on the HDMI console (tty1) and Hyprland starts. Not `exec`: if Hyprland exits
+  # or crashes you drop back into this shell instead of a login loop. Ctrl+Alt+F2 = plain
+  # console. (greetd/tuigreet would be nicer, but they're Rust: cross-building them pulls a
+  # whole cross rustc + cups/ghostscript/ffmpeg chain, ~200 extra derivations.)
+  # Config: ~/.config/hypr/hyprland.lua if you made one, else /etc/hypr/hyprland.lua
+  # (static/.config/hypr/hyprland.conf adapted for the Pi: hosts/izels-pi4/files/).
+  # start-hyprland is Hyprland's watchdog launcher (plain `Hyprland` warns about it).
+  programs.zsh.loginShellInit = ''
+    if [ "$(tty)" = /dev/tty1 ] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$NO_HYPRLAND" ]; then
+      hyprcfg=~/.config/hypr/hyprland.lua
+      [ -f "$hyprcfg" ] || hyprcfg=/etc/hypr/hyprland.lua
+      # Pi 4 has two DRM cards: v3d (render-only, no outputs) and vc4 (HDMI). Hyprland may
+      # grab v3d and fail with "can't open drm", so point it at the card with connectors.
+      for c in /sys/class/drm/card[0-9]; do
+        if ls -d "$c"/"''${c##*/}"-* >/dev/null 2>&1; then
+          export AQ_DRM_DEVICES=/dev/dri/''${c##*/}; break
+        fi
+      done
+      echo "Starting Hyprland on ''${AQ_DRM_DEVICES:-?} with $hyprcfg (log: ~/.hyprland.log; NO_HYPRLAND=1 skips)"
+      start-hyprland -- --config "$hyprcfg" >~/.hyprland.log 2>&1
+      echo "Hyprland exited ($?). Last lines of ~/.hyprland.log:"; tail -n 15 ~/.hyprland.log
+    fi
+  '';
+  # Lua: Hyprland 0.57's native config format, ported from static/.config/hypr/hyprland.lua
+  # (the laptop runs it without config errors; the legacy .conf port showed an error overlay).
+  environment.etc."hypr/hyprland.lua".source = ./files/hyprland.lua;
+  # (the legacy hyprland.conf port was removed: 0.57 parses configs as Lua, "#" comments fail)
   # services.greetd = {
   #   enable = true;
-  #
   #   settings.default_session = {
-  #     command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd Hyprland";
+  #     command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --asterisks --cmd Hyprland";
   #     user = "greeter";
   #   };
   # };
+  # ~/.zshrc stops zsh's interactive new-user menu on first login (created only if missing).
+  systemd.tmpfiles.rules = [
+    "f /home/izelnakri/.zshrc 0644 izelnakri users - # yours to edit; created on first boot"
+  ];
 
   hardware.raspberry-pi = {
     firmware = {
       enable = true;
+      path = "/boot";
+
       uboot = {
         enable = true;
-
         package = pkgs.ubootRaspberryPiAarch64.override {
           extraConfig = ''
+            CONFIG_BOOTSTD=y
             CONFIG_BOOTSTD_FULL=y
             CONFIG_BOOTSTD_DEFAULTS=y
+            CONFIG_BOOTSTD_BOOTCOMMAND=y
             CONFIG_BOOTMETH_EXTLINUX=y
-
             CONFIG_CMD_BOOTDEV=y
+            CONFIG_CMD_BOOTFLOW=y
             CONFIG_CMD_BOOTFLOW_FULL=y
             CONFIG_CMD_BOOTMETH=y
             CONFIG_CMD_BOOTSTD=y
-
+            # Must be explicit: with CMD_BOOTFLOW_FULL, plain "bootflow scan" only
+            # *lists* bootflows and drops to the U-Boot> prompt (found in QEMU,
+            # `make pi4-vm-test`). Kconfig would default to "-lb", but buildUBoot
+            # appends extraConfig after the defconfig already set "bootflow scan".
+            CONFIG_BOOTCOMMAND="bootflow scan -lb"
             # CONFIG_BOOTMETH_EFI_BOOTMGR is not set
             # CONFIG_BOOTMETH_EFILOADER is not set
           '';
@@ -118,14 +171,40 @@
       };
     };
 
-    configtxt.deviceTreeOverlays.all = lib.mkForce [
-      {
-        vc4-kms-v3d.noaudio = true;
-      }
-    ];
+    # U-Boot hands Linux the *mainline* DTB (FDTDIR, see boot.loader below), so
+    # firmware-applied overlays never reach the kernel. vc4-kms-v3d was also written
+    # for the downstream DT/rpi kernel; with mainline 7.x it was the likely cause of
+    # HDMI going black once vc4 took over from the firmware framebuffer. Mainline's
+    # bcm2711-rpi-4-b.dtb already enables vc4/hdmi/v3d.
+    configtxt.deviceTreeOverlays.all = lib.mkForce [ ];
+    # configtxt.deviceTreeOverlays.all = lib.mkForce [
+    #   { vc4-kms-v3d.noaudio = true; }
+    # ];
+  };
+
+  boot = {
+    # Mainline kernel (already cross-built in the store). Set here instead of the
+    # image module so the image and nixinate deploys run the same kernel; without
+    # it nixos-hardware would mkDefault the rpi vendor kernel on first deploy.
+    kernelPackages = lib.mkForce pkgs.linuxPackages_latest; # mkForce: sd-image *-new-kernel also sets it
+
+    loader = {
+      grub.enable = false;
+      generic-extlinux-compatible = {
+        enable = true;
+        # true => extlinux.conf gets FDTDIR, U-Boot loads the kernel's own (mainline)
+        # bcm2711-rpi-4-b.dtb: kernel and DT always match. (firmware.nix defaults it
+        # to false to keep config.txt overlays, which only suits the vendor kernel.)
+        useGenerationDeviceTree = true;
+        configurationLimit = 10; # FAT partition is 512M; ~45M per generation
+      };
+    };
   };
 
   environment.systemPackages = with pkgs; [
+    foot # terminal (Wayland-native, light: good fit for the Pi 4 GPU)
+    tmux
+    bluez # bluetoothctl
     libarchive
     gnumake
     vim
@@ -141,36 +220,128 @@
 
   users.users.izelnakri = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
-    initialPassword = "testing";
+    # networkmanager: polkit lets this group manage connections, so nmtui/nmcli work without
+    # sudo (on the Pi nmtui needed sudo).
+    extraGroups = [ "wheel" "networkmanager" ]; # wheel: full root via sudo
+    # Pre-hashed (`openssl passwd -6 -salt Pi4nasSaltFixed1 testing`) instead of
+    # initialPassword: that one is hashed at runtime on first boot by the cross-built
+    # activation and gave "Incorrect password" on the real Pi. TEMPORARY password;
+    # change with `passwd` or switch to a ragenix hashedPasswordFile.
+    hashedPassword = "$6$Pi4nasSaltFixed1$cNl/40c57yX6T.sRmrTRYb/CNtsZxkwMzRb0viidPoYmLsK10iDk1xOZTYKjkYfDAvUVvK6htONWN.1VVYIGt1";
+    # initialPassword = "testing";
 
     # Set locally with `passwd`, or use a secret-backed hashedPasswordFile.
     shell = pkgs.zsh;
     openssh.authorizedKeys.keys = [
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDP2YFXzWEAwbYvefJzHNw1yu6Z0ZgiBCBFA1pJQ5ajrK18auaOlvCZ6Jqvn/91/Erl6qxc2bHKYNfHPa8YL0U07dZYvEKZ4pqxcpC1aLX29vVTuBQL/e8JenpKtLm6E+/e6x8NKoTb1teADsY/0thZBZSpTWt5q+GeTAkOVYtIFqew5Q7V0pwk+liV6FGHv7XOiGwtG06+KrD1hOwBJIlsMBOPoeye88aKDYnZ864xDCzrOjBALeRCnfXc8RIvCzbMKL78kdsbiowQyPZrc6zPXK1xx0KUNSAeNY6u5U0C6SFf7VikPkNaW7q/YjbbxwSA9ejvAaPcl2TOZnVIh8XaBwCP6jxW9EFljCqwIgjnnk4xE0vIITgZtwff+lTJQ12SqMXBwlD4CpLTo2G9ecUbXgJ6hjt8hsrYyhP+JiGXV45bMOmAVDRcICcCLMfFQQp96RjRGIylXhpUJxjt4AA1K4Op0v5ugxCry5b4mkc7VNMQl1cRCCkj9WE1wCk/qrs= izelnakri@x1-carbon"
+      # omnibook (this laptop): key auth for `make pi4-deploy` / `make run-pi4 ARGS=--ssh ...`
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJwZQqINIghrteWbhRl9RtHimKF27o24AuJAbEnAuMgf contact@izelnakri.com"
     ];
   };
+
+  # Root gets the same temporary password so the console emergency shell is usable
+  # (empty root password gave "System error"). mkForce: the installer profile sets "".
+  users.users.root.hashedPassword = lib.mkForce config.users.users.izelnakri.hashedPassword;
+  users.users.root.initialHashedPassword = lib.mkForce null;
+
+  # Console login said "System error" right after a correct password (VM and real Pi):
+  #   pam_lastlog2(login:session): Cannot create/open database (/var/lib/lastlog/lastlog2.db)
+  # pam_lastlog2 is a *required* session module, so a missing /var/lib/lastlog kills every
+  # login. Last-login bookkeeping isn't worth that; off for console and SSH.
+  security.pam.services.login.lastlog.enable = lib.mkForce false;
+  security.pam.services.sshd.lastlog.enable = lib.mkForce false;
 
   programs.zsh.enable = true;
   security.polkit.enable = true;
 
   # boot.loader.systemd-boot.enable = true;
   # boot.loader.systemd-boot.configurationLimit = 25;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # No EFI on this U-Boot/extlinux setup:
+  # boot.loader.efi.canTouchEfiVariables = true;
 
   # boot.binfmt.emulatedSystems = [ "x86_64-linux" ];
   # boot.kernelParams = [
   #   "console=tty0"
   # ];
-  boot.kernelParams = [
-    "console=tty0"
-    "console=serial0,115200"
-    "earlycon"
-    "ignore_loglevel"
+  # The *last* console= becomes /dev/console (where systemd prints its status), so
+  # the HDMI tty must come last. "serial0" only exists when the Pi firmware rewrites
+  # cmdline.txt, which never happens under U-Boot, so it was a dead entry.
+  # loglevel=7 already comes from sd-image-aarch64.nix (boot.consoleLogLevel).
+  # mkForce: sd-image-aarch64.nix adds console=ttyS0 + console=ttyAMA0. On the Pi 4, ttyAMA0
+  # is the PL011 UART wired to the Bluetooth chip; a kernel console + serial getty on it broke
+  # Bluetooth ("hci0: command tx timeout ... Failed to set baudrate"). Everything else that
+  # ended up in APPEND is kept explicitly (root=fstab: systemd initrd; loglevel: console log
+  # level; lsm: security defaults).
+  boot.kernelParams = lib.mkForce [
+    "console=ttyS1,115200" # mini-UART on GPIO14/15 (enable_uart=1) for a USB-TTL cable
+    "console=tty1" # HDMI, last = /dev/console
+    "root=fstab"
     "loglevel=7"
+    "lsm=landlock,yama,bpf"
+    # If the monitor still blanks when vc4 takes over, force a mode it surely supports:
+    # "video=HDMI-A-1:1920x1080@60"
   ];
+  # boot.kernelParams = [
+  #   "console=tty0"
+  #   "console=serial0,115200"
+  #   "earlycon"
+  #   "ignore_loglevel"
+  #   "loglevel=7"
+  # ];
 
   boot.initrd.verbose = true;
+
+  # Wi-Fi via NetworkManager (`nmtui` / `nmcli`). Do NOT force networking.wireless off: the
+  # NetworkManager module enables it itself in D-Bus-controlled mode, and that's where its
+  # wpa_supplicant comes from ("Failed to D-Bus activate wpa_supplicant service" otherwise).
+  # networking.wireless.enable = lib.mkForce false;
+  networking.networkmanager.wifi.powersave = false; # brcmfmac power-save drops connections
+  # In the VM test NetworkManager listed Wi-Fi devices as "unmanaged", which also matches
+  # nmtui refusing them on the Pi. Always manage Wi-Fi explicitly.
+  networking.networkmanager.settings."device-wifi-managed" = {
+    match-device = "type:wifi";
+    managed = 1;
+  };
+  hardware.wirelessRegulatoryDatabase = true;
+  boot.extraModprobeConfig = "options cfg80211 ieee80211_regdom=ES";
+
+  # Bluetooth (BCM4345C0 on the PL011 UART; the mainline DTB already describes it and the
+  # firmware ships in raspberrypi-wireless-firmware). Use `bluetoothctl`.
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+
+  # Writes a hardware/network report to the FAT partition 2 min after boot, so it can be read
+  # from the laptop's SD reader (no second screen or typing needed): /boot/pi4-diagnostics.txt
+  systemd.timers.pi4-diagnostics = {
+    wantedBy = [ "timers.target" ];
+    timerConfig.OnBootSec = "2min";
+  };
+  systemd.services.pi4-diagnostics = {
+    description = "Write boot diagnostics to /boot/pi4-diagnostics.txt";
+    path = with pkgs; [ coreutils gnugrep util-linux iproute2 networkmanager bluez systemd kmod ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      # NixOS runs unit scripts with `set -e`; a grep without matches must not kill the report.
+      set +e
+      out=/boot/pi4-diagnostics.txt
+      {
+        echo "== $(date -Is) $(uname -r) boot $(cat /proc/sys/kernel/random/boot_id)"
+        echo "== nmcli dev"; nmcli dev 2>&1
+        echo "== nmcli -f GENERAL.STATE,GENERAL.REASON,GENERAL.DRIVER dev show wlan0"; nmcli -f GENERAL.STATE,GENERAL.REASON,GENERAL.DRIVER dev show wlan0 2>&1
+        echo "== nmcli dev wifi list"; nmcli dev wifi list 2>&1 | head -15
+        echo "== ip -br link"; ip -br link 2>&1
+        echo "== lsmod (wifi/bt)"; lsmod | grep -iE 'brcm|bt|hci|cfg80211|sdhci|gpio' 2>&1
+        echo "== dmesg (wifi/bt/mmc/firmware)"; dmesg | grep -iE 'brcm|mmc|wlan|firmware|hci|blue|pwrseq|gpio' | tail -60
+        echo "== bluetoothctl list"; timeout 10 bluetoothctl list 2>&1
+        echo "== systemctl --failed"; systemctl --failed --no-legend --plain 2>&1
+        echo "== journal NetworkManager/wpa_supplicant/bluetooth"; journalctl -b -u NetworkManager -u wpa_supplicant -u bluetooth -o short-monotonic --no-pager 2>&1 | tail -60
+        echo "== ~izelnakri/.hyprland.log"; tail -n 40 /home/izelnakri/.hyprland.log 2>&1
+      } > "$out.tmp" 2>&1
+      mv "$out.tmp" "$out"; sync
+    '';
+  };
 
   networking = {
     hostName = "pi4-nas";
@@ -212,6 +383,15 @@
   # services.displayManager.autoLogin.user = "izelnakri";
   # services.displayManager.defaultSession = "hyprland";
   # services.displayManager.hiddenUsers = [ "root" ];
+
+  # Stable address on your tailnet, from any network (no LAN/mDNS needed): after first boot run
+  # once `sudo tailscale up --hostname=izels-pi4` and open the printed login URL. Then
+  # `ssh izelnakri@izels-pi4` works from every tailnet device (laptop, Fairphone, Omnibook).
+  # FOSS alternative later: point the same client at a self-hosted Headscale (--login-server).
+  services.tailscale = {
+    enable = true;
+    openFirewall = true; # WireGuard UDP port, for direct (non-relayed) connections
+  };
 
   services.avahi = {
     enable = true;

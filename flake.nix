@@ -136,6 +136,26 @@
             "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel-no-zfs-installer.nix"
           ];
         }).config.system.build.sdImage;
+
+        # Same image with a zstd btrfs root (modules/raspberry-pi/rootfs.nix). To run it for
+        # real, also set pi4.rootFs = "btrfs" in hosts/izels-pi4 so deploys match the card.
+        pi4-nas-btrfs = (self.nixosConfigurations.pi4-nas.extendModules {
+          modules = [
+            { pi4.rootFs = "btrfs"; }
+            ./modules/build-raspberry-pi-image.nix
+            "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel-no-zfs-installer.nix"
+          ];
+        }).config.system.build.sdImage;
+      };
+
+      # `nix run .#run-pi4 [-- --ssh pi4-nas.local | --reboot | --tier uboot | --run CMD ...]`:
+      # tests images.pi4-nas in QEMU (raspi4b: real U-Boot -> extlinux -> kernel; virt: system
+      # to login + checks), or the running Pi over SSH. See scripts/run-pi4.ts / `make run-pi4`.
+      # Pinned toolchain; the script itself (TypeScript) also runs under plain node/deno.
+      packages.x86_64-linux.run-pi4 = x86Pkgs.writeShellApplication {
+        name = "run-pi4";
+        runtimeInputs = with x86Pkgs; [ nodejs qemu dtc mtools util-linux openssh sshpass ];
+        text = ''exec node ${./scripts/run-pi4.ts} "$@"'';
       };
 
       nixosModules = import ./modules { lib = nixpkgs.lib; };
@@ -182,9 +202,11 @@
             # home-manager.nixosModules.home-manager # commented out due to image build error from x86
             {
               _module.args.nixinate = {
-                host = "pi4-nas.lan";
+                # Tailscale MagicDNS name (after `tailscale up --hostname=izels-pi4` on the Pi).
+                # Was "pi4-nas.local" (mDNS: blocked on campus Wi-Fi) / "pi4-nas.lan" (router DNS, works on the LAN).
+                host = "izels-pi4";
                 sshUser = "izelnakri";
-                buildOn = "remote";
+                buildOn = "local"; # cross-build on the laptop, reusing the image's store paths; was "remote" (Pi compiles everything)
                 substituteOnTarget = true; # if buildOn is "local" then it will substitute on the target, "-s"
                 hermetic = false;
               };
