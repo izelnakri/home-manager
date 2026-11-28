@@ -160,6 +160,64 @@ function staticChecks(img: string, fat: string): { ext: Extlinux; dtb?: string }
   return { ext, dtb };
 }
 
+// ------------------------------------------------------------------ unit test: bt-autopair
+// Runs the image's real bt-autopair script on the host against a mock `bluetoothctl` (a small
+// state machine standing in for the keyboard). Deterministic, seconds, no VM or radio needed.
+// "@{" stands for bash's "${" (a JS template literal can't hold "${" without interpolating).
+const bash = (src: string) => src.replaceAll("@{", "${");
+const MOCK_BTCTL = bash(String.raw`#!/usr/bin/env bash
+# state: $STATE/{discoverable,paired,trusted,connected}; every call is logged to $STATE/calls
+echo "$*" >> "$STATE/calls"
+args=("$@"); while [[ "@{args[0]}" == --* ]]; do args=("@{args[@]:2}"); done
+yn() { [ -e "$STATE/$1" ] && echo yes || echo no; }
+case "@{args[0]}" in
+  info) [ -e "$STATE/known" ] || { echo "Device @{args[1]} not available"; exit 1; }
+        echo "Device @{args[1]}"; echo "Paired: $(yn paired)"; echo "Trusted: $(yn trusted)"; echo "Connected: $(yn connected)";;
+  scan) [ -e "$STATE/discoverable" ] && touch "$STATE/known";;
+  pair) if [ -e "$STATE/known" ] && [ -e "$STATE/discoverable" ]; then touch "$STATE/paired"; echo "Pairing successful"; else echo "Device not available"; exit 1; fi;;
+  trust) [ -e "$STATE/known" ] && touch "$STATE/trusted";;
+  connect) [ -e "$STATE/paired" ] && [ -e "$STATE/discoverable" ] && touch "$STATE/connected" && echo "Connection successful";;
+esac`);
+// \`sleep\` ends the loop after N iterations (the real script loops forever)
+const MOCK_SLEEP = bash(String.raw`#!/usr/bin/env bash
+n=$(( $(cat "$STATE/loops" 2>/dev/null || echo 0) + 1 )); echo $n > "$STATE/loops"
+[ $n -ge @{LOOPS:-2} ] && kill -TERM $PPID; exit 0`);
+
+function btAutopairUnitTest(top: string) {
+  const unit = path.join(top, "etc/systemd/system/bt-autopair.service");
+  if (!fs.existsSync(unit)) { report(null, "bt-autopair unit test", "no bt-autopair in this image"); return; }
+  const exec = /^ExecStart=(\S+)/m.exec(fs.readFileSync(unit, "utf8"))?.[1];
+  const script = fs.readFileSync(exec!, "utf8").replace(/\/nix\/store\/[a-z0-9]{32}-bluez-[^/]+\/bin\/bluetoothctl/g, "bluetoothctl");
+  const mac = /devices="([^"]+)"/.exec(script)?.[1] ?? "?";
+  const run = (name: string, state: string[], loops: number) => {
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), "btmock-")), bin = path.join(d, "bin"), st = path.join(d, "state");
+    fs.mkdirSync(bin); fs.mkdirSync(st);
+    fs.writeFileSync(path.join(bin, "bluetoothctl"), MOCK_BTCTL, { mode: 0o755 });
+    fs.writeFileSync(path.join(bin, "sleep"), MOCK_SLEEP, { mode: 0o755 });
+    fs.writeFileSync(path.join(d, "script.sh"), script);
+    for (const f of state) fs.writeFileSync(path.join(st, f), "");
+    spawnSync("bash", [path.join(d, "script.sh")], { env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, STATE: st, LOOPS: String(loops) },
+                                                    timeout: 20000, stdio: "ignore" });
+    const calls = fs.existsSync(path.join(st, "calls")) ? fs.readFileSync(path.join(st, "calls"), "utf8").trim().split("\n") : [];
+    const has = (f: string) => fs.existsSync(path.join(st, f));
+    fs.rmSync(d, { recursive: true, force: true });
+    return { calls: calls.map((c) => c.replace(/^(--\S+ \S+ )+/, "").split(" ")[0]), has, name };
+  };
+  // 1. keyboard in pairing mode -> scan, pair (NoInputNoOutput), trust, connect
+  let r = run("pairing mode", ["discoverable"], 2);
+  const seq = r.calls.filter((c) => c !== "info").join(">");
+  report(/scan>pair>trust>connect/.test(seq) && r.has("connected"),
+         `bt-autopair unit: keyboard ${mac} in pairing mode gets paired, trusted, connected`, seq);
+  // 2. keyboard off -> no trust/connect, no crash
+  r = run("off", [], 2);
+  report(!r.calls.includes("trust") && !r.calls.includes("connect") && r.calls.includes("pair"),
+         "bt-autopair unit: keyboard off -> keeps scanning, no trust/connect", r.calls.filter((c) => c !== "info").join(">"));
+  // 3. already paired + trusted but disconnected -> reconnect, no re-pair
+  r = run("reconnect", ["known", "paired", "trusted", "discoverable"], 1);
+  report(r.has("connected") && !r.calls.includes("pair"),
+         "bt-autopair unit: paired keyboard turned on -> reconnects without re-pairing", r.calls.filter((c) => c !== "info").join(">"));
+}
+
 // ------------------------------------------------------------------ VM-only DTB ([uboot] --full)
 function* fdtNodes(dtb: string, p = "/"): Generator<string> {
   yield p;
@@ -608,6 +666,17 @@ async function vmDiagnosticsChecks(t: Target) {
          `${o.replace(/\n/g, " ")} unit=${state.trim()}`);
 }
 
+/** DisplayLink: evdi module + its virtual DRM card, and DisplayLinkManager running. */
+async function vmDisplayLinkChecks(t: Target) {
+  const tag = `[${t.tag}]`;
+  await waitActive(t, ["NetworkManager"], 900);
+  const [, ev] = await t.sh("lsmod | grep -c '^evdi'; for c in /sys/class/drm/card[0-9]; do " +
+                            "[ \"$(basename $(readlink -f $c/device/driver) 2>/dev/null)\" = evdi ] && ls -d $c/card*-*; done | xargs -rn1 basename | paste -sd' '", 60);
+  const [loaded, conns = ""] = ev.split("\n");
+  report(Number(loaded) > 0 && conns.length > 0, `${tag} DisplayLink: evdi loaded with a DRM card + connector`, `evdi=${loaded} ${conns}`);
+  report((await waitActive(t, ["dlm"], 300)) === "active", `${tag} DisplayLink: DisplayLinkManager (dlm.service) running`);
+}
+
 /** Desktop: log in on tty1 with the virtual keyboard; the zsh login autostarts Hyprland. */
 async function vmDesktopChecks(vm: Vm, t: Target, wd: string) {
   const tag = `[${vm.tag}]`;
@@ -750,6 +819,14 @@ async function main() {
   const fat = path.join(wd, "firmware.img");
   copyRange(img, fat, p1.start * 512, p1.size * 512);
   const { ext, dtb } = staticChecks(img, fat);
+  const top = /init=(\S+)\/init/.exec(ext.append)?.[1];
+  if (top && fs.existsSync(top)) { // the image's system closure is in the local store after a build
+    btAutopairUnitTest(top);
+    const dlm = path.join(top, "sw/bin/.DisplayLinkManager-wrapped");
+    const bin = fs.existsSync(dlm) ? dlm : path.join(top, "sw/bin/DisplayLinkManager");
+    const elf = fs.existsSync(bin) ? fs.readFileSync(fs.realpathSync(bin)).subarray(0, 20) : null;
+    report(elf ? elf.readUInt16LE(18) === 183 : null, "DisplayLinkManager is an aarch64 binary in the image", elf ? `e_machine=${elf.readUInt16LE(18)}` : "not in sw/bin");
+  }
   const out = (name: string, data: Buffer) => { const f = path.join(wd, name); fs.writeFileSync(f, data); return f; };
   const uboot = out("u-boot.bin", fatRead(fat, "/u-boot.bin"));
   const fwDtb = out("fw.dtb", fatRead(fat, "/bcm2711-rpi-4-b.dtb"));
@@ -831,6 +908,7 @@ async function main() {
         vmWifiChecks(rootT),
         vmBluetoothChecks(rootT),
         vmDiagnosticsChecks(rootT),
+        vmDisplayLinkChecks(rootT),
         vmDesktopChecks(vm, rootT, wd),
         (async () => { if (await milestones(vm, t0.t, getty)) await login(vm); })(),
       ]);

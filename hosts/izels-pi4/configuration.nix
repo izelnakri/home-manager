@@ -52,6 +52,20 @@
   # boot.supportedFilesystems = [ "btrfs" ];
 
   nixpkgs.overlays = [
+    # DisplayLink: the flake-wide overlay maps displaylink to nixpkgs-unstable (6.3). On the Pi
+    # that would cross-build a second (unstable) toolchain. Instead: the stable 26.05 package
+    # definition (shares this config's cross toolchain; it supports aarch64-linux) fed the same
+    # 6.3 driver zip the omnibook uses (already in the store; requireFile can't download it).
+    (final: prev: {
+      displaylink = (prev.callPackage "${inputs.nixpkgs}/pkgs/os-specific/linux/displaylink" { }).overrideAttrs (_: {
+        version = "6.3.0-48";
+        src = prev.requireFile {
+          name = "displaylink-630.zip";
+          hash = "sha256-cmmFbHUnBgxRMhXOG1o2/vB02Oicq4m8qxPfNCrM4Jg=";
+          url = "https://www.synaptics.com/products/displaylink-usb-graphics-software-ubuntu";
+        };
+      });
+    })
     # Was only in modules/build-raspberry-pi-image.nix; here so nixinate deploys share the
     # image's (cross-built, already in the store) closure instead of rebuilding from p11-kit up.
     (final: super: {
@@ -88,6 +102,12 @@
 
   hardware.graphics.enable = true;
 
+  # DisplayLink USB docks/adapters (extra screens besides HDMI). nixos/modules/hardware/video/
+  # displaylink.nix keys off videoDrivers: evdi kernel module + DisplayLinkManager (dlm.service).
+  # No X server is enabled by this; Hyprland drives the evdi DRM card directly.
+  services.xserver.videoDrivers = [ "displaylink" "modesetting" ];
+  # (evdi initial_device_count=1 is in boot.extraModprobeConfig below.)
+
   programs.hyprland = {
     enable = true;
     withUWSM = false;
@@ -115,11 +135,15 @@
       [ -f "$hyprcfg" ] || hyprcfg=/etc/hypr/hyprland.lua
       # Pi 4 has two DRM cards: v3d (render-only, no outputs) and vc4 (HDMI). Hyprland may
       # grab v3d and fail with "can't open drm", so point it at the card with connectors.
+      # Pi 4: card0 = v3d (render-only), card1 = vc4 (HDMI), evdi = DisplayLink. List every card
+      # that has connectors (vc4 first = primary), skipping v3d.
+      cards=""
       for c in /sys/class/drm/card[0-9]; do
         if ls -d "$c"/"''${c##*/}"-* >/dev/null 2>&1; then
-          export AQ_DRM_DEVICES=/dev/dri/''${c##*/}; break
+          cards="''${cards:+$cards:}/dev/dri/''${c##*/}"
         fi
       done
+      [ -n "$cards" ] && export AQ_DRM_DEVICES="$cards"
       echo "Starting Hyprland on ''${AQ_DRM_DEVICES:-?} with $hyprcfg (log: ~/.hyprland.log; NO_HYPRLAND=1 skips)"
       start-hyprland -- --config "$hyprcfg" >~/.hyprland.log 2>&1
       echo "Hyprland exited ($?). Last lines of ~/.hyprland.log:"; tail -n 15 ~/.hyprland.log
@@ -304,7 +328,12 @@
     managed = 1;
   };
   hardware.wirelessRegulatoryDatabase = true;
-  boot.extraModprobeConfig = "options cfg80211 ieee80211_regdom=ES";
+  boot.extraModprobeConfig = ''
+    options cfg80211 ieee80211_regdom=ES
+    # One evdi (DisplayLink) card exists from boot, so Hyprland, started at login, already
+    # includes it; the adapter attaches to it when plugged in. Same as the omnibook.
+    options evdi initial_device_count=1
+  '';
 
   # Bluetooth (BCM4345C0 on the PL011 UART; the mainline DTB already describes it and the
   # firmware ships in raspberrypi-wireless-firmware). Use `bluetoothctl`.
