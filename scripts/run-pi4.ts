@@ -654,7 +654,9 @@ async function main() {
     const ms: [string, number, string][] = [[String.raw`Linux version \S+`, 60, "kernel started"], ...LINUX_MS("vda2")];
     const boot = ms.slice(0, -1), getty = ms.slice(-1);
     if (await milestones(vm, t0.t, boot) && await rootShellReady(vm)) {
-      const rootT: Target = { tag: "system", real: false, sh: (c, tm) => vm.root!.sh(c, tm) };
+      // Every command carries its own env: the debug shell can respawn (fresh env) mid-run.
+      const env = "PATH=/run/current-system/sw/bin:$PATH SYSTEMD_COLORS=0 SYSTEMD_PAGER= PAGER=cat TERM=dumb";
+      const rootT: Target = { tag: "system", real: false, sh: (c, tm) => vm.root!.sh(`${env}; ${c}`, tm) };
       // System checks as root over hvc0, while the serial console independently proves the
       // real user login (getty + PAM + password + sudo) once getty is up.
       await Promise.all([

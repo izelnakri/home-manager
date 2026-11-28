@@ -89,14 +89,34 @@
     ];
   };
 
+  # Log in on the HDMI console (tty1) and Hyprland starts. Not `exec`: if Hyprland exits
+  # or crashes you drop back into this shell instead of a login loop. Ctrl+Alt+F2 = plain
+  # console. (greetd/tuigreet would be nicer, but they're Rust: cross-building them pulls a
+  # whole cross rustc + cups/ghostscript/ffmpeg chain, ~200 extra derivations.)
+  # Config: ~/.config/hypr/hyprland.conf if you made one, else /etc/hypr/hyprland.conf
+  # (static/.config/hypr/hyprland.conf adapted for the Pi: hosts/izels-pi4/files/).
+  # start-hyprland is Hyprland's watchdog launcher (plain `Hyprland` warns about it).
+  programs.zsh.loginShellInit = ''
+    if [ "$(tty)" = /dev/tty1 ] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$NO_HYPRLAND" ]; then
+      hyprcfg=~/.config/hypr/hyprland.conf
+      [ -f "$hyprcfg" ] || hyprcfg=/etc/hypr/hyprland.conf
+      echo "Starting Hyprland with $hyprcfg (log: ~/.hyprland.log; NO_HYPRLAND=1 skips)"
+      start-hyprland -- --config "$hyprcfg" >~/.hyprland.log 2>&1
+      echo "Hyprland exited ($?). Last lines of ~/.hyprland.log:"; tail -n 15 ~/.hyprland.log
+    fi
+  '';
+  environment.etc."hypr/hyprland.conf".source = ./files/hyprland.conf;
   # services.greetd = {
   #   enable = true;
-  #
   #   settings.default_session = {
-  #     command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd Hyprland";
+  #     command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --asterisks --cmd Hyprland";
   #     user = "greeter";
   #   };
   # };
+  # ~/.zshrc stops zsh's interactive new-user menu on first login (created only if missing).
+  systemd.tmpfiles.rules = [
+    "f /home/izelnakri/.zshrc 0644 izelnakri users - # yours to edit; created on first boot"
+  ];
 
   hardware.raspberry-pi = {
     firmware = {
@@ -160,6 +180,9 @@
   };
 
   environment.systemPackages = with pkgs; [
+    foot # terminal (Wayland-native, light: good fit for the Pi 4 GPU)
+    tmux
+    bluez # bluetoothctl
     libarchive
     gnumake
     vim
@@ -235,6 +258,56 @@
   # ];
 
   boot.initrd.verbose = true;
+
+  # Wi-Fi: the SD-installer profile also enables networking.wireless (standalone
+  # wpa_supplicant on wlan0). It fought NetworkManager for the interface, so nmtui couldn't
+  # select the Wi-Fi device. NetworkManager alone owns Wi-Fi now: use `nmtui` / `nmcli`.
+  networking.wireless.enable = lib.mkForce false;
+  networking.networkmanager.wifi.powersave = false; # brcmfmac power-save drops connections
+  # In the VM test NetworkManager listed Wi-Fi devices as "unmanaged", which also matches
+  # nmtui refusing them on the Pi. Always manage Wi-Fi explicitly.
+  networking.networkmanager.settings."device-wifi-managed" = {
+    match-device = "type:wifi";
+    managed = 1;
+  };
+  hardware.wirelessRegulatoryDatabase = true;
+  boot.extraModprobeConfig = "options cfg80211 ieee80211_regdom=ES";
+
+  # Bluetooth (BCM4345C0 on the PL011 UART; the mainline DTB already describes it and the
+  # firmware ships in raspberrypi-wireless-firmware). Use `bluetoothctl`.
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+
+  # Writes a hardware/network report to the FAT partition 2 min after boot, so it can be read
+  # from the laptop's SD reader (no second screen or typing needed): /boot/pi4-diagnostics.txt
+  systemd.timers.pi4-diagnostics = {
+    wantedBy = [ "timers.target" ];
+    timerConfig.OnBootSec = "2min";
+  };
+  systemd.services.pi4-diagnostics = {
+    description = "Write boot diagnostics to /boot/pi4-diagnostics.txt";
+    path = with pkgs; [ coreutils gnugrep util-linux iproute2 networkmanager bluez systemd kmod ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      out=/boot/pi4-diagnostics.txt
+      {
+        echo "== $(date -Is) $(uname -r) boot $(cat /proc/sys/kernel/random/boot_id)"
+        echo "== nmcli dev"; nmcli dev 2>&1
+        echo "== nmcli -f GENERAL.STATE,GENERAL.REASON,GENERAL.DRIVER dev show wlan0"; nmcli -f GENERAL.STATE,GENERAL.REASON,GENERAL.DRIVER dev show wlan0 2>&1
+        echo "== nmcli dev wifi list"; nmcli dev wifi list 2>&1 | head -15
+        echo "== ip -br link"; ip -br link 2>&1
+        echo "== lsmod (wifi/bt)"; lsmod | grep -iE 'brcm|bt|hci|cfg80211|sdhci|gpio' 2>&1
+        echo "== dmesg (wifi/bt/mmc/firmware)"; dmesg | grep -iE 'brcm|mmc|wlan|firmware|hci|blue|pwrseq|gpio' | tail -60
+        echo "== bluetoothctl list"; timeout 10 bluetoothctl list 2>&1
+        echo "== systemctl --failed"; systemctl --failed --no-legend --plain 2>&1
+        echo "== journal NetworkManager/wpa_supplicant/bluetooth"; journalctl -b -u NetworkManager -u wpa_supplicant -u bluetooth -o short-monotonic --no-pager 2>&1 | tail -60
+        echo "== ~izelnakri/.hyprland.log"; tail -n 40 /home/izelnakri/.hyprland.log 2>&1
+      } > "$out.tmp" 2>&1
+      mv "$out.tmp" "$out"; sync
+    '';
+  };
 
   networking = {
     hostName = "pi4-nas";
