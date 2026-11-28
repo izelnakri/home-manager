@@ -20,14 +20,23 @@
     allowUnfree = true;
   };
 
+  # ext4, not btrfs: nixpkgs builds btrfs images with mkfs.btrfs, which reads file owners
+  # past fakeroot, so the image's /, /var and /nix/store were owned by uid 1000. systemd and
+  # NetworkManager reject that (no tmpfiles, no Wi-Fi plugin, broken logins/Hyprland). The
+  # ext4 builder (standard NixOS SD image path) produces root-owned files.
   fileSystems."/" = {
     device = "/dev/disk/by-label/NIXOS_SD";
-    fsType = "btrfs";
-    options = [
-      "compress=zstd"
-      "noatime"
-    ];
+    fsType = "ext4";
+    options = [ "noatime" ];
   };
+  # fileSystems."/" = {
+  #   device = "/dev/disk/by-label/NIXOS_SD";
+  #   fsType = "btrfs";
+  #   options = [
+  #     "compress=zstd"
+  #     "noatime"
+  #   ];
+  # };
 
   fileSystems."/boot" = {
     device = "/dev/disk/by-label/FIRMWARE";
@@ -35,8 +44,8 @@
     options = [ "umask=0077" ];
   };
 
-  boot.initrd.supportedFilesystems = [ "btrfs" ];
-  boot.supportedFilesystems = [ "btrfs" ];
+  # boot.initrd.supportedFilesystems = [ "btrfs" ];
+  # boot.supportedFilesystems = [ "btrfs" ];
 
   nixpkgs.overlays = [
     # Was only in modules/build-raspberry-pi-image.nix; here so nixinate deploys share the
@@ -93,19 +102,29 @@
   # or crashes you drop back into this shell instead of a login loop. Ctrl+Alt+F2 = plain
   # console. (greetd/tuigreet would be nicer, but they're Rust: cross-building them pulls a
   # whole cross rustc + cups/ghostscript/ffmpeg chain, ~200 extra derivations.)
-  # Config: ~/.config/hypr/hyprland.conf if you made one, else /etc/hypr/hyprland.conf
+  # Config: ~/.config/hypr/hyprland.lua if you made one, else /etc/hypr/hyprland.lua
   # (static/.config/hypr/hyprland.conf adapted for the Pi: hosts/izels-pi4/files/).
   # start-hyprland is Hyprland's watchdog launcher (plain `Hyprland` warns about it).
   programs.zsh.loginShellInit = ''
     if [ "$(tty)" = /dev/tty1 ] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$NO_HYPRLAND" ]; then
-      hyprcfg=~/.config/hypr/hyprland.conf
-      [ -f "$hyprcfg" ] || hyprcfg=/etc/hypr/hyprland.conf
-      echo "Starting Hyprland with $hyprcfg (log: ~/.hyprland.log; NO_HYPRLAND=1 skips)"
+      hyprcfg=~/.config/hypr/hyprland.lua
+      [ -f "$hyprcfg" ] || hyprcfg=/etc/hypr/hyprland.lua
+      # Pi 4 has two DRM cards: v3d (render-only, no outputs) and vc4 (HDMI). Hyprland may
+      # grab v3d and fail with "can't open drm", so point it at the card with connectors.
+      for c in /sys/class/drm/card[0-9]; do
+        if ls -d "$c"/"''${c##*/}"-* >/dev/null 2>&1; then
+          export AQ_DRM_DEVICES=/dev/dri/''${c##*/}; break
+        fi
+      done
+      echo "Starting Hyprland on ''${AQ_DRM_DEVICES:-?} with $hyprcfg (log: ~/.hyprland.log; NO_HYPRLAND=1 skips)"
       start-hyprland -- --config "$hyprcfg" >~/.hyprland.log 2>&1
       echo "Hyprland exited ($?). Last lines of ~/.hyprland.log:"; tail -n 15 ~/.hyprland.log
     fi
   '';
-  environment.etc."hypr/hyprland.conf".source = ./files/hyprland.conf;
+  # Lua: Hyprland 0.57's native config format, ported from static/.config/hypr/hyprland.lua
+  # (the laptop runs it without config errors; the legacy .conf port showed an error overlay).
+  environment.etc."hypr/hyprland.lua".source = ./files/hyprland.lua;
+  # (the legacy hyprland.conf port was removed: 0.57 parses configs as Lua, "#" comments fail)
   # services.greetd = {
   #   enable = true;
   #   settings.default_session = {
@@ -243,9 +262,17 @@
   # the HDMI tty must come last. "serial0" only exists when the Pi firmware rewrites
   # cmdline.txt, which never happens under U-Boot, so it was a dead entry.
   # loglevel=7 already comes from sd-image-aarch64.nix (boot.consoleLogLevel).
-  boot.kernelParams = [
+  # mkForce: sd-image-aarch64.nix adds console=ttyS0 + console=ttyAMA0. On the Pi 4, ttyAMA0
+  # is the PL011 UART wired to the Bluetooth chip; a kernel console + serial getty on it broke
+  # Bluetooth ("hci0: command tx timeout ... Failed to set baudrate"). Everything else that
+  # ended up in APPEND is kept explicitly (root=fstab: systemd initrd; loglevel: console log
+  # level; lsm: security defaults).
+  boot.kernelParams = lib.mkForce [
     "console=ttyS1,115200" # mini-UART on GPIO14/15 (enable_uart=1) for a USB-TTL cable
-    "console=tty1"
+    "console=tty1" # HDMI, last = /dev/console
+    "root=fstab"
+    "loglevel=7"
+    "lsm=landlock,yama,bpf"
     # If the monitor still blanks when vc4 takes over, force a mode it surely supports:
     # "video=HDMI-A-1:1920x1080@60"
   ];
@@ -259,10 +286,10 @@
 
   boot.initrd.verbose = true;
 
-  # Wi-Fi: the SD-installer profile also enables networking.wireless (standalone
-  # wpa_supplicant on wlan0). It fought NetworkManager for the interface, so nmtui couldn't
-  # select the Wi-Fi device. NetworkManager alone owns Wi-Fi now: use `nmtui` / `nmcli`.
-  networking.wireless.enable = lib.mkForce false;
+  # Wi-Fi via NetworkManager (`nmtui` / `nmcli`). Do NOT force networking.wireless off: the
+  # NetworkManager module enables it itself in D-Bus-controlled mode, and that's where its
+  # wpa_supplicant comes from ("Failed to D-Bus activate wpa_supplicant service" otherwise).
+  # networking.wireless.enable = lib.mkForce false;
   networking.networkmanager.wifi.powersave = false; # brcmfmac power-save drops connections
   # In the VM test NetworkManager listed Wi-Fi devices as "unmanaged", which also matches
   # nmtui refusing them on the Pi. Always manage Wi-Fi explicitly.

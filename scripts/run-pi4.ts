@@ -11,7 +11,7 @@
  *   make pi4-check                       # static image checks only (~5s)
  *   make pi4-vm                          # interactive serial console (virt; ARGS=--full for raspi4b)
  *   node scripts/run-pi4.ts [img] [opts]   /   deno run -A scripts/run-pi4.ts [img] [opts]
- *     opts: --ssh [user@]host[:port]  --password PW (default "testing": SSH + sudo)  --static-only
+ *     opts: --keep-going (default: stop at the first FAIL)  --ssh [user@]host[:port]  --password PW (default "testing": SSH + sudo)  --static-only
  *           --tier uboot|system  --full --reboot --interactive --keep --workdir DIR --run CMD
  *   Tools on PATH: VM mode: qemu-system-aarch64 qemu-img qemu-io sfdisk mtype mdir mcopy fdtget fdtput;
  *   --ssh: ssh (+ sshpass for password auth). `nix run .#run-pi4` provides pinned ones.
@@ -92,6 +92,11 @@ const rows: [Status, string, string][] = [];
 const tStart = Date.now();
 const secs = (t0: number) => `${Math.round((Date.now() - t0) / 1000)}s`;
 
+// Fail fast by default: the first FAIL throws, VMs are killed in main's finally, exit 1.
+// --keep-going runs every check instead (full report).
+let FAIL_FAST = true;
+class FailFast extends Error {}
+
 /** ok: true=PASS, false=FAIL, null=WARN. Returns ok === true. */
 function report(ok: boolean | null, name: string, detail = ""): boolean {
   const s: Status = ok === true ? "PASS" : ok === false ? "FAIL" : "WARN";
@@ -99,6 +104,7 @@ function report(ok: boolean | null, name: string, detail = ""): boolean {
   const color = { PASS: 32, FAIL: 31, WARN: 33 }[s];
   const tag = process.stdout.isTTY ? `\x1b[${color}m${s}\x1b[0m` : s;
   console.log(`  [${tag}] ${name}${detail ? `  (${detail})` : ""}`);
+  if (s === "FAIL" && FAIL_FAST) throw new FailFast(name);
   return ok === true;
 }
 const failed = () => rows.filter((r) => r[0] === "FAIL");
@@ -522,6 +528,7 @@ function parseArgs(argv: string[]) {
     if (x === "--interactive") a.interactive = true;
     else if (x === "--reboot") a.reboot = true;
     else if (x === "--keep") a.keep = true;
+    else if (x === "--keep-going") FAIL_FAST = false;
     else if (x === "--full") a.full = true;
     else if (x === "--static-only") a.staticOnly = true;
     else if (x === "--workdir") a.workdir = argv[++i];
@@ -557,7 +564,7 @@ async function main() {
     try {
       await systemChecks(t, { disk: "mmcblk0", sshPort: null, extra: a.run });
       if (a.reboot) await sshRebootChecks(t);
-    } catch { /* connection failure already reported */ }
+    } catch (e) { if (!(e instanceof FailFast)) console.log(`  error: ${e}`); }
     const bad = failed();
     step(`Summary: ${rows.length - bad.length}/${rows.length} passed in ${secs(tStart)}`);
     for (const [, n, d] of bad) console.log(`  FAIL ${n}  ${d}`);
@@ -669,10 +676,20 @@ async function main() {
   };
   try {
     await Promise.all([a.tier !== "system" && ubootTier(), a.tier !== "uboot" && systemTier()]);
+  } catch (e) {
+    if (!(e instanceof FailFast)) throw e;
+    console.log(`\n  fail-fast: stopping after "${e.message}" (use --keep-going for a full report)`);
   } finally {
     vms.forEach(stopVm);
   }
   finish();
 }
 
-await main();
+try {
+  await main();
+} catch (e) {
+  if (!(e instanceof FailFast)) throw e;
+  // FAIL outside the VM tiers (e.g. static checks): VMs are killed by the exit hook.
+  console.log(`\n==> fail-fast: stopped after "${e.message}" (${secs(tStart)}); --keep-going for a full report`);
+  process.exit(1);
+}
