@@ -136,6 +136,16 @@
             "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel-no-zfs-installer.nix"
           ];
         }).config.system.build.sdImage;
+
+        # Same image with a zstd btrfs root (modules/raspberry-pi/rootfs.nix). To run it for
+        # real, also set pi4.rootFs = "btrfs" in hosts/izels-pi4 so deploys match the card.
+        pi4-nas-btrfs = (self.nixosConfigurations.pi4-nas.extendModules {
+          modules = [
+            { pi4.rootFs = "btrfs"; }
+            ./modules/build-raspberry-pi-image.nix
+            "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel-no-zfs-installer.nix"
+          ];
+        }).config.system.build.sdImage;
       };
 
       # `nix run .#run-pi4 [-- --ssh pi4-nas.local | --reboot | --tier uboot | --run CMD ...]`:

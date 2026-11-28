@@ -443,9 +443,13 @@ async function systemChecks(t: Target, o: CheckOpts) {
               (_, o) => o.includes("root=fstab") && (ext ? o.includes(ext.append.split(" ")[0]) : /init=\/nix\/store\//.test(o)));
   await check("DT is the Pi 4 Model B", "tr -d '\\0' </proc/device-tree/model 2>/dev/null || echo none",
               (_, o) => t.tag === "system" || o.includes("Raspberry Pi 4 Model B")); // virt has its own DT
-  await check("/ is btrfs on partition 2", "findmnt -no SOURCE,FSTYPE /", (_, o) => new RegExp(`${p(2)}(\\[/\\])?\\s+btrfs`).test(o));
+  // pi4.rootFs: ext4 (default) or btrfs (modules/raspberry-pi/rootfs.nix)
+  await check("/ is ext4 or btrfs on partition 2", "findmnt -no SOURCE,FSTYPE /",
+              (_, o) => new RegExp(`${p(2)}(\\[/\\])?\\s+(ext4|btrfs)`).test(o));
   await check("/boot is the FAT firmware partition", "findmnt -no SOURCE,FSTYPE /boot", (_, o) => new RegExp(`${p(1)}\\s+vfat`).test(o));
-  await check("bootloader files visible under /boot", "ls /boot/extlinux/extlinux.conf /boot/u-boot.bin /boot/config.txt",
+  // /boot is mounted umask=0077 (root only), so a real user needs sudo to look.
+  await check("bootloader files visible under /boot",
+              `${t.real ? sudo() + " " : ""}ls /boot/extlinux/extlinux.conf /boot/u-boot.bin /boot/config.txt`,
               (c) => c === 0);
   // Works on 1st and later boots: the root partition + btrfs fill the card (VM: the 16 GiB overlay).
   await check("root partition + btrfs expanded to the whole disk",
@@ -460,6 +464,8 @@ async function systemChecks(t: Target, o: CheckOpts) {
   if (t.real) await check("izelnakri has root via sudo", `${sudo()} id -u`, (_, o) => o.trim().endsWith("0"));
   await check("no kernel oops/BUG", "journalctl -k -b --no-pager -o cat | grep -cE 'Oops|BUG:|Call trace' || true",
               (_, o) => o.trim() === "0", 120, true);
+  if (t.real) await check("izelnakri can manage NetworkManager without sudo (networkmanager group)",
+                         "nmcli general permissions | grep -E 'network-control' | grep -c yes", (_, o) => o.trim() === "1");
   await check("RAM is the 8 GB board's", "awk '/MemTotal/{print $2}' /proc/meminfo",
               (_, o) => Number(o) > 7 * 1024 * 1024, 30, true);
   if (sshPort || t.real) {
@@ -470,7 +476,9 @@ async function systemChecks(t: Target, o: CheckOpts) {
     report(banner.startsWith("SSH-2.0-"), `[${t.tag}] sshd reachable from the host over the network`, banner);
   }
   if (t.real) { // only real hardware can show these
-    await check("vc4 HDMI driver bound", "ls -d /sys/bus/platform/drivers/vc4-drm/*.gpu 2>/dev/null", (c) => c === 0);
+    // Pi 4: card0 = v3d (render only), card1 = vc4-drm with the HDMI connectors.
+    await check("vc4 HDMI driver bound to a DRM card", "for c in /sys/class/drm/card[0-9]; do readlink -f $c/device/driver; done | grep -c vc4",
+                (_, o) => Number(o.trim()) > 0);
     await check("HDMI monitor detected", "cat /sys/class/drm/card*-HDMI-A-*/status | paste -sd' '",
                 (_, o) => o.includes("connected") && !/^(disconnected ?)+$/.test(o.trim()), 30, true);
     await check("getty on tty1 (HDMI) running", "systemctl is-active getty@tty1", (_, o) => o.trim() === "active");

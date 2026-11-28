@@ -2,6 +2,7 @@
 {
   imports = [
     ../../modules/raspberry-pi/firmware.nix
+    ../../modules/raspberry-pi/rootfs.nix # fileSystems."/": pi4.rootFs = "ext4" | "btrfs"
   ];
 
   disabledModules = [
@@ -24,11 +25,13 @@
   # past fakeroot, so the image's /, /var and /nix/store were owned by uid 1000. systemd and
   # NetworkManager reject that (no tmpfiles, no Wi-Fi plugin, broken logins/Hyprland). The
   # ext4 builder (standard NixOS SD image path) produces root-owned files.
-  fileSystems."/" = {
-    device = "/dev/disk/by-label/NIXOS_SD";
-    fsType = "ext4";
-    options = [ "noatime" ];
-  };
+  # (fileSystems."/" now comes from modules/raspberry-pi/rootfs.nix; ext4 by default.
+  #  btrfs works again via a fixed builder: images.pi4-nas-btrfs / pi4.rootFs = "btrfs".)
+  # fileSystems."/" = {
+  #   device = "/dev/disk/by-label/NIXOS_SD";
+  #   fsType = "ext4";
+  #   options = [ "noatime" ];
+  # };
   # fileSystems."/" = {
   #   device = "/dev/disk/by-label/NIXOS_SD";
   #   fsType = "btrfs";
@@ -217,7 +220,9 @@
 
   users.users.izelnakri = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # full root via sudo
+    # networkmanager: polkit lets this group manage connections, so nmtui/nmcli work without
+    # sudo (on the Pi nmtui needed sudo).
+    extraGroups = [ "wheel" "networkmanager" ]; # wheel: full root via sudo
     # Pre-hashed (`openssl passwd -6 -salt Pi4nasSaltFixed1 testing`) instead of
     # initialPassword: that one is hashed at runtime on first boot by the cross-built
     # activation and gave "Incorrect password" on the real Pi. TEMPORARY password;
