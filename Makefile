@@ -99,7 +99,7 @@ decrypt-sample-secret-file: decrypt
 #   more ARGS: --tier uboot|system  --reboot  --full  --keep  --run 'CMD'  --password PW   (scripts/run-pi4.ts)
 # make pi4-check                  -> static image checks only (partition flag, bootcmd, extlinux, DTB): seconds
 # make pi4-vm [ARGS=--full]       -> interactive serial console (virt, or raspi4b with --full); Ctrl-A X quits
-#   (also: `node scripts/run-pi4.ts ...` / `deno run -A scripts/run-pi4.ts ...` with the tools on PATH)
+#   (also: `deno run -A scripts/run-pi4.ts ...` with the tools on PATH)
 # ROOTFS=btrfs selects the btrfs-root image (images.pi4-nas-btrfs); default ext4. If you flash
 # btrfs, also set `pi4.rootFs = "btrfs";` in hosts/izels-pi4 before `make pi4-deploy`.
 ROOTFS ?= ext4

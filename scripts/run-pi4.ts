@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node
+#!/usr/bin/env -S deno run --allow-all --quiet
 /**
  * Test the pi4-nas system: in QEMU (before flashing) or on the real Pi over SSH.
  *
@@ -10,7 +10,7 @@
  *   make run-pi4 ARGS="--run 'journalctl -b -p err'"   # extra commands, VM or --ssh (repeatable)
  *   make pi4-check                       # static image checks only (~5s)
  *   make pi4-vm                          # interactive serial console (virt; ARGS=--full for raspi4b)
- *   node scripts/run-pi4.ts [img] [opts]   /   deno run -A scripts/run-pi4.ts [img] [opts]
+ *   deno run -A scripts/run-pi4.ts [img] [opts]   (`nix run .#run-pi4` pins Deno + the tools)
  *     opts: --keep-going (default: stop at the first FAIL)  --ssh [user@]host[:port]  --password PW (default "testing": SSH + sudo)  --static-only
  *           --tier uboot|system  --full --reboot --interactive --keep --workdir DIR --run CMD
  *   Tools on PATH: VM mode: qemu-system-aarch64 qemu-img qemu-io sfdisk mtype mdir mcopy fdtget fdtput;
@@ -43,10 +43,14 @@
  *     timeout would drop to emergency mode.
  *
  * The store image is never modified: each VM gets a throwaway qcow2 overlay.
- * Only erasable TypeScript syntax and node: built-ins, so Node and Deno run it as-is.
+ * Runs on Deno (node: built-in modules, all I/O async). Only erasable TypeScript syntax is used,
+ * so it would also run under Node >= 23.6 with native type stripping.
  */
-import { execFileSync, spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { execFile, spawn, type ChildProcess } from "node:child_process";
 import * as fs from "node:fs";
+import * as fsp from "node:fs/promises";
+import { pipeline } from "node:stream/promises";
+import { promisify } from "node:util";
 import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -110,13 +114,17 @@ function report(ok: boolean | null, name: string, detail = ""): boolean {
 const failed = () => rows.filter((r) => r[0] === "FAIL");
 const step = (msg: string) => console.log(`\n==> ${msg}`);
 
-const run = (cmd: string, ...args: string[]) => execFileSync(cmd, args, { encoding: "utf8", maxBuffer: 1 << 28 });
-const runBuf = (cmd: string, ...args: string[]) => execFileSync(cmd, args, { maxBuffer: 1 << 28 });
-const ok0 = (cmd: string, ...args: string[]) => spawnSync(cmd, args, { stdio: "ignore" }).status === 0;
+const execFileP = promisify(execFile);
+const run = async (cmd: string, ...args: string[]): Promise<string> =>
+  (await execFileP(cmd, args, { encoding: "utf8", maxBuffer: 1 << 28 })).stdout;
+const runBuf = async (cmd: string, ...args: string[]): Promise<Buffer> =>
+  (await execFileP(cmd, args, { encoding: "buffer", maxBuffer: 1 << 28 })).stdout;
+const ok0 = (cmd: string, ...args: string[]): Promise<boolean> => execFileP(cmd, args).then(() => true, () => false);
+const exists = (p: string): Promise<boolean> => fsp.access(p).then(() => true, () => false);
 
 // ------------------------------------------------------------------ image / FAT helpers
 interface Part { start: number; size: number; type: string; bootable?: boolean }
-const partitions = (img: string): Part[] => JSON.parse(run("sfdisk", "-J", img)).partitiontable.partitions;
+const partitions = async (img: string): Promise<Part[]> => JSON.parse(await run("sfdisk", "-J", img)).partitiontable.partitions;
 const fatRead = (fat: string, p: string) => runBuf("mtype", "-i", fat, "::" + p);
 const fatExists = (fat: string, p: string) => ok0("mdir", "-i", fat, "::" + p);
 
@@ -130,30 +138,36 @@ function parseExtlinux(text: string): Extlinux {
            fdt: rel(get("FDT")), append: get("APPEND") ?? "" };
 }
 
-function staticChecks(img: string, fat: string): { ext: Extlinux; dtb?: string } {
+async function staticChecks(img: string, fat: string): Promise<{ ext: Extlinux; dtb?: string }> {
   step("Static checks of the image (what the real Pi's firmware + U-Boot will see)");
-  const [p1, p2] = partitions(img);
+  // Independent reads run concurrently; reports below stay in a fixed order.
+  const fwFiles = ["/start4.elf", "/fixup4.dat", "/bcm2711-rpi-4-b.dtb", "/u-boot.bin"];
+  const [[p1, p2], cfgBuf, ubootBuf, extBuf, fwPresent] = await Promise.all([
+    partitions(img), fatRead(fat, "/config.txt"), fatRead(fat, "/u-boot.bin"), fatRead(fat, "/extlinux/extlinux.conf"),
+    Promise.all(fwFiles.map((f) => fatExists(fat, f))),
+  ]);
   report(p1.bootable === true && ["b", "c"].includes(p1.type), "partition 1 (FAT) is the bootable partition",
          `type=${p1.type} bootable=${!!p1.bootable}`);
   report(!p2.bootable, "partition 2 (btrfs root) is NOT flagged bootable",
          "U-Boot here has no btrfs driver and only scans flagged partitions");
 
-  const cfg = fatRead(fat, "/config.txt").toString();
+  const cfg = cfgBuf.toString();
   report(cfg.includes("kernel=u-boot.bin") && cfg.includes("arm_64bit=1"), "config.txt chainloads 64-bit U-Boot");
   report(cfg.includes("vc4-kms-v3d") ? null : true, "config.txt has no vendor-kernel vc4-kms-v3d overlay");
-  const missing = ["/start4.elf", "/fixup4.dat", "/bcm2711-rpi-4-b.dtb", "/u-boot.bin"].filter((f) => !fatExists(fat, f));
+  const missing = fwFiles.filter((_, i) => !fwPresent[i]);
   report(missing.length === 0, "Pi 4 firmware files present (start4.elf fixup4.dat vendor DTB u-boot.bin)", missing.join(" "));
 
-  const bootcmd = /bootcmd=([^\x00]*)/.exec(fatRead(fat, "/u-boot.bin").toString("latin1"))?.[1] ?? "";
+  const bootcmd = /bootcmd=([^\x00]*)/.exec(ubootBuf.toString("latin1"))?.[1] ?? "";
   report(/bootflow scan -\w*b/.test(bootcmd) || bootcmd.includes("distro_bootcmd"),
          "U-Boot bootcmd actually boots", JSON.stringify(bootcmd));
 
-  const ext = parseExtlinux(fatRead(fat, "/extlinux/extlinux.conf").toString());
-  for (const k of ["linux", "initrd"] as const) {
-    report(!!ext[k] && fatExists(fat, ext[k]!), `extlinux ${k.toUpperCase()} exists on FAT`, path.basename(ext[k] ?? ""));
-  }
+  const ext = parseExtlinux(extBuf.toString());
   const dtb = ext.fdtdir ? `${ext.fdtdir}/broadcom/bcm2711-rpi-4-b.dtb` : ext.fdt;
-  report(!!dtb && fatExists(fat, dtb), "extlinux points U-Boot at the kernel's own (mainline) DTB", dtb && "FDTDIR");
+  const [hasLinux, hasInitrd, hasDtb] = await Promise.all(
+    [ext.linux, ext.initrd, dtb].map((p) => (p ? fatExists(fat, p) : Promise.resolve(false))));
+  report(hasLinux, "extlinux LINUX exists on FAT", path.basename(ext.linux ?? ""));
+  report(hasInitrd, "extlinux INITRD exists on FAT", path.basename(ext.initrd ?? ""));
+  report(hasDtb, "extlinux points U-Boot at the kernel's own (mainline) DTB", dtb && "FDTDIR");
   const consoles = [...ext.append.matchAll(/console=(\w+)/g)].map((m) => m[1]);
   report(/^tty\d+$/.test(consoles.at(-1) ?? "") ? true : null,
          "last console= is the HDMI VT (systemd status goes to /dev/console)", consoles.join(" "));
@@ -183,63 +197,76 @@ const MOCK_SLEEP = bash(String.raw`#!/usr/bin/env bash
 n=$(( $(cat "$STATE/loops" 2>/dev/null || echo 0) + 1 )); echo $n > "$STATE/loops"
 [ $n -ge @{LOOPS:-2} ] && kill -TERM $PPID; exit 0`);
 
-function btAutopairUnitTest(top: string) {
+async function btAutopairUnitTest(top: string) {
   const unit = path.join(top, "etc/systemd/system/bt-autopair.service");
-  if (!fs.existsSync(unit)) { report(null, "bt-autopair unit test", "no bt-autopair in this image"); return; }
-  const exec = /^ExecStart=(\S+)/m.exec(fs.readFileSync(unit, "utf8"))?.[1];
-  const script = fs.readFileSync(exec!, "utf8").replace(/\/nix\/store\/[a-z0-9]{32}-bluez-[^/]+\/bin\/bluetoothctl/g, "bluetoothctl");
+  if (!(await exists(unit))) { report(null, "bt-autopair unit test", "no bt-autopair in this image"); return; }
+  const exec = /^ExecStart=(\S+)/m.exec(await fsp.readFile(unit, "utf8"))?.[1];
+  const script = (await fsp.readFile(exec!, "utf8")).replace(/\/nix\/store\/[a-z0-9]{32}-bluez-[^/]+\/bin\/bluetoothctl/g, "bluetoothctl");
   const mac = /devices="([^"]+)"/.exec(script)?.[1] ?? "?";
-  const run = (name: string, state: string[], loops: number) => {
-    const d = fs.mkdtempSync(path.join(os.tmpdir(), "btmock-")), bin = path.join(d, "bin"), st = path.join(d, "state");
-    fs.mkdirSync(bin); fs.mkdirSync(st);
-    fs.writeFileSync(path.join(bin, "bluetoothctl"), MOCK_BTCTL, { mode: 0o755 });
-    fs.writeFileSync(path.join(bin, "sleep"), MOCK_SLEEP, { mode: 0o755 });
-    fs.writeFileSync(path.join(d, "script.sh"), script);
-    for (const f of state) fs.writeFileSync(path.join(st, f), "");
-    spawnSync("bash", [path.join(d, "script.sh")], { env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, STATE: st, LOOPS: String(loops) },
-                                                    timeout: 20000, stdio: "ignore" });
-    const calls = fs.existsSync(path.join(st, "calls")) ? fs.readFileSync(path.join(st, "calls"), "utf8").trim().split("\n") : [];
-    const has = (f: string) => fs.existsSync(path.join(st, f));
-    fs.rmSync(d, { recursive: true, force: true });
-    return { calls: calls.map((c) => c.replace(/^(--\S+ \S+ )+/, "").split(" ")[0]), has, name };
+  /** One scenario in its own temp dir: initial mock state -> the calls made + the final state. */
+  const scenario = async (state: string[], loops: number) => {
+    const d = await fsp.mkdtemp(path.join(os.tmpdir(), "btmock-")), bin = path.join(d, "bin"), st = path.join(d, "state");
+    await Promise.all([fsp.mkdir(bin), fsp.mkdir(st)]);
+    await Promise.all([
+      fsp.writeFile(path.join(bin, "bluetoothctl"), MOCK_BTCTL, { mode: 0o755 }),
+      fsp.writeFile(path.join(bin, "sleep"), MOCK_SLEEP, { mode: 0o755 }),
+      fsp.writeFile(path.join(d, "script.sh"), script),
+      ...state.map((f) => fsp.writeFile(path.join(st, f), "")),
+    ]);
+    // The loop ends when the mock `sleep` kills it, so a non-zero exit is expected.
+    await execFileP("bash", [path.join(d, "script.sh")], {
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, STATE: st, LOOPS: String(loops) }, timeout: 20000,
+    }).catch(() => {});
+    const calls = (await fsp.readFile(path.join(st, "calls"), "utf8").catch(() => "")).trim().split("\n").filter(Boolean);
+    const final = new Set(await fsp.readdir(st));
+    await fsp.rm(d, { recursive: true, force: true });
+    return { calls: calls.map((c) => c.replace(/^(--\S+ \S+ )+/, "").split(" ")[0]), has: (f: string) => final.has(f) };
   };
+  const [pairing, off, reconnect] = await Promise.all([
+    scenario(["discoverable"], 2),                                   // keyboard in pairing mode
+    scenario([], 2),                                                 // keyboard off
+    scenario(["known", "paired", "trusted", "discoverable"], 1),     // paired keyboard turned on
+  ]);
   // 1. keyboard in pairing mode -> scan, pair (NoInputNoOutput), trust, connect
-  let r = run("pairing mode", ["discoverable"], 2);
+  let r = pairing;
   const seq = r.calls.filter((c) => c !== "info").join(">");
   report(/scan>pair>trust>connect/.test(seq) && r.has("connected"),
          `bt-autopair unit: keyboard ${mac} in pairing mode gets paired, trusted, connected`, seq);
   // 2. keyboard off -> no trust/connect, no crash
-  r = run("off", [], 2);
+  r = off;
   report(!r.calls.includes("trust") && !r.calls.includes("connect") && r.calls.includes("pair"),
          "bt-autopair unit: keyboard off -> keeps scanning, no trust/connect", r.calls.filter((c) => c !== "info").join(">"));
   // 3. already paired + trusted but disconnected -> reconnect, no re-pair
-  r = run("reconnect", ["known", "paired", "trusted", "discoverable"], 1);
+  r = reconnect;
   report(r.has("connected") && !r.calls.includes("pair"),
          "bt-autopair unit: paired keyboard turned on -> reconnects without re-pairing", r.calls.filter((c) => c !== "info").join(">"));
 }
 
 // ------------------------------------------------------------------ VM-only DTB ([uboot] --full)
-function* fdtNodes(dtb: string, p = "/"): Generator<string> {
-  yield p;
-  for (const child of run("fdtget", "-l", dtb, p).split(/\s+/).filter(Boolean)) {
-    yield* fdtNodes(dtb, `${p.replace(/\/$/, "")}/${child}`);
-  }
+/** All node paths of a DTB (children listed concurrently). */
+async function fdtNodes(dtb: string, p = "/"): Promise<string[]> {
+  const children = (await run("fdtget", "-l", dtb, p)).split(/\s+/).filter(Boolean);
+  const sub = await Promise.all(children.map((c) => fdtNodes(dtb, `${p.replace(/\/$/, "")}/${c}`)));
+  return [p, ...sub.flat()];
 }
 
-function makeVmDtb(dtb: string): string[] {
+async function makeVmDtb(dtb: string): Promise<string[]> {
+  const nodes = await fdtNodes(dtb);
+  // Reads concurrently; writes below stay sequential (they all modify the same file).
+  const compats = await Promise.all(nodes.map((n) =>
+    run("fdtget", "-t", "s", dtb, n, "compatible").then((o) => o.split(/\s+/).filter(Boolean), () => [] as string[])));
   const changes: string[] = [];
-  for (const node of [...fdtNodes(dtb)]) {
-    const r = spawnSync("fdtget", ["-t", "s", dtb, node, "compatible"], { encoding: "utf8" });
-    const compat = r.status === 0 ? r.stdout.split(/\s+/).filter(Boolean) : [];
+  for (const [i, node] of nodes.entries()) {
+    const compat = compats[i];
     const hit = compat.find((c) => c in UNEMULATED);
     if (hit) {
-      run("fdtput", "-t", "s", dtb, node, "status", "disabled");
+      await run("fdtput", "-t", "s", dtb, node, "status", "disabled");
       changes.push(`disabled ${node} (${UNEMULATED[hit]})`);
     }
     if (compat.includes("brcm,bcm2835-sdhci")) { // the SDHCI QEMU wires the SD card to
-      spawnSync("fdtput", ["-d", dtb, node, "mmc-pwrseq"], { stdio: "ignore" });
-      for (const child of run("fdtget", "-l", dtb, node).split(/\s+/).filter(Boolean)) {
-        run("fdtput", "-r", dtb, `${node}/${child}`);
+      await ok0("fdtput", "-d", dtb, node, "mmc-pwrseq");
+      for (const child of (await run("fdtget", "-l", dtb, node)).split(/\s+/).filter(Boolean)) {
+        await run("fdtput", "-r", dtb, `${node}/${child}`);
       }
       changes.push(`${node}: plain SD slot (dropped mmc-pwrseq + wifi child)`);
     }
@@ -371,7 +398,7 @@ for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) process.on(sig, () =
 /** rootShell: also a virtio console (hvc0) for `systemd.debug_shell=hvc0`, i.e. a root
  *  shell from early boot that needs no getty, password or working PAM. VM-only. */
 async function startVm(tag: string, wd: string, args: string[], after: string[] = [], rootShell = false): Promise<Vm> {
-  const sockDir = fs.mkdtempSync("/tmp/pi4s"); // unix socket paths max out at ~107 bytes
+  const sockDir = await fsp.mkdtemp("/tmp/pi4s"); // unix socket paths max out at ~107 bytes
   const sock = path.join(sockDir, "ttyAMA0"), hvc = path.join(sockDir, "hvc0");
   const hvcArgs = rootShell ? ["-device", "virtio-serial-pci", "-chardev", `socket,id=hvc0,path=${hvc},server=on,wait=off`,
                                "-device", "virtconsole,chardev=hvc0"] : [];
@@ -379,7 +406,7 @@ async function startVm(tag: string, wd: string, args: string[], after: string[] 
   const proc = spawn("qemu-system-aarch64",
     [...args, ...hvcArgs, "-display", "none", "-monitor", `unix:${mon},server=on,wait=off`,
      "-serial", `unix:${sock},server=on,wait=on`, ...after],
-    { stdio: ["ignore", "ignore", fs.openSync(path.join(wd, `${tag}.qemu.stderr`), "w")] });
+    { stdio: ["ignore", "ignore", (await fsp.open(path.join(wd, `${tag}.qemu.stderr`), "w")).fd] });
   children.add(proc);
   const con = await Console.connect(sock, path.join(wd, `${tag}.serial.log`));
   const root = rootShell ? await Console.connect(hvc, path.join(wd, `${tag}.rootshell.log`)) : undefined;
@@ -404,7 +431,7 @@ function stopVm(vm?: Vm) {
   if (!vm) return;
   vm.con.sock.destroy();
   vm.proc.kill("SIGKILL");
-  fs.rmSync(vm.sockDir, { recursive: true, force: true });
+  void fsp.rm(vm.sockDir, { recursive: true, force: true }); // best effort
 }
 
 async function milestones(vm: Vm, t0: number, ms: [string, number, string][]): Promise<boolean> {
@@ -484,11 +511,11 @@ const vmTarget = (vm: Vm): Target => ({ tag: vm.tag, real: false, sh: (c, t) => 
 let PASSWORD = "testing"; // izelnakri's initialPassword: login, SSH fallback, sudo
 const sudo = () => `echo '${PASSWORD.replace(/'/g, "'\\''")}' | sudo -S -p ''`;
 
-function sshTarget(dest: string): Target {
+async function sshTarget(dest: string): Promise<Target> {
   const port = /:(\d+)$/.exec(dest)?.[1]; // [user@]host[:port]
   const bare = port ? dest.slice(0, -port.length - 1) : dest;
   const host = bare.includes("@") ? bare : `izelnakri@${bare}`;
-  const ctl = path.join(fs.mkdtempSync("/tmp/pi4ssh"), "c");
+  const ctl = path.join(await fsp.mkdtemp("/tmp/pi4ssh"), "c");
   const common = ["-o", "ControlMaster=auto", "-o", `ControlPath=${ctl}`, "-o", "ControlPersist=120",
                   "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=5", "-o", "StrictHostKeyChecking=accept-new",
                   "-o", "LogLevel=ERROR", ...(port ? ["-p", port] : [])];
@@ -770,16 +797,11 @@ function parseArgs(argv: string[]) {
   return a;
 }
 
-function copyRange(src: string, dst: string, offset: number, length: number) {
-  const fi = fs.openSync(src, "r"), fo = fs.openSync(dst, "w");
-  const chunk = Buffer.alloc(1 << 24);
-  for (let done = 0; done < length;) {
-    const n = fs.readSync(fi, chunk, 0, Math.min(chunk.length, length - done), offset + done);
-    fs.writeSync(fo, chunk, 0, n);
-    done += n;
-  }
-  fs.closeSync(fi); fs.closeSync(fo);
+/** Copy bytes [offset, offset+length) of src to dst (streams; no full read into memory). */
+async function copyRange(src: string, dst: string, offset: number, length: number) {
+  await pipeline(fs.createReadStream(src, { start: offset, end: offset + length - 1 }), fs.createWriteStream(dst));
 }
+
 
 const TOOLS = ["qemu-system-aarch64", "qemu-img", "qemu-io", "sfdisk", "mtype", "mdir", "mcopy", "fdtget", "fdtput"];
 
@@ -787,7 +809,7 @@ async function main() {
   const a = parseArgs(process.argv.slice(2));
   if (a.ssh) { // real hardware: no image, no VMs
     step(`System checks on the real Pi: ${a.ssh}`);
-    const t = sshTarget(a.ssh);
+    const t = await sshTarget(a.ssh);
     try {
       await systemChecks(t, { disk: "mmcblk0", sshPort: null, extra: a.run });
       if (a.reboot) await sshRebootChecks(t);
@@ -797,7 +819,8 @@ async function main() {
     for (const [, n, d] of bad) console.log(`  FAIL ${n}  ${d}`);
     process.exit(bad.length ? 1 : 0);
   }
-  const missing = TOOLS.filter((t) => spawnSync("sh", ["-c", `command -v ${t}`], { stdio: "ignore" }).status !== 0);
+  const found = await Promise.all(TOOLS.map((t) => ok0("sh", "-c", `command -v ${t}`)));
+  const missing = TOOLS.filter((_, i) => !found[i]);
   if (missing.length) {
     console.error(`missing on PATH: ${missing.join(" ")}\nuse \`nix run .#run-pi4\` (pinned tools) or ` +
                   "`nix shell nixpkgs#{qemu,dtc,mtools,util-linux}`");
@@ -806,59 +829,66 @@ async function main() {
   let img = a.image;
   if (!img) {
     const dir = "result-pi4-nas/sd-image";
-    const f = fs.existsSync(dir) ? fs.readdirSync(dir).filter((x) => x.endsWith(".img")).sort()[0] : undefined;
+    const f = (await fsp.readdir(dir).catch(() => [] as string[])).filter((x) => x.endsWith(".img")).sort()[0];
     img = f ? path.join(dir, f) : "";
   }
-  if (!img || !fs.existsSync(img)) { console.error("no image; run `make pi4-image` or pass the .img path"); process.exit(2); }
-  img = fs.realpathSync(img);
-  const wd = a.workdir || fs.mkdtempSync(path.join(os.tmpdir(), "pi4-vm-"));
-  fs.mkdirSync(wd, { recursive: true });
+  if (!img || !(await exists(img))) { console.error("no image; run `make pi4-image` or pass the .img path"); process.exit(2); }
+  img = await fsp.realpath(img);
+  const wd = a.workdir || await fsp.mkdtemp(path.join(os.tmpdir(), "pi4-vm-"));
+  await fsp.mkdir(wd, { recursive: true });
   console.log(`image:   ${img}\nworkdir: ${wd}`);
 
-  const [p1, p2] = partitions(img);
+  const [p1, p2] = await partitions(img);
   const fat = path.join(wd, "firmware.img");
-  copyRange(img, fat, p1.start * 512, p1.size * 512);
-  const { ext, dtb } = staticChecks(img, fat);
+  await copyRange(img, fat, p1.start * 512, p1.size * 512);
+  const { ext, dtb } = await staticChecks(img, fat);
   const top = /init=(\S+)\/init/.exec(ext.append)?.[1];
-  if (top && fs.existsSync(top)) { // the image's system closure is in the local store after a build
-    btAutopairUnitTest(top);
+  if (top && await exists(top)) { // the image's system closure is in the local store after a build
+    await btAutopairUnitTest(top);
     const dlm = path.join(top, "sw/bin/.DisplayLinkManager-wrapped");
-    const bin = fs.existsSync(dlm) ? dlm : path.join(top, "sw/bin/DisplayLinkManager");
-    const elf = fs.existsSync(bin) ? fs.readFileSync(fs.realpathSync(bin)).subarray(0, 20) : null;
+    const bin = (await exists(dlm)) ? dlm : path.join(top, "sw/bin/DisplayLinkManager");
+    const elf = (await exists(bin)) ? (await fsp.readFile(await fsp.realpath(bin))).subarray(0, 20) : null;
     report(elf ? elf.readUInt16LE(18) === 183 : null, "DisplayLinkManager is an aarch64 binary in the image", elf ? `e_machine=${elf.readUInt16LE(18)}` : "not in sw/bin");
   }
-  const out = (name: string, data: Buffer) => { const f = path.join(wd, name); fs.writeFileSync(f, data); return f; };
-  const uboot = out("u-boot.bin", fatRead(fat, "/u-boot.bin"));
-  const fwDtb = out("fw.dtb", fatRead(fat, "/bcm2711-rpi-4-b.dtb"));
-  const kernel = ext.linux && out("Image", fatRead(fat, ext.linux));
-  const initrd = ext.initrd && out("initrd", fatRead(fat, ext.initrd));
+  /** Extract a FAT file into the workdir; returns its path. */
+  const extract = async (name: string, fatPath: string) => {
+    const f = path.join(wd, name);
+    await fsp.writeFile(f, await fatRead(fat, fatPath));
+    return f;
+  };
+  const [uboot, fwDtb, kernel, initrd] = await Promise.all([
+    extract("u-boot.bin", "/u-boot.bin"), extract("fw.dtb", "/bcm2711-rpi-4-b.dtb"),
+    ext.linux ? extract("Image", ext.linux) : undefined, ext.initrd ? extract("initrd", ext.initrd) : undefined,
+  ]);
 
-  const finish = () => {
+  const finish = async () => {
     const bad = failed();
     step(`Summary: ${rows.length - bad.length}/${rows.length} passed in ${secs(tStart)}`);
     for (const [, n, d] of bad) console.log(`  FAIL ${n}  ${d}`);
     if (bad.length || a.keep) console.log(`  kept ${wd} (*.serial.log, *.qemu.stderr, overlays)`);
-    else fs.rmSync(wd, { recursive: true, force: true });
+    else await fsp.rm(wd, { recursive: true, force: true });
     process.exit(bad.length ? 1 : 0);
   };
-  if (a.staticOnly || failed().length) { fs.unlinkSync(fat); finish(); }
+  if (a.staticOnly || failed().length) { await fsp.unlink(fat); await finish(); }
 
   // overlays: the store image is the read-only backing file
-  const overlay = (name: string, size?: number) => {
+  const overlay = async (name: string, size?: number) => {
     const f = path.join(wd, name);
-    run("qemu-img", "create", "-q", "-f", "qcow2", "-F", "raw", "-b", img, f, ...(size ? [String(size)] : []));
+    await run("qemu-img", "create", "-q", "-f", "qcow2", "-F", "raw", "-b", img, f, ...(size ? [String(size)] : []));
     return f;
   };
-  const piDisk = overlay("raspi4b.qcow2", 2 ** Math.ceil(Math.log2(fs.statSync(img).size + 1))); // SD: power of 2
+  const [piDisk, virtDisk] = await Promise.all([
+    overlay("raspi4b.qcow2", 2 ** Math.ceil(Math.log2((await fsp.stat(img)).size + 1))), // SD: power of 2
+    overlay("virt.qcow2", 16 * 2 ** 30), // room for the first-boot root expansion
+  ]);
   if (a.full && dtb) { // VM-only DTB, written only into the raspi4b overlay
     const vmDtb = path.join(wd, "vm.dtb");
-    fs.writeFileSync(vmDtb, fatRead(fat, dtb), { mode: 0o644 });
-    makeVmDtb(vmDtb);
-    run("mcopy", "-o", "-i", fat, vmDtb, "::" + dtb);
-    run("qemu-io", "-f", "qcow2", "-c", `write -s ${fat} ${p1.start * 512} ${p1.size * 512}`, piDisk);
+    await fsp.writeFile(vmDtb, await fatRead(fat, dtb), { mode: 0o644 });
+    await makeVmDtb(vmDtb);
+    await run("mcopy", "-o", "-i", fat, vmDtb, "::" + dtb);
+    await run("qemu-io", "-f", "qcow2", "-c", `write -s ${fat} ${p1.start * 512} ${p1.size * 512}`, piDisk);
   }
-  fs.unlinkSync(fat);
-  const virtDisk = overlay("virt.qcow2", 16 * 2 ** 30); // room for expand-root-partition
+  await fsp.unlink(fat);
 
   const piArgs = ["-M", "raspi4b", "-kernel", uboot, "-dtb", fwDtb, "-drive", `file=${piDisk},if=sd,format=qcow2`];
   const piSerial1 = ["-serial", "null"]; // mini-UART (ttyS1), after serial0
@@ -875,10 +905,11 @@ async function main() {
     const args = a.full ? piArgs : virtArgs;
     step(`Interactive ${a.full ? "raspi4b" : "virt"} VM. Login izelnakri/testing, quit with Ctrl-A X` +
          (a.full ? "" : `, ssh -p ${sshPort} izelnakri@127.0.0.1`));
-    const r = spawnSync("qemu-system-aarch64", [...args, "-display", "none", "-serial", "mon:stdio",
-                        ...(a.full ? piSerial1 : [])], { stdio: "inherit" });
+    const q = spawn("qemu-system-aarch64", [...args, "-display", "none", "-serial", "mon:stdio",
+                    ...(a.full ? piSerial1 : [])], { stdio: "inherit" });
+    const code = await new Promise<number>((res) => q.on("close", (c) => res(c ?? 1)));
     console.log(`workdir kept: ${wd}`);
-    process.exit(r.status ?? 1);
+    process.exit(code);
   }
 
   step(`Booting both VMs in parallel (logs: ${wd}/{uboot,system}.serial.log)`);
@@ -924,7 +955,7 @@ async function main() {
   } finally {
     vms.forEach(stopVm);
   }
-  finish();
+  await finish();
 }
 
 try {

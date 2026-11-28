@@ -151,11 +151,12 @@
       # `nix run .#run-pi4 [-- --ssh pi4-nas.local | --reboot | --tier uboot | --run CMD ...]`:
       # tests images.pi4-nas in QEMU (raspi4b: real U-Boot -> extlinux -> kernel; virt: system
       # to login + checks), or the running Pi over SSH. See scripts/run-pi4.ts / `make run-pi4`.
-      # Pinned toolchain; the script itself (TypeScript) also runs under plain node/deno.
+      # Pinned toolchain (Deno + QEMU + tools); `deno run -A scripts/run-pi4.ts` works too.
       packages.x86_64-linux.run-pi4 = x86Pkgs.writeShellApplication {
         name = "run-pi4";
-        runtimeInputs = with x86Pkgs; [ nodejs qemu dtc mtools util-linux openssh sshpass ];
-        text = ''exec node ${./scripts/run-pi4.ts} "$@"'';
+        runtimeInputs = with x86Pkgs; [ deno qemu dtc mtools util-linux openssh sshpass ];
+        # Deno runs the TypeScript directly (no build step); node: built-ins only, all I/O async.
+        text = ''exec deno run --allow-all --quiet --no-prompt ${./scripts/run-pi4.ts} "$@"'';
       };
 
       nixosModules = import ./modules { lib = nixpkgs.lib; };
