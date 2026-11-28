@@ -112,6 +112,11 @@
             CONFIG_CMD_BOOTFLOW_FULL=y
             CONFIG_CMD_BOOTMETH=y
             CONFIG_CMD_BOOTSTD=y
+            # Must be explicit: with CMD_BOOTFLOW_FULL, plain "bootflow scan" only
+            # *lists* bootflows and drops to the U-Boot> prompt (found in QEMU,
+            # `make pi4-vm-test`). Kconfig would default to "-lb", but buildUBoot
+            # appends extraConfig after the defconfig already set "bootflow scan".
+            CONFIG_BOOTCOMMAND="bootflow scan -lb"
             # CONFIG_BOOTMETH_EFI_BOOTMGR is not set
             # CONFIG_BOOTMETH_EFILOADER is not set
           '';

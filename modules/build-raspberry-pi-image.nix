@@ -109,10 +109,21 @@
       RemainAfterExit = true;
     };
 
+    # Device/partition come from sysfs, not lsblk: lsblk's PKNAME/PARTN come from the
+    # udev database, which this early (before sysinit.target) may not have the disk
+    # yet. Then partNum was empty, `-N"$partNum"` swallowed `--no-reread`, and the
+    # unit failed ("sfdisk: failed to parse partition number"; seen in pi4-vm-test).
+    # Old:
+    # rootPart="$(${lib.getExe' pkgs.util-linux "findmnt"} -n -o SOURCE /)"
+    # bootDevice="$(${lib.getExe' pkgs.util-linux "lsblk"} -npo PKNAME "$rootPart")"
+    # partNum="$(${lib.getExe' pkgs.util-linux "lsblk"} -npo PARTN "$rootPart")"
     script = ''
-      rootPart="$(${lib.getExe' pkgs.util-linux "findmnt"} -n -o SOURCE /)"
-      bootDevice="$(${lib.getExe' pkgs.util-linux "lsblk"} -npo PKNAME "$rootPart")"
-      partNum="$(${lib.getExe' pkgs.util-linux "lsblk"} -npo PARTN "$rootPart")"
+      set -euo pipefail
+      rootPart="$(${lib.getExe' pkgs.util-linux "findmnt"} -nvo SOURCE /)"   # -v: no btrfs [/subvol]
+      sys="/sys/class/block/$(basename "$rootPart")"
+      partNum="$(cat "$sys/partition")"
+      bootDevice="/dev/$(basename "$(readlink -f "$sys/..")")"
+      echo "expanding $rootPart (partition $partNum of $bootDevice)"
 
       echo ",+," | ${lib.getExe' pkgs.util-linux "sfdisk"} \
         -N"$partNum" --no-reread "$bootDevice"

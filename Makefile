@@ -93,6 +93,12 @@ decrypt-sample-secret-file: decrypt
 #                                    (no build here: don't run nix build as root)
 # make pi4-inspect                -> print partition table, extlinux.conf, config.txt of the image
 # make pi4-deploy                 -> nixinate: push the config to the running Pi over SSH
+# make pi4-check                  -> static image checks only (partition flag, bootcmd, extlinux, DTB): seconds
+# make pi4-vm-test [ARGS=...]     -> static + 2 parallel QEMU VMs: raspi4b runs the real U-Boot -> extlinux ->
+#                                    kernel path; virt (A72x4, 8G) boots the image's kernel/initrd/rootfs to login
+#                                    and checks the system. ARGS: --reboot --full --keep --run 'CMD'
+# make pi4-vm [ARGS=--full]       -> interactive serial console (virt, or raspi4b with --full); Ctrl-A X quits
+#   (scripts/pi4-vm-test.ts; also `node scripts/pi4-vm-test.ts` / `deno run -A ...` with tools on PATH)
 PI4_IMG = $(wildcard result-pi4-nas/sd-image/*.img)
 
 pi4-image:
@@ -119,4 +125,13 @@ pi4-inspect:
 pi4-deploy:
 	nix run .#apps.nixinate.pi4-nas
 
-.PHONY: pi4-image pi4-flash pi4-inspect pi4-deploy
+pi4-check: pi4-image
+	nix run .#pi4-vm-test -- --static-only
+
+pi4-vm-test: pi4-image
+	nix run .#pi4-vm-test -- $(ARGS)
+
+pi4-vm: pi4-image
+	nix run .#pi4-vm-test -- --interactive $(ARGS)
+
+.PHONY: pi4-image pi4-flash pi4-inspect pi4-deploy pi4-check pi4-vm-test pi4-vm

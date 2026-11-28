@@ -138,6 +138,15 @@
         }).config.system.build.sdImage;
       };
 
+      # `nix run .#pi4-vm-test [-- --reboot|--interactive|--run CMD]`: boots images.pi4-nas
+      # on QEMU raspi4b through its real U-Boot -> extlinux -> kernel chain and checks it.
+      # Pinned toolchain; the script itself (TypeScript) also runs under plain node/deno.
+      packages.x86_64-linux.pi4-vm-test = x86Pkgs.writeShellApplication {
+        name = "pi4-vm-test";
+        runtimeInputs = with x86Pkgs; [ nodejs qemu dtc mtools util-linux ];
+        text = ''exec node ${./scripts/pi4-vm-test.ts} "$@"'';
+      };
+
       nixosModules = import ./modules { lib = nixpkgs.lib; };
 
       nixosConfigurations = {
