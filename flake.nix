@@ -202,7 +202,9 @@
             # home-manager.nixosModules.home-manager # commented out due to image build error from x86
             {
               _module.args.nixinate = {
-                host = "pi4-nas.local"; # avahi mDNS; was "pi4-nas.lan"
+                # Tailscale MagicDNS name (after `tailscale up --hostname=izels-pi4` on the Pi).
+                # Was "pi4-nas.local" (mDNS: blocked on campus Wi-Fi) / "pi4-nas.lan" (router DNS, works on the LAN).
+                host = "izels-pi4";
                 sshUser = "izelnakri";
                 buildOn = "local"; # cross-build on the laptop, reusing the image's store paths; was "remote" (Pi compiles everything)
                 substituteOnTarget = true; # if buildOn is "local" then it will substitute on the target, "-s"

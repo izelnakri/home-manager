@@ -384,6 +384,15 @@
   # services.displayManager.defaultSession = "hyprland";
   # services.displayManager.hiddenUsers = [ "root" ];
 
+  # Stable address on your tailnet, from any network (no LAN/mDNS needed): after first boot run
+  # once `sudo tailscale up --hostname=izels-pi4` and open the printed login URL. Then
+  # `ssh izelnakri@izels-pi4` works from every tailnet device (laptop, Fairphone, Omnibook).
+  # FOSS alternative later: point the same client at a self-hosted Headscale (--login-server).
+  services.tailscale = {
+    enable = true;
+    openFirewall = true; # WireGuard UDP port, for direct (non-relayed) connections
+  };
+
   services.avahi = {
     enable = true;
     nssmdns4 = true;

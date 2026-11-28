@@ -248,8 +248,18 @@ class Console {
     for (const ch of text) { this.sock.write(ch); await sleep(3); }
   }
 
-  /** Run cmd in the logged-in shell; returns [exitCode|null, output]. */
-  async sh(cmd: string, timeoutS = 120): Promise<[number | null, string]> {
+  private queue: Promise<unknown> = Promise.resolve();
+
+  /** Run cmd in the shell; returns [exitCode|null, output]. Calls are queued (one at a time),
+   *  so concurrent check groups can share a console: their *waits* overlap, commands don't. */
+  sh(cmd: string, timeoutS = 120): Promise<[number | null, string]> {
+    const run = () => this.shNow(cmd, timeoutS);
+    const p = this.queue.then(run, run);
+    this.queue = p.catch(() => {});
+    return p;
+  }
+
+  private async shNow(cmd: string, timeoutS: number): Promise<[number | null, string]> {
     const n = ++this.n; // markers built by printf so the echoed command line never matches
     await this.send(`printf '\\n__B%s__\\n' ${n}; ${cmd}; printf '\\n__E%s__ %s\\n' ${n} $?\n`);
     if (!(await this.expect(`\\n__B${n}__\\n`, timeoutS))) return [null, ""];
@@ -261,7 +271,35 @@ class Console {
 }
 
 // ------------------------------------------------------------------ VM plumbing
-interface Vm { proc: ChildProcess; con: Console; tag: string; sockDir: string; root?: Console }
+/** QEMU human monitor (HMP): virtual-keyboard input and screenshots. */
+class Monitor {
+  sock!: net.Socket;
+  static async connect(sockPath: string): Promise<Monitor> {
+    const m = new Monitor();
+    for (let i = 0; ; i++) {
+      try {
+        m.sock = await new Promise<net.Socket>((res, rej) => {
+          const s = net.createConnection({ path: sockPath }, () => res(s));
+          s.once("error", rej);
+        });
+        m.sock.on("data", () => {});
+        m.sock.on("error", () => {});
+        return m;
+      } catch (e) {
+        if (i > 100) throw e;
+        await sleep(100);
+      }
+    }
+  }
+  async cmd(c: string) { this.sock.write(c + "\n"); await sleep(300); }
+  /** Type text on the VM's USB keyboard (letters, digits and a few symbols). */
+  async type(text: string) {
+    const keys: Record<string, string> = { " ": "spc", "\n": "ret", ".": "dot", "-": "minus", "/": "slash", "_": "shift-minus" };
+    for (const ch of text) await this.cmd(`sendkey ${keys[ch] ?? ch}`);
+  }
+}
+
+interface Vm { proc: ChildProcess; con: Console; tag: string; sockDir: string; root?: Console; mon?: Monitor }
 
 // QEMU assigns -serial options in order: the first is serial0 = PL011 = ttyAMA0, which
 // carries U-Boot's and Linux's console on raspi4b and virt. `after` comes after it.
@@ -278,13 +316,15 @@ async function startVm(tag: string, wd: string, args: string[], after: string[] 
   const sock = path.join(sockDir, "ttyAMA0"), hvc = path.join(sockDir, "hvc0");
   const hvcArgs = rootShell ? ["-device", "virtio-serial-pci", "-chardev", `socket,id=hvc0,path=${hvc},server=on,wait=off`,
                                "-device", "virtconsole,chardev=hvc0"] : [];
+  const mon = path.join(sockDir, "monitor");
   const proc = spawn("qemu-system-aarch64",
-    [...args, ...hvcArgs, "-display", "none", "-monitor", "none", "-serial", `unix:${sock},server=on,wait=on`, ...after],
+    [...args, ...hvcArgs, "-display", "none", "-monitor", `unix:${mon},server=on,wait=off`,
+     "-serial", `unix:${sock},server=on,wait=on`, ...after],
     { stdio: ["ignore", "ignore", fs.openSync(path.join(wd, `${tag}.qemu.stderr`), "w")] });
   children.add(proc);
   const con = await Console.connect(sock, path.join(wd, `${tag}.serial.log`));
   const root = rootShell ? await Console.connect(hvc, path.join(wd, `${tag}.rootshell.log`)) : undefined;
-  return { proc, con, tag, sockDir, root };
+  return { proc, con, tag, sockDir, root, mon: await Monitor.connect(mon) };
 }
 
 /** Make the debug shell scriptable; resolves false if it never shows up. */
@@ -434,8 +474,16 @@ async function systemChecks(t: Target, o: CheckOpts) {
 
   // First: everything below needs a finished boot (/boot mounted, first-boot expansion done).
   // The VM root shell exists from early stage 2, long before that.
-  await check("system finished booting", "systemctl is-system-running --wait",
-              (_, o) => ["running", "degraded"].includes(o.trim()), 900);
+  if (t.real) {
+    await check("system finished booting", "systemctl is-system-running --wait",
+                (_, o) => ["running", "degraded"].includes(o.trim()), 900);
+  } else { // VM: first boot under emulation is slow; wait only for what the checks need
+    const st = await waitActive(t, ["sshd", "NetworkManager"], 900);
+    report(st === "active active", `[${t.tag}] sshd + NetworkManager active`, `${st} t+${secs(tStart)}`);
+  }
+  await check("image files root-owned (/, /var, NetworkManager Wi-Fi plugin)",
+              "stat -c %U / /var /nix/store/*-networkmanager-*/lib/NetworkManager/*/libnm-device-plugin-wifi.so | sort -u",
+              (_, o) => o.trim() === "root");
   const kver = /linux-\S*?-(\d+\.\d+\.\d+)/.exec(ext?.linux ?? "")?.[1];
   await check(ext ? "running the kernel from extlinux.conf" : "kernel", "uname -r",
               (c, o) => c === 0 && (!kver || o.trim() === kver));
@@ -491,6 +539,75 @@ async function systemChecks(t: Target, o: CheckOpts) {
     const [code, out] = await t.sh(cmd, 300);
     console.log(`\n[${t.tag}] $ ${cmd}   [exit ${code}]\n${out}`);
   }
+}
+
+/** Poll until all units are active (or timeout); returns the last `is-active` line. */
+async function waitActive(t: Target, units: string[], timeoutS: number): Promise<string> {
+  const end = Date.now() + timeoutS * 1000;
+  let st = "";
+  while (Date.now() < end) {
+    st = (await t.sh(`systemctl is-active ${units.join(" ")} | paste -sd' '`, 60))[1].trim();
+    if (st.split(" ").every((x) => x === "active")) break;
+    await sleep(5000);
+  }
+  return st;
+}
+
+// ---- VM-only check groups. They run concurrently (each waits only for its own services);
+// root-shell commands are queued by Console.sh, so their waits overlap.
+
+/** Wi-Fi: NetworkManager's wpa_supplicant backend + virtual mac80211_hwsim radios. */
+async function vmWifiChecks(t: Target) {
+  const tag = `[${t.tag}]`;
+  await waitActive(t, ["NetworkManager"], 900);
+  const [, act] = await t.sh("busctl --system list --activatable --no-pager 2>/dev/null | grep -c fi.w1.wpa_supplicant1");
+  report(Number(act) > 0, `${tag} wpa_supplicant D-Bus service activatable (NetworkManager's Wi-Fi backend)`, act);
+  await t.sh("modprobe mac80211_hwsim radios=2", 60);
+  const usable = /:wifi:(disconnected|connected|connecting)/;
+  let wifi = "";
+  for (let i = 0; i < 24 && !usable.test(wifi); i++) { // bounded: ~2 min
+    wifi = (await t.sh("nmcli -t -f DEVICE,TYPE,STATE dev | grep ':wifi:' | paste -sd' '", 30))[1];
+    if (i === 6 && !usable.test(wifi)) { // NM may skip hwsim radios by policy: force management
+      await t.sh(`for d in $(nmcli -t -f DEVICE,TYPE dev | awk -F: '$2=="wifi"{print $1}'); do nmcli dev set $d managed yes; done`, 30);
+    }
+    if (!usable.test(wifi)) await sleep(5000);
+  }
+  report(usable.test(wifi), `${tag} NetworkManager manages Wi-Fi (nmtui can select it)`, wifi);
+  const [c] = await t.sh("nmcli dev wifi rescan 2>/dev/null; sleep 3; nmcli -t dev wifi list >/dev/null", 90);
+  report(c === 0, `${tag} Wi-Fi scan runs`);
+}
+
+/** Bluetooth daemon. (A real controller only exists on hardware: see --ssh.) */
+async function vmBluetoothChecks(t: Target) {
+  report((await waitActive(t, ["bluetooth"], 900)) === "active", `[${t.tag}] bluetoothd running`);
+}
+
+/** The boot-diagnostics unit must succeed and write its report to the FAT partition. */
+async function vmDiagnosticsChecks(t: Target) {
+  await waitActive(t, ["NetworkManager"], 900);
+  const [, o] = await t.sh("systemctl start pi4-diagnostics 2>&1; systemctl is-failed pi4-diagnostics; " +
+                           "test -s /boot/pi4-diagnostics.txt && echo written", 240);
+  report(o.includes("written") && !o.includes("failed"), `[${t.tag}] pi4-diagnostics writes /boot/pi4-diagnostics.txt`,
+         o.replace(/\n/g, " | ").slice(0, 100));
+}
+
+/** Desktop: log in on tty1 with the virtual keyboard; the zsh login autostarts Hyprland. */
+async function vmDesktopChecks(vm: Vm, t: Target, wd: string) {
+  const tag = `[${vm.tag}]`;
+  report((await waitActive(t, ["getty@tty1"], 900)) === "active", `${tag} getty on tty1`);
+  await sleep(3000);
+  await vm.mon!.type("izelnakri\n");
+  await sleep(5000);
+  await vm.mon!.type(`${PASSWORD}\n`);
+  let ps = "";
+  for (let i = 0; i < 36 && !ps.includes("foot"); i++) { // bounded: ~6 min (software rendering)
+    await sleep(10000);
+    ps = (await t.sh("pgrep -u izelnakri -f 'Hyprland --config' >/dev/null && echo hyprland; " +
+                     "pgrep -u izelnakri -x foot >/dev/null && echo foot", 30))[1];
+  }
+  const shot = path.join(wd, "hyprland.ppm");
+  await vm.mon!.cmd(`screendump ${shot}`);
+  report(ps.includes("hyprland"), `${tag} Hyprland started from the tty1 login (+ foot)`, `${ps.replace(/\n/g, " ")} screenshot: ${shot}`);
 }
 
 async function rebootChecks(vm: Vm, t0Ref: { t: number }, ms: [string, number, string][]) {
@@ -640,7 +757,9 @@ async function main() {
     "-accel", "tcg,thread=multi,tb-size=1024", "-kernel", kernel!, "-initrd", initrd!,
     "-append", `${ext.append} console=ttyAMA0 ${VM_DEVICE_TIMEOUT}${a.interactive ? "" : " systemd.debug_shell=hvc0"}`,
     "-drive", `file=${virtDisk},if=virtio,format=qcow2,cache=unsafe`,
-    "-nic", `user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:${sshPort}-:22`];
+    "-nic", `user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:${sshPort}-:22`,
+    // display + input for the Hyprland check (tty1 login via the USB keyboard, then screendump)
+    "-device", "virtio-gpu-pci", "-device", "qemu-xhci", "-device", "usb-kbd", "-device", "usb-tablet"];
 
   if (a.interactive) {
     const args = a.full ? piArgs : virtArgs;
@@ -676,6 +795,10 @@ async function main() {
       // real user login (getty + PAM + password + sudo) once getty is up.
       await Promise.all([
         systemChecks(rootT, { ext, disk: "vda", sshPort, extra: a.run }),
+        vmWifiChecks(rootT),
+        vmBluetoothChecks(rootT),
+        vmDiagnosticsChecks(rootT),
+        vmDesktopChecks(vm, rootT, wd),
         (async () => { if (await milestones(vm, t0.t, getty)) await login(vm); })(),
       ]);
       if (a.reboot) await rebootChecks(vm, t0, ms);
