@@ -3,6 +3,7 @@
   imports = [
     ../../modules/raspberry-pi/firmware.nix
     ../../modules/raspberry-pi/rootfs.nix # fileSystems."/": pi4.rootFs = "ext4" | "btrfs"
+    ../../modules/raspberry-pi/bt-autopair.nix # pi4.bluetooth.autoPair
   ];
 
   disabledModules = [
@@ -311,6 +312,9 @@
     enable = true;
     powerOnBoot = true;
   };
+  # Paired to the Quest 3 as "Bluetooth 5.1 Keyboard" (classic BR/EDR). First time: put it in
+  # pairing mode near the Pi; it pairs + trusts itself, then reconnects on its own afterwards.
+  pi4.bluetooth.autoPair = [ "E6:7A:00:00:2C:8E" ];
 
   # Writes a hardware/network report to the FAT partition 2 min after boot, so it can be read
   # from the laptop's SD reader (no second screen or typing needed): /boot/pi4-diagnostics.txt
