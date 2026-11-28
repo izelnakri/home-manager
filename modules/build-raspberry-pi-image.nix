@@ -50,8 +50,15 @@
     # The FAT partition is mounted over /boot, so the kernel/initrd/extlinux.conf
     # that sd-image-aarch64.nix copies into the btrfs /boot were dead weight that
     # nothing could ever read. Boot files only go to FAT (modules/raspberry-pi/firmware.nix).
+    #
+    # /var/run -> ../run and /var/lib/lastlog are baked in at build time: on first boot
+    # /var/run ended up a real directory (tmpfiles' `L /var/run` never applied), so
+    # sandboxed services got EROFS writing /var/run/... (nsncd: "Read-only file system"),
+    # and /var/lib/lastlog was missing (pam_lastlog2 -> login "System error").
     populateRootCommands = lib.mkForce ''
-      mkdir -p ./files/boot
+      mkdir -p ./files/boot ./files/var/lib/lastlog
+      mkdir -m 0555 ./files/var/empty   # sshd privilege separation dir
+      ln -s ../run ./files/var/run
     '';
 
     # THE "U-Boot can't find the partition" BUG: sd-image.nix marks the *root*
@@ -64,6 +71,13 @@
     '';
   };
 
+  # The installer profile auto-logs in a passwordless `nixos` user on every console.
+  # That autologin looped with "System error" (seen in `make run-pi4`), so HDMI never
+  # showed a usable prompt. Plain `pi4-nas login:` instead: log in as izelnakri, or
+  # use SSH in parallel. Root has a password (host config) for the emergency shell.
+  services.getty.autologinUser = lib.mkForce null;
+  users.users.nixos.hashedPassword = lib.mkForce "!"; # locked; not a NAS account
+
   nix.settings = {
     experimental-features = lib.mkDefault "nix-command flakes repl-flake";
   };
@@ -74,16 +88,31 @@
   #   trusted-users = [ "root" "@wheel" ];
   # };
 
-  nixpkgs = {
-    overlays = [
-      (final: super: {
-        # Kept: changing this would invalidate the whole cross-built closure.
-        p11-kit = super.p11-kit.overrideAttrs(_: {
-          doCheck = false;
-          doInstallCheck = false;
-        });
-      })
-    ];
+  # p11-kit overlay moved to hosts/izels-pi4/configuration.nix (shared with deploys):
+  # nixpkgs = {
+  #   overlays = [
+  #     (final: super: {
+  #       p11-kit = super.p11-kit.overrideAttrs(_: {
+  #         doCheck = false;
+  #         doInstallCheck = false;
+  #       });
+  #     })
+  #   ];
+  # };
+
+  # Belt and braces for the first-boot tmpfiles problem above: re-apply every tmpfiles
+  # rule (idempotent) before the services that died from missing /var/run, /var/empty,
+  # /var/lib/lastlog. Cheap; can be dropped once the root cause is understood.
+  systemd.services.tmpfiles-reapply = {
+    description = "Re-apply tmpfiles rules before network services";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-tmpfiles-setup.service" "local-fs.target" ];
+    before = [ "sshd.service" "nscd.service" "avahi-daemon.service" "systemd-user-sessions.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "-${config.systemd.package}/bin/systemd-tmpfiles --create";
+    };
   };
 
   systemd.services.expand-root-partition = {

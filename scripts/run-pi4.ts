@@ -1,17 +1,25 @@
 #!/usr/bin/env -S node
 /**
- * Boot-test the pi4-nas SD image in QEMU, fast, without hardware.
+ * Test the pi4-nas system: in QEMU (before flashing) or on the real Pi over SSH.
  *
- *   make pi4-check                  # static image checks only (~5s)
- *   make pi4-vm-test                # static + both VM tiers in parallel (exit 0/1)
- *   make pi4-vm-test ARGS=--reboot  # + reboot, check persistence and 2nd-boot behaviour
- *   make pi4-vm-test ARGS=--full    # raspi4b tier boots all the way too (slow: emulated PIO SD)
- *   make pi4-vm                     # interactive serial console (virt; add ARGS=--full for raspi4b)
- *   node scripts/pi4-vm-test.ts [img] [opts]   /   deno run -A scripts/pi4-vm-test.ts [img] [opts]
- *     opts: --static-only --tier uboot|system --full --reboot --interactive --keep --workdir DIR
- *           --run 'CMD' (repeatable)
- *   Tools on PATH: qemu-system-aarch64 qemu-img qemu-io sfdisk mtype mdir mcopy fdtget fdtput
- *   (`nix run .#pi4-vm-test` provides pinned ones.)
+ *   make run-pi4                         # static image checks + both VM tiers in parallel (exit 0/1)
+ *   make run-pi4 ARGS="--ssh pi4-nas.local"   # same system checks + real-hardware ones, on the Pi (seconds)
+ *   make run-pi4 ARGS="--tier uboot"     # only the U-Boot VM (~1 min)   --tier system: only the virt VM
+ *   make run-pi4 ARGS="--reboot"         # + reboot, check persistence and 2nd-boot behaviour (VM or --ssh)
+ *   make run-pi4 ARGS="--full"           # raspi4b tier boots all the way too (slow: emulated PIO SD)
+ *   make run-pi4 ARGS="--run 'journalctl -b -p err'"   # extra commands, VM or --ssh (repeatable)
+ *   make pi4-check                       # static image checks only (~5s)
+ *   make pi4-vm                          # interactive serial console (virt; ARGS=--full for raspi4b)
+ *   node scripts/run-pi4.ts [img] [opts]   /   deno run -A scripts/run-pi4.ts [img] [opts]
+ *     opts: --ssh [user@]host[:port]  --password PW (default "testing": SSH + sudo)  --static-only
+ *           --tier uboot|system  --full --reboot --interactive --keep --workdir DIR --run CMD
+ *   Tools on PATH: VM mode: qemu-system-aarch64 qemu-img qemu-io sfdisk mtype mdir mcopy fdtget fdtput;
+ *   --ssh: ssh (+ sshpass for password auth). `nix run .#run-pi4` provides pinned ones.
+ *
+ *  --ssh: key auth if it works, else password via sshpass. One multiplexed connection
+ *     (ControlMaster) for every check, so a run takes seconds. Adds what only real
+ *     hardware can show: HDMI connector + vc4 driver, Wi-Fi connected, 8 GB RAM,
+ *     getty on tty1. No VM allowances: any failed unit fails the run.
  *
  * Two VMs run in parallel, each covering what it emulates faithfully:
  *
@@ -247,7 +255,7 @@ class Console {
 }
 
 // ------------------------------------------------------------------ VM plumbing
-interface Vm { proc: ChildProcess; con: Console; tag: string; sockDir: string }
+interface Vm { proc: ChildProcess; con: Console; tag: string; sockDir: string; root?: Console }
 
 // QEMU assigns -serial options in order: the first is serial0 = PL011 = ttyAMA0, which
 // carries U-Boot's and Linux's console on raspi4b and virt. `after` comes after it.
@@ -257,15 +265,34 @@ const killAll = () => children.forEach((c) => c.kill("SIGKILL"));
 process.on("exit", killAll);
 for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) process.on(sig, () => { killAll(); process.exit(130); });
 
-async function startVm(tag: string, wd: string, args: string[], after: string[] = []): Promise<Vm> {
+/** rootShell: also a virtio console (hvc0) for `systemd.debug_shell=hvc0`, i.e. a root
+ *  shell from early boot that needs no getty, password or working PAM. VM-only. */
+async function startVm(tag: string, wd: string, args: string[], after: string[] = [], rootShell = false): Promise<Vm> {
   const sockDir = fs.mkdtempSync("/tmp/pi4s"); // unix socket paths max out at ~107 bytes
-  const sock = path.join(sockDir, "ttyAMA0");
+  const sock = path.join(sockDir, "ttyAMA0"), hvc = path.join(sockDir, "hvc0");
+  const hvcArgs = rootShell ? ["-device", "virtio-serial-pci", "-chardev", `socket,id=hvc0,path=${hvc},server=on,wait=off`,
+                               "-device", "virtconsole,chardev=hvc0"] : [];
   const proc = spawn("qemu-system-aarch64",
-    [...args, "-display", "none", "-monitor", "none", "-serial", `unix:${sock},server=on,wait=on`, ...after],
+    [...args, ...hvcArgs, "-display", "none", "-monitor", "none", "-serial", `unix:${sock},server=on,wait=on`, ...after],
     { stdio: ["ignore", "ignore", fs.openSync(path.join(wd, `${tag}.qemu.stderr`), "w")] });
   children.add(proc);
   const con = await Console.connect(sock, path.join(wd, `${tag}.serial.log`));
-  return { proc, con, tag, sockDir };
+  const root = rootShell ? await Console.connect(hvc, path.join(wd, `${tag}.rootshell.log`)) : undefined;
+  return { proc, con, tag, sockDir, root };
+}
+
+/** Make the debug shell scriptable; resolves false if it never shows up. */
+async function rootShellReady(vm: Vm): Promise<boolean> {
+  const r = vm.root!;
+  for (let i = 0; i < 120; i++) { // the shell only prints its prompt after input
+    await r.send("\n");
+    if (await r.expect(/#\s*$/, 5)) break;
+  }
+  await r.send("export PATH=/run/current-system/sw/bin:$PATH SYSTEMD_COLORS=0 SYSTEMD_PAGER= PAGER=cat TERM=dumb; " +
+               "stty -echo cols 400 2>/dev/null; PS1='ROOT# '\n");
+  const ok = !!(await r.expect("ROOT# ", 60));
+  report(ok, `[${vm.tag}] root debug shell on hvc0 (VM-only diagnostics channel)`);
+  return ok;
 }
 
 function stopVm(vm?: Vm) {
@@ -313,20 +340,23 @@ async function login(vm: Vm): Promise<boolean> {
   await con.send("PROMPT='VMTEST> '; PS1='VMTEST> '; stty -echo cols 400; " +
                  "export SYSTEMD_PAGER= SYSTEMD_COLORS=0 PAGER=cat TERM=dumb\n");
   ok &&= !!(await con.expect("VMTEST> ", 60));
-  report(ok, `[${vm.tag}] logged in as izelnakri / testing`);
-  if (ok) await con.sh("echo testing | sudo -S -p '' dmesg -n 1"); // keep kmsg out of command output
-  return ok;
+  report(ok, `[${vm.tag}] logged in as izelnakri / ${PASSWORD} on the serial console`);
+  if (!ok) return false;
+  const [, out] = await con.sh(`${sudo()} sh -c 'dmesg -n 1; id -u'`); // also keeps kmsg out of output
+  report(out.trim().endsWith("0"), `[${vm.tag}] izelnakri has root via sudo`, out.trim().split("\n").at(-1));
+  return true;
 }
 
-async function unexpectedFailedUnits(vm: Vm): Promise<string[]> {
-  const [, out] = await vm.con.sh("systemctl --failed --plain --no-legend | awk '{print $1}'");
+async function unexpectedFailedUnits(t: Target): Promise<string[]> {
+  const [, out] = await t.sh("systemctl --failed --plain --no-legend | awk '{print $1}'");
   const units = out.split(/\s+/).filter(Boolean);
-  for (const u of units.filter((u) => u in FAILED_UNITS_EXPECTED_IN_VM)) {
-    report(null, `[${vm.tag}] ${u} failed`, `expected in VM: ${FAILED_UNITS_EXPECTED_IN_VM[u]}`);
+  const allowed = t.real ? {} : FAILED_UNITS_EXPECTED_IN_VM; // real hardware gets no allowances
+  for (const u of units.filter((u) => u in allowed)) {
+    report(null, `[${t.tag}] ${u} failed`, `expected in VM: ${allowed[u]}`);
   }
-  const bad = units.filter((u) => !(u in FAILED_UNITS_EXPECTED_IN_VM));
+  const bad = units.filter((u) => !(u in allowed));
   for (const u of bad) {
-    const [, why] = await vm.con.sh(`journalctl -b -u ${u} --no-pager -n 12 -o cat`);
+    const [, why] = await t.sh(`journalctl -b -u ${u} --no-pager -n 12 -o cat`);
     console.log(`      --- ${u} ---\n      ${why.replace(/\n/g, "\n      ")}`);
   }
   return bad;
@@ -342,57 +372,141 @@ function sshBanner(port: number, timeoutS: number): Promise<string> {
   });
 }
 
-async function systemChecks(vm: Vm, ext: Extlinux, disk: string, origRootBytes: number, sshPort: number | null, extra: string[]) {
+/** Something checks can run shell commands on: a VM's serial console or an SSH session. */
+interface Target { tag: string; real: boolean; sh(cmd: string, timeoutS?: number): Promise<[number | null, string]> }
+const vmTarget = (vm: Vm): Target => ({ tag: vm.tag, real: false, sh: (c, t) => vm.con.sh(c, t) });
+
+let PASSWORD = "testing"; // izelnakri's initialPassword: login, SSH fallback, sudo
+const sudo = () => `echo '${PASSWORD.replace(/'/g, "'\\''")}' | sudo -S -p ''`;
+
+function sshTarget(dest: string): Target {
+  const port = /:(\d+)$/.exec(dest)?.[1]; // [user@]host[:port]
+  const bare = port ? dest.slice(0, -port.length - 1) : dest;
+  const host = bare.includes("@") ? bare : `izelnakri@${bare}`;
+  const ctl = path.join(fs.mkdtempSync("/tmp/pi4ssh"), "c");
+  const common = ["-o", "ControlMaster=auto", "-o", `ControlPath=${ctl}`, "-o", "ControlPersist=120",
+                  "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=5", "-o", "StrictHostKeyChecking=accept-new",
+                  "-o", "LogLevel=ERROR", ...(port ? ["-p", port] : [])];
+  let usePassword = false;
+  const exec = (cmd: string, timeoutS: number): Promise<[number | null, string]> => new Promise((res) => {
+    const args = usePassword
+      ? ["-e", "ssh", ...common, "-o", "PubkeyAuthentication=no", "-o", "PreferredAuthentications=password", host, cmd]
+      : [...common, "-o", "BatchMode=yes", host, cmd];
+    const p = spawn(usePassword ? "sshpass" : "ssh", args,
+                    { env: { ...process.env, SSHPASS: PASSWORD }, stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    p.stdout!.on("data", (d) => (out += d));
+    p.stderr!.on("data", (d) => (out += d));
+    const timer = setTimeout(() => p.kill("SIGKILL"), timeoutS * 1000);
+    p.on("error", () => {});
+    p.on("close", (code) => { clearTimeout(timer); res([code === null ? null : code, out.trim()]); });
+  });
+  let ready: Promise<void> | null = null;
+  const connect = async (): Promise<void> => {
+    const [kc] = await exec("true", 20);
+    if (kc === 0) { report(true, "[ssh] connected (key auth)", host); return; }
+    usePassword = true;
+    const [pc, po] = await exec("true", 30);
+    report(pc === 0, "[ssh] connected (password auth)", pc === 0 ? host : `${host}: ${po || "unreachable"}`);
+    if (pc !== 0) throw new Error("ssh failed");
+  };
+  return { tag: "ssh", real: true, sh: async (cmd, t = 120) => { await (ready ??= connect()); return exec(cmd, t); } };
+}
+
+interface CheckOpts { ext?: Extlinux; disk: string; sshPort: number | null; extra: string[] }
+
+async function systemChecks(t: Target, o: CheckOpts) {
+  const { ext, disk, sshPort, extra } = o;
   const p = (n: number) => (/\d$/.test(disk) ? `${disk}p${n}` : `${disk}${n}`);
   const check = async (name: string, cmd: string, pred: (c: number, o: string) => boolean,
                        timeoutS = 120, warn = false) => {
-    const [code, out] = await vm.con.sh(cmd, timeoutS);
+    const [code, out] = await t.sh(cmd, timeoutS);
     const ok = code !== null && pred(code, out);
-    report(ok || !warn ? ok : null, `[${vm.tag}] ${name}`, out.replace(/\n/g, " | ").slice(0, 140));
+    report(ok || !warn ? ok : null, `[${t.tag}] ${name}`, out.replace(/\n/g, " | ").slice(0, 140));
     return out;
   };
 
-  const kver = /linux-\S*?-(\d+\.\d+\.\d+)/.exec(ext.linux ?? "")?.[1];
-  await check("running the kernel from extlinux.conf", "uname -r", (c, o) => c === 0 && (!kver || o.trim() === kver));
-  await check("cmdline is extlinux's APPEND", "cat /proc/cmdline",
-              (_, o) => o.includes(ext.append.split(" ")[0]) && o.includes("root=fstab"));
+  // First: everything below needs a finished boot (/boot mounted, first-boot expansion done).
+  // The VM root shell exists from early stage 2, long before that.
+  await check("system finished booting", "systemctl is-system-running --wait",
+              (_, o) => ["running", "degraded"].includes(o.trim()), 900);
+  const kver = /linux-\S*?-(\d+\.\d+\.\d+)/.exec(ext?.linux ?? "")?.[1];
+  await check(ext ? "running the kernel from extlinux.conf" : "kernel", "uname -r",
+              (c, o) => c === 0 && (!kver || o.trim() === kver));
+  await check("cmdline is a NixOS extlinux boot", "cat /proc/cmdline",
+              (_, o) => o.includes("root=fstab") && (ext ? o.includes(ext.append.split(" ")[0]) : /init=\/nix\/store\//.test(o)));
+  await check("DT is the Pi 4 Model B", "tr -d '\\0' </proc/device-tree/model 2>/dev/null || echo none",
+              (_, o) => t.tag === "system" || o.includes("Raspberry Pi 4 Model B")); // virt has its own DT
   await check("/ is btrfs on partition 2", "findmnt -no SOURCE,FSTYPE /", (_, o) => new RegExp(`${p(2)}(\\[/\\])?\\s+btrfs`).test(o));
   await check("/boot is the FAT firmware partition", "findmnt -no SOURCE,FSTYPE /boot", (_, o) => new RegExp(`${p(1)}\\s+vfat`).test(o));
   await check("bootloader files visible under /boot", "ls /boot/extlinux/extlinux.conf /boot/u-boot.bin /boot/config.txt",
               (c) => c === 0);
-  await check("expand-root-partition grew partition + btrfs",
-              `systemctl is-active expand-root-partition; lsblk -bndo SIZE /dev/${p(2)}; df -B1 --output=size / | tail -1`,
-              (c, o) => { const [st, ...n] = o.split(/\s+/); return st === "active" && n.every((x) => Number(x) > origRootBytes * 1.2); });
-  await check("system finished booting", "systemctl is-system-running --wait",
-              (_, o) => ["running", "degraded"].includes(o.trim()), 600);
-  const bad = await unexpectedFailedUnits(vm);
-  report(bad.length === 0, `[${vm.tag}] no unexpected failed units`, bad.join(" "));
-  const [, act] = await vm.con.sh("systemctl is-active sshd NetworkManager systemd-timesyncd avahi-daemon | paste -sd' '");
-  report(act.trim() === "active active active active", `[${vm.tag}] sshd NetworkManager timesyncd avahi active`, act.trim());
-  await check("wheel user can sudo", "echo testing | sudo -S -p '' id -u", (_, o) => o.trim().endsWith("0"));
+  // Works on 1st and later boots: the root partition + btrfs fill the card (VM: the 16 GiB overlay).
+  await check("root partition + btrfs expanded to the whole disk",
+              `lsblk -bndo SIZE /dev/${disk}; lsblk -bndo SIZE /dev/${p(2)}; df -B1 --output=size / | tail -1`,
+              (c, o) => { const [d, part, fsz] = o.split(/\s+/).map(Number); return c === 0 && part > d * 0.9 && fsz > d * 0.85; });
+  const bad = await unexpectedFailedUnits(t);
+  report(bad.length === 0, `[${t.tag}] no unexpected failed units`, bad.join(" "));
+  const [, act] = await t.sh("systemctl is-active sshd NetworkManager systemd-timesyncd avahi-daemon | paste -sd' '");
+  report(act.trim() === "active active active active", `[${t.tag}] sshd NetworkManager timesyncd avahi active`, act.trim());
+  await check("console shows a login prompt (no autologin)", "systemctl cat getty@tty1 | grep -c -- '--autologin' || true",
+              (_, o) => o.trim() === "0");
+  if (t.real) await check("izelnakri has root via sudo", `${sudo()} id -u`, (_, o) => o.trim().endsWith("0"));
   await check("no kernel oops/BUG", "journalctl -k -b --no-pager -o cat | grep -cE 'Oops|BUG:|Call trace' || true",
               (_, o) => o.trim() === "0", 120, true);
+  await check("RAM is the 8 GB board's", "awk '/MemTotal/{print $2}' /proc/meminfo",
+              (_, o) => Number(o) > 7 * 1024 * 1024, 30, true);
+  if (sshPort || t.real) {
+    await check("NetworkManager has a default route", "ip -4 route show default", (_, o) => o.includes("default via"), 60);
+  }
   if (sshPort) {
-    await check("NetworkManager got a DHCP lease", "ip -4 route show default", (_, o) => o.includes("default via"), 60);
     const banner = await sshBanner(sshPort, 30);
-    report(banner.startsWith("SSH-2.0-"), `[${vm.tag}] sshd reachable from the host over the network`, banner);
+    report(banner.startsWith("SSH-2.0-"), `[${t.tag}] sshd reachable from the host over the network`, banner);
+  }
+  if (t.real) { // only real hardware can show these
+    await check("vc4 HDMI driver bound", "ls -d /sys/bus/platform/drivers/vc4-drm/*.gpu 2>/dev/null", (c) => c === 0);
+    await check("HDMI monitor detected", "cat /sys/class/drm/card*-HDMI-A-*/status | paste -sd' '",
+                (_, o) => o.includes("connected") && !/^(disconnected ?)+$/.test(o.trim()), 30, true);
+    await check("getty on tty1 (HDMI) running", "systemctl is-active getty@tty1", (_, o) => o.trim() === "active");
+    await check("Wi-Fi connected", "nmcli -t -f DEVICE,TYPE,STATE dev | grep ':wifi:'",
+                (_, o) => o.includes(":wifi:connected"), 30, true);
+    await check("not undervolted/throttled", "journalctl -k -b --no-pager -o cat | grep -ci 'under-voltage' || true",
+                (_, o) => o.trim() === "0", 30, true);
   }
   for (const cmd of extra) {
-    const [code, out] = await vm.con.sh(cmd, 300);
-    console.log(`\n[${vm.tag}] $ ${cmd}   [exit ${code}]\n${out}`);
+    const [code, out] = await t.sh(cmd, 300);
+    console.log(`\n[${t.tag}] $ ${cmd}   [exit ${code}]\n${out}`);
   }
 }
 
 async function rebootChecks(vm: Vm, t0Ref: { t: number }, ms: [string, number, string][]) {
   await vm.con.sh("echo persisted >~/.vmtest && sync");
-  await vm.con.send("echo testing | sudo -S -p '' systemctl reboot\n");
+  await vm.con.send(`${sudo()} systemctl reboot\n`);
   t0Ref.t = Date.now();
   if (!(await milestones(vm, t0Ref.t, ms)) || !(await login(vm))) return;
   report((await vm.con.sh("cat ~/.vmtest"))[1].trim() === "persisted", `[${vm.tag}] file written before reboot survived`);
   const [, cond] = await vm.con.sh("systemctl show -p ConditionResult --value expand-root-partition");
   report(cond.trim() === "no", `[${vm.tag}] root expansion skipped on 2nd boot`, `ConditionResult=${cond.trim()}`);
-  const bad = await unexpectedFailedUnits(vm);
+  const bad = await unexpectedFailedUnits(vmTarget(vm));
   report(bad.length === 0, `[${vm.tag}] no unexpected failed units on 2nd boot`, bad.join(" "));
+}
+
+/** Reboot the real Pi over SSH and wait for it to come back (bounded, polls every 3s). */
+async function sshRebootChecks(t: Target) {
+  step("Rebooting the Pi");
+  const [, boot1] = await t.sh("cat /proc/sys/kernel/random/boot_id; echo persisted >~/.vmtest; sync");
+  await t.sh(`${sudo()} systemd-run --on-active=2 systemctl reboot`, 20);
+  const t0 = Date.now();
+  let boot2 = "";
+  while (Date.now() - t0 < 300_000) {
+    await sleep(3000);
+    const [c, o] = await t.sh("cat /proc/sys/kernel/random/boot_id", 8);
+    if (c === 0 && o.split("\n")[0] !== boot1.split("\n")[0]) { boot2 = o; break; }
+  }
+  if (!report(!!boot2, "[ssh] Pi rebooted and is reachable again", `t+${secs(t0)}`)) return;
+  report((await t.sh("cat ~/.vmtest"))[1].trim() === "persisted", "[ssh] file written before reboot survived");
+  const bad = await unexpectedFailedUnits(t);
+  report(bad.length === 0, "[ssh] no failed units after reboot", bad.join(" "));
 }
 
 const freePort = () => new Promise<number>((res) => {
@@ -402,7 +516,7 @@ const freePort = () => new Promise<number>((res) => {
 // ------------------------------------------------------------------ main
 function parseArgs(argv: string[]) {
   const a = { image: "", interactive: false, reboot: false, keep: false, full: false, staticOnly: false,
-              workdir: "", tier: "", run: [] as string[] };
+              workdir: "", tier: "", ssh: "", run: [] as string[] };
   for (let i = 0; i < argv.length; i++) {
     const x = argv[i];
     if (x === "--interactive") a.interactive = true;
@@ -412,8 +526,10 @@ function parseArgs(argv: string[]) {
     else if (x === "--static-only") a.staticOnly = true;
     else if (x === "--workdir") a.workdir = argv[++i];
     else if (x === "--tier") a.tier = argv[++i]; // uboot | system (default: both)
+    else if (x === "--ssh") a.ssh = argv[++i];
+    else if (x === "--password") PASSWORD = argv[++i];
     else if (x === "--run") a.run.push(argv[++i]);
-    else if (x === "-h" || x === "--help") { console.log("see the header of scripts/pi4-vm-test.ts"); process.exit(0); }
+    else if (x === "-h" || x === "--help") { console.log("see the header of scripts/run-pi4.ts"); process.exit(0); }
     else if (x.startsWith("-")) { console.error(`unknown option ${x}`); process.exit(2); }
     else a.image = x;
   }
@@ -435,9 +551,21 @@ const TOOLS = ["qemu-system-aarch64", "qemu-img", "qemu-io", "sfdisk", "mtype", 
 
 async function main() {
   const a = parseArgs(process.argv.slice(2));
+  if (a.ssh) { // real hardware: no image, no VMs
+    step(`System checks on the real Pi: ${a.ssh}`);
+    const t = sshTarget(a.ssh);
+    try {
+      await systemChecks(t, { disk: "mmcblk0", sshPort: null, extra: a.run });
+      if (a.reboot) await sshRebootChecks(t);
+    } catch { /* connection failure already reported */ }
+    const bad = failed();
+    step(`Summary: ${rows.length - bad.length}/${rows.length} passed in ${secs(tStart)}`);
+    for (const [, n, d] of bad) console.log(`  FAIL ${n}  ${d}`);
+    process.exit(bad.length ? 1 : 0);
+  }
   const missing = TOOLS.filter((t) => spawnSync("sh", ["-c", `command -v ${t}`], { stdio: "ignore" }).status !== 0);
   if (missing.length) {
-    console.error(`missing on PATH: ${missing.join(" ")}\nuse \`nix run .#pi4-vm-test\` (pinned tools) or ` +
+    console.error(`missing on PATH: ${missing.join(" ")}\nuse \`nix run .#run-pi4\` (pinned tools) or ` +
                   "`nix shell nixpkgs#{qemu,dtc,mtools,util-linux}`");
     process.exit(2);
   }
@@ -488,14 +616,14 @@ async function main() {
     run("qemu-io", "-f", "qcow2", "-c", `write -s ${fat} ${p1.start * 512} ${p1.size * 512}`, piDisk);
   }
   fs.unlinkSync(fat);
-  const virtDisk = overlay("virt.qcow2");
+  const virtDisk = overlay("virt.qcow2", 16 * 2 ** 30); // room for expand-root-partition
 
   const piArgs = ["-M", "raspi4b", "-kernel", uboot, "-dtb", fwDtb, "-drive", `file=${piDisk},if=sd,format=qcow2`];
   const piSerial1 = ["-serial", "null"]; // mini-UART (ttyS1), after serial0
   const sshPort = await freePort();
   const virtArgs = ["-M", "virt", "-cpu", "cortex-a72", "-smp", "4", "-m", "8G",
     "-accel", "tcg,thread=multi,tb-size=1024", "-kernel", kernel!, "-initrd", initrd!,
-    "-append", `${ext.append} console=ttyAMA0 ${VM_DEVICE_TIMEOUT}`,
+    "-append", `${ext.append} console=ttyAMA0 ${VM_DEVICE_TIMEOUT}${a.interactive ? "" : " systemd.debug_shell=hvc0"}`,
     "-drive", `file=${virtDisk},if=virtio,format=qcow2,cache=unsafe`,
     "-nic", `user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:${sshPort}-:22`];
 
@@ -516,16 +644,23 @@ async function main() {
     vms.push(vm);
     const t0 = Date.now();
     const ok = await milestones(vm, t0, a.full ? [...UBOOT_MS, ...UBOOT_KERNEL_MS, ...LINUX_MS("mmcblk0p2")] : UBOOT_MS);
-    if (ok && a.full && await login(vm)) await systemChecks(vm, ext, "mmcblk0", p2.size * 512, null, []);
+    if (ok && a.full && await login(vm)) await systemChecks(vmTarget(vm), { ext, disk: "mmcblk0", sshPort: null, extra: [] });
     stopVm(vm);
   };
   const systemTier = async () => {
-    const vm = await startVm("system", wd, virtArgs);
+    const vm = await startVm("system", wd, virtArgs, [], true);
     vms.push(vm);
     const t0 = { t: Date.now() };
     const ms: [string, number, string][] = [[String.raw`Linux version \S+`, 60, "kernel started"], ...LINUX_MS("vda2")];
-    if (await milestones(vm, t0.t, ms) && await login(vm)) {
-      await systemChecks(vm, ext, "vda", p2.size * 512, sshPort, a.run);
+    const boot = ms.slice(0, -1), getty = ms.slice(-1);
+    if (await milestones(vm, t0.t, boot) && await rootShellReady(vm)) {
+      const rootT: Target = { tag: "system", real: false, sh: (c, tm) => vm.root!.sh(c, tm) };
+      // System checks as root over hvc0, while the serial console independently proves the
+      // real user login (getty + PAM + password + sudo) once getty is up.
+      await Promise.all([
+        systemChecks(rootT, { ext, disk: "vda", sshPort, extra: a.run }),
+        (async () => { if (await milestones(vm, t0.t, getty)) await login(vm); })(),
+      ]);
       if (a.reboot) await rebootChecks(vm, t0, ms);
     }
     stopVm(vm);

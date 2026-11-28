@@ -39,6 +39,11 @@
   boot.supportedFilesystems = [ "btrfs" ];
 
   nixpkgs.overlays = [
+    # Was only in modules/build-raspberry-pi-image.nix; here so nixinate deploys share the
+    # image's (cross-built, already in the store) closure instead of rebuilding from p11-kit up.
+    (final: super: {
+      p11-kit = super.p11-kit.overrideAttrs (_: { doCheck = false; doInstallCheck = false; });
+    })
     inputs.hyprland.overlays.hyprland-packages
     inputs.hyprland.overlays.hyprland-extras
 
@@ -170,15 +175,34 @@
 
   users.users.izelnakri = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
-    initialPassword = "testing";
+    extraGroups = [ "wheel" ]; # full root via sudo
+    # Pre-hashed (`openssl passwd -6 -salt Pi4nasSaltFixed1 testing`) instead of
+    # initialPassword: that one is hashed at runtime on first boot by the cross-built
+    # activation and gave "Incorrect password" on the real Pi. TEMPORARY password;
+    # change with `passwd` or switch to a ragenix hashedPasswordFile.
+    hashedPassword = "$6$Pi4nasSaltFixed1$cNl/40c57yX6T.sRmrTRYb/CNtsZxkwMzRb0viidPoYmLsK10iDk1xOZTYKjkYfDAvUVvK6htONWN.1VVYIGt1";
+    # initialPassword = "testing";
 
     # Set locally with `passwd`, or use a secret-backed hashedPasswordFile.
     shell = pkgs.zsh;
     openssh.authorizedKeys.keys = [
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDP2YFXzWEAwbYvefJzHNw1yu6Z0ZgiBCBFA1pJQ5ajrK18auaOlvCZ6Jqvn/91/Erl6qxc2bHKYNfHPa8YL0U07dZYvEKZ4pqxcpC1aLX29vVTuBQL/e8JenpKtLm6E+/e6x8NKoTb1teADsY/0thZBZSpTWt5q+GeTAkOVYtIFqew5Q7V0pwk+liV6FGHv7XOiGwtG06+KrD1hOwBJIlsMBOPoeye88aKDYnZ864xDCzrOjBALeRCnfXc8RIvCzbMKL78kdsbiowQyPZrc6zPXK1xx0KUNSAeNY6u5U0C6SFf7VikPkNaW7q/YjbbxwSA9ejvAaPcl2TOZnVIh8XaBwCP6jxW9EFljCqwIgjnnk4xE0vIITgZtwff+lTJQ12SqMXBwlD4CpLTo2G9ecUbXgJ6hjt8hsrYyhP+JiGXV45bMOmAVDRcICcCLMfFQQp96RjRGIylXhpUJxjt4AA1K4Op0v5ugxCry5b4mkc7VNMQl1cRCCkj9WE1wCk/qrs= izelnakri@x1-carbon"
+      # omnibook (this laptop): key auth for `make pi4-deploy` / `make run-pi4 ARGS=--ssh ...`
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJwZQqINIghrteWbhRl9RtHimKF27o24AuJAbEnAuMgf contact@izelnakri.com"
     ];
   };
+
+  # Root gets the same temporary password so the console emergency shell is usable
+  # (empty root password gave "System error"). mkForce: the installer profile sets "".
+  users.users.root.hashedPassword = lib.mkForce config.users.users.izelnakri.hashedPassword;
+  users.users.root.initialHashedPassword = lib.mkForce null;
+
+  # Console login said "System error" right after a correct password (VM and real Pi):
+  #   pam_lastlog2(login:session): Cannot create/open database (/var/lib/lastlog/lastlog2.db)
+  # pam_lastlog2 is a *required* session module, so a missing /var/lib/lastlog kills every
+  # login. Last-login bookkeeping isn't worth that; off for console and SSH.
+  security.pam.services.login.lastlog.enable = lib.mkForce false;
+  security.pam.services.sshd.lastlog.enable = lib.mkForce false;
 
   programs.zsh.enable = true;
   security.polkit.enable = true;

@@ -138,13 +138,14 @@
         }).config.system.build.sdImage;
       };
 
-      # `nix run .#pi4-vm-test [-- --reboot|--interactive|--run CMD]`: boots images.pi4-nas
-      # on QEMU raspi4b through its real U-Boot -> extlinux -> kernel chain and checks it.
+      # `nix run .#run-pi4 [-- --ssh pi4-nas.local | --reboot | --tier uboot | --run CMD ...]`:
+      # tests images.pi4-nas in QEMU (raspi4b: real U-Boot -> extlinux -> kernel; virt: system
+      # to login + checks), or the running Pi over SSH. See scripts/run-pi4.ts / `make run-pi4`.
       # Pinned toolchain; the script itself (TypeScript) also runs under plain node/deno.
-      packages.x86_64-linux.pi4-vm-test = x86Pkgs.writeShellApplication {
-        name = "pi4-vm-test";
-        runtimeInputs = with x86Pkgs; [ nodejs qemu dtc mtools util-linux ];
-        text = ''exec node ${./scripts/pi4-vm-test.ts} "$@"'';
+      packages.x86_64-linux.run-pi4 = x86Pkgs.writeShellApplication {
+        name = "run-pi4";
+        runtimeInputs = with x86Pkgs; [ nodejs qemu dtc mtools util-linux openssh sshpass ];
+        text = ''exec node ${./scripts/run-pi4.ts} "$@"'';
       };
 
       nixosModules = import ./modules { lib = nixpkgs.lib; };
@@ -191,9 +192,9 @@
             # home-manager.nixosModules.home-manager # commented out due to image build error from x86
             {
               _module.args.nixinate = {
-                host = "pi4-nas.lan";
+                host = "pi4-nas.local"; # avahi mDNS; was "pi4-nas.lan"
                 sshUser = "izelnakri";
-                buildOn = "remote";
+                buildOn = "local"; # cross-build on the laptop, reusing the image's store paths; was "remote" (Pi compiles everything)
                 substituteOnTarget = true; # if buildOn is "local" then it will substitute on the target, "-s"
                 hermetic = false;
               };

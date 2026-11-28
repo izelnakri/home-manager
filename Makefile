@@ -93,12 +93,13 @@ decrypt-sample-secret-file: decrypt
 #                                    (no build here: don't run nix build as root)
 # make pi4-inspect                -> print partition table, extlinux.conf, config.txt of the image
 # make pi4-deploy                 -> nixinate: push the config to the running Pi over SSH
+# make run-pi4 [ARGS=...]         -> test the image: static checks + 2 parallel QEMU VMs (raspi4b runs the real
+#                                    U-Boot -> extlinux -> kernel; virt A72x4/8G boots it to login + system checks)
+# make run-pi4 ARGS="--ssh pi4-nas.local" -> the same system checks + HDMI/Wi-Fi/RAM on the real Pi (seconds)
+#   more ARGS: --tier uboot|system  --reboot  --full  --keep  --run 'CMD'  --password PW   (scripts/run-pi4.ts)
 # make pi4-check                  -> static image checks only (partition flag, bootcmd, extlinux, DTB): seconds
-# make pi4-vm-test [ARGS=...]     -> static + 2 parallel QEMU VMs: raspi4b runs the real U-Boot -> extlinux ->
-#                                    kernel path; virt (A72x4, 8G) boots the image's kernel/initrd/rootfs to login
-#                                    and checks the system. ARGS: --reboot --full --keep --run 'CMD'
 # make pi4-vm [ARGS=--full]       -> interactive serial console (virt, or raspi4b with --full); Ctrl-A X quits
-#   (scripts/pi4-vm-test.ts; also `node scripts/pi4-vm-test.ts` / `deno run -A ...` with tools on PATH)
+#   (also: `node scripts/run-pi4.ts ...` / `deno run -A scripts/run-pi4.ts ...` with the tools on PATH)
 PI4_IMG = $(wildcard result-pi4-nas/sd-image/*.img)
 
 pi4-image:
@@ -126,12 +127,14 @@ pi4-deploy:
 	nix run .#apps.nixinate.pi4-nas
 
 pi4-check: pi4-image
-	nix run .#pi4-vm-test -- --static-only
+	nix run .#run-pi4 -- --static-only
 
-pi4-vm-test: pi4-image
-	nix run .#pi4-vm-test -- $(ARGS)
+# --ssh needs no image, so skip the build then.
+run-pi4:
+	$(if $(findstring --ssh,$(ARGS)),,nix build .#images.pi4-nas -o result-pi4-nas -L)
+	nix run .#run-pi4 -- $(ARGS)
 
 pi4-vm: pi4-image
-	nix run .#pi4-vm-test -- --interactive $(ARGS)
+	nix run .#run-pi4 -- --interactive $(ARGS)
 
-.PHONY: pi4-image pi4-flash pi4-inspect pi4-deploy pi4-check pi4-vm-test pi4-vm
+.PHONY: pi4-image pi4-flash pi4-inspect pi4-deploy pi4-check run-pi4 pi4-vm
