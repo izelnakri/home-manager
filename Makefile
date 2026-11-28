@@ -100,13 +100,21 @@ decrypt-sample-secret-file: decrypt
 # make pi4-check                  -> static image checks only (partition flag, bootcmd, extlinux, DTB): seconds
 # make pi4-vm [ARGS=--full]       -> interactive serial console (virt, or raspi4b with --full); Ctrl-A X quits
 #   (also: `node scripts/run-pi4.ts ...` / `deno run -A scripts/run-pi4.ts ...` with the tools on PATH)
-PI4_IMG = $(wildcard result-pi4-nas/sd-image/*.img)
+# ROOTFS=btrfs selects the btrfs-root image (images.pi4-nas-btrfs); default ext4. If you flash
+# btrfs, also set `pi4.rootFs = "btrfs";` in hosts/izels-pi4 before `make pi4-deploy`.
+ROOTFS ?= ext4
+PI4_RESULT = $(if $(filter btrfs,$(ROOTFS)),result-pi4-nas-btrfs,result-pi4-nas)
+PI4_IMG = $(wildcard $(PI4_RESULT)/sd-image/*.img)
 
 pi4-image:
 	nix build .#images.pi4-nas -o result-pi4-nas -L
 
+pi4-image-btrfs:
+	nix build .#images.pi4-nas-btrfs -o result-pi4-nas-btrfs -L
+
 pi4-flash:
-	@test -n "$(PI4_IMG)" || { echo "no image, run: make pi4-image"; exit 1; }
+	@test -n "$(PI4_IMG)" || { echo "no $(ROOTFS) image, run: make pi4-image$(if $(filter btrfs,$(ROOTFS)),-btrfs,)"; exit 1; }
+	@echo "flashing $(ROOTFS) image: $(PI4_IMG)"
 	@test -n "$(DEV)" || { echo "usage: sudo make pi4-flash DEV=/dev/sdX"; exit 1; }
 	@test "$$(lsblk -dno RM $(DEV))" = 1 || { echo "$(DEV) is not removable, refusing"; exit 1; }
 	@! lsblk -no MOUNTPOINTS $(DEV) | grep -q . || { echo "$(DEV) has mounted partitions, refusing"; exit 1; }
@@ -137,4 +145,4 @@ run-pi4:
 pi4-vm: pi4-image
 	nix run .#run-pi4 -- --interactive $(ARGS)
 
-.PHONY: pi4-image pi4-flash pi4-inspect pi4-deploy pi4-check run-pi4 pi4-vm
+.PHONY: pi4-image pi4-image-btrfs pi4-flash pi4-inspect pi4-deploy pi4-check run-pi4 pi4-vm

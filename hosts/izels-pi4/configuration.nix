@@ -323,6 +323,8 @@
     path = with pkgs; [ coreutils gnugrep util-linux iproute2 networkmanager bluez systemd kmod ];
     serviceConfig.Type = "oneshot";
     script = ''
+      # NixOS runs unit scripts with `set -e`; a grep without matches must not kill the report.
+      set +e
       out=/boot/pi4-diagnostics.txt
       {
         echo "== $(date -Is) $(uname -r) boot $(cat /proc/sys/kernel/random/boot_id)"
